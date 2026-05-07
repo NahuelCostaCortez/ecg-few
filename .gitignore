@@ -1,0 +1,26 @@
+.DS_Store
+.env
+.venv/
+.uv-cache/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Generated experiment artifacts
+data/**
+!data/**/
+!data/**/.gitkeep
+reports/**
+!reports/
+!reports/.gitkeep
+notebooks/.ipynb_checkpoints/
+
+# Local task-board/tooling files for this workspace
+.obsidian/
+AGENTS.md
+CLAUDE.md
+Project.canvas
+RULES.md
+canvas-tool.py
