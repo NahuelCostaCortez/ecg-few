@@ -448,8 +448,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--outdir",
         type=str,
-        default="data",
-        help="Output directory for dataset files.",
+        default="data/synthetic",
+        help="Output directory for synthetic dataset files.",
     )
     parser.add_argument(
         "--samples-per-family",

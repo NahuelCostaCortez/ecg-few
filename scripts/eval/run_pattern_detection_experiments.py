@@ -31,24 +31,24 @@ EXPERIMENTS = {
     "multilabel_label_only": Experiment(
         name="multilabel_label_only",
         task="multilabel",
-        eval_jsonl="data/vlm/eval/multilabel/test.jsonl",
-        few_shot_jsonl="data/vlm/eval/multilabel/train.jsonl",
+        eval_jsonl="data/synthetic/vlm/eval/multilabel/test.jsonl",
+        few_shot_jsonl="data/synthetic/vlm/eval/multilabel/train.jsonl",
         metric_script="scripts/eval/evaluate_multilabel_predictions.py",
         prompt_file="prompts/multilabel/label_only.md",
     ),
     "multilabel_morphology_described": Experiment(
         name="multilabel_morphology_described",
         task="multilabel",
-        eval_jsonl="data/vlm/eval/multilabel/test.jsonl",
-        few_shot_jsonl="data/vlm/eval/multilabel/train.jsonl",
+        eval_jsonl="data/synthetic/vlm/eval/multilabel/test.jsonl",
+        few_shot_jsonl="data/synthetic/vlm/eval/multilabel/train.jsonl",
         metric_script="scripts/eval/evaluate_multilabel_predictions.py",
         prompt_file="prompts/multilabel/morphology_described.md",
     ),
     "binary_morphology_described": Experiment(
         name="binary_morphology_described",
         task="binary",
-        eval_jsonl="data/vlm/eval/binary/test.jsonl",
-        few_shot_jsonl="data/vlm/eval/binary/train.jsonl",
+        eval_jsonl="data/synthetic/vlm/eval/binary/test.jsonl",
+        few_shot_jsonl="data/synthetic/vlm/eval/binary/train.jsonl",
         metric_script="scripts/eval/evaluate_binary_predictions.py",
         binary_prompt_dir="prompts/binary",
     ),
@@ -65,7 +65,7 @@ def parse_str_list(text: str) -> list[str]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run VLM pattern-detection experiments.")
-    parser.add_argument("--dataset-root", default="data", help="Dataset root directory.")
+    parser.add_argument("--dataset-root", default="data/synthetic", help="Dataset root directory.")
     parser.add_argument("--output-root", default="outputs/vlm_outputs/openai/icl_sweep")
     parser.add_argument("--report-dir", default="reports/pattern_detection/openai")
     parser.add_argument("--model", default="gpt-5.5")

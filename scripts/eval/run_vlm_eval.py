@@ -35,9 +35,9 @@ BINARY_PROMPT_FILES = {
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a VLM on ECG beat images.")
     parser.add_argument("--provider", choices=("openai", "vllm"), default="openai")
-    parser.add_argument("--dataset-root", default="data")
-    parser.add_argument("--eval-jsonl", default="data/vlm/eval/multilabel/test.jsonl")
-    parser.add_argument("--few-shot-jsonl", default="data/vlm/eval/multilabel/train.jsonl")
+    parser.add_argument("--dataset-root", default="data/synthetic")
+    parser.add_argument("--eval-jsonl", default="data/synthetic/vlm/eval/multilabel/test.jsonl")
+    parser.add_argument("--few-shot-jsonl", default="data/synthetic/vlm/eval/multilabel/train.jsonl")
     parser.add_argument("--output", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--api-base", default="http://localhost:8000/v1")
