@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ecg_vlm.simulator.constants import LABEL_NAMES
+from ecg_few.simulator.constants import LABEL_NAMES
 
 TASK_MULTILABEL = "multilabel_findings"
 TASK_BINARY = "binary_finding"

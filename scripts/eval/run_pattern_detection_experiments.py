@@ -11,7 +11,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_K_VALUES = (0, 1, 2, 4, 8, 12)
+DEFAULT_K_VALUES = (0, 1, 2, 4, 8, 12, 16, 24, 32)
 DEFAULT_SEEDS = (42, 123, 2026)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -59,12 +59,16 @@ def parse_int_list(text: str) -> list[int]:
     return [int(part.strip()) for part in text.split(",") if part.strip()]
 
 
+def parse_str_list(text: str) -> list[str]:
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run VLM pattern-detection experiments.")
     parser.add_argument("--dataset-root", default="data", help="Dataset root directory.")
-    parser.add_argument("--output-root", default="data/vlm_outputs/openai/icl_sweep")
+    parser.add_argument("--output-root", default="outputs/vlm_outputs/openai/icl_sweep")
     parser.add_argument("--report-dir", default="reports/pattern_detection/openai")
-    parser.add_argument("--model", default="gpt-4.5-preview")
+    parser.add_argument("--model", default="gpt-5.5")
     parser.add_argument(
         "--provider",
         choices=("openai", "vllm"),
@@ -90,6 +94,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--k-values", default=",".join(str(k) for k in DEFAULT_K_VALUES))
     parser.add_argument("--seeds", default=",".join(str(seed) for seed in DEFAULT_SEEDS))
     parser.add_argument(
+        "--few-shot-controls",
+        default="normal",
+        help=(
+            "Comma-separated few-shot controls to run. Available: normal, "
+            "shuffled_answers, text_only_examples."
+        ),
+    )
+    parser.add_argument(
         "--experiments",
         default=",".join(EXPERIMENTS),
         help=f"Comma-separated experiment names. Available: {', '.join(EXPERIMENTS)}",
@@ -102,7 +114,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--limit", type=int, default=0, help="Limit records per run.")
-    parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true", default=True)
     parser.add_argument(
         "--no-resume",
@@ -123,10 +134,17 @@ def run_command(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True)
 
 
-def output_stem(experiment: Experiment, k: int, seed: int, reasoning_effort: str) -> str:
+def output_stem(
+    experiment: Experiment,
+    k: int,
+    seed: int,
+    reasoning_effort: str,
+    few_shot_control: str,
+) -> str:
+    control_part = "" if few_shot_control == "normal" else f"_control-{few_shot_control}"
     if k == 0:
-        return f"{experiment.name}_k0_reasoning-{reasoning_effort}"
-    return f"{experiment.name}_k{k}_seed{seed}_reasoning-{reasoning_effort}"
+        return f"{experiment.name}{control_part}_k0_reasoning-{reasoning_effort}"
+    return f"{experiment.name}{control_part}_k{k}_seed{seed}_reasoning-{reasoning_effort}"
 
 
 def resolve_path(path: str) -> str:
@@ -142,6 +160,7 @@ def run_eval(
     args: argparse.Namespace,
     k: int,
     seed: int,
+    few_shot_control: str,
     output_jsonl: Path,
 ) -> None:
     mode = "zero-shot" if k == 0 else "few-shot"
@@ -164,6 +183,8 @@ def run_eval(
         mode,
         "--few-shot-k",
         str(k),
+        "--few-shot-control",
+        few_shot_control,
         "--seed",
         str(seed),
         "--task",
@@ -192,8 +213,6 @@ def run_eval(
         cmd.extend(["--binary-prompt-dir", resolve_path(experiment.binary_prompt_dir)])
     if args.limit:
         cmd.extend(["--limit", str(args.limit)])
-    if args.dry_run:
-        cmd.append("--dry-run")
     if args.resume:
         cmd.append("--resume")
     run_command(cmd)
@@ -220,6 +239,7 @@ def summarize_row(
     predictions: Path,
     metrics_payload: dict[str, object] | None,
     args: argparse.Namespace,
+    few_shot_control: str,
 ) -> dict[str, object]:
     row: dict[str, object] = {
         "experiment": experiment.name,
@@ -229,8 +249,8 @@ def summarize_row(
         "k": k,
         "seed": "" if k == 0 else seed,
         "reasoning_effort": args.reasoning_effort,
+        "few_shot_control": few_shot_control,
         "predictions": predictions.as_posix(),
-        "dry_run": args.dry_run,
     }
     if metrics_payload is None:
         return row
@@ -274,6 +294,7 @@ def main() -> None:
         args.response_format = args.vllm_response_format
     k_values = parse_int_list(args.k_values)
     seeds = parse_int_list(args.seeds)
+    few_shot_controls = parse_str_list(args.few_shot_controls)
     experiment_names = [name.strip() for name in args.experiments.split(",") if name.strip()]
     if args.skip_binary:
         experiment_names = [name for name in experiment_names if not name.startswith("binary_")]
@@ -282,31 +303,52 @@ def main() -> None:
     if unknown:
         raise ValueError(f"Unknown experiments: {unknown}. Available: {sorted(EXPERIMENTS)}")
 
+    valid_controls = {"normal", "shuffled_answers", "text_only_examples"}
+    unknown_controls = [control for control in few_shot_controls if control not in valid_controls]
+    if unknown_controls:
+        raise ValueError(
+            f"Unknown few-shot controls: {unknown_controls}. Available: {sorted(valid_controls)}"
+        )
+
     output_root = Path(args.output_root)
     rows: list[dict[str, object]] = []
     for experiment_name in experiment_names:
         experiment = EXPERIMENTS[experiment_name]
         for k in k_values:
             seeds_for_k = [seeds[0]] if k == 0 else seeds
-            for seed in seeds_for_k:
-                stem = output_stem(experiment, k, seed, args.reasoning_effort)
-                output_dir = output_root / experiment.name
-                predictions = output_dir / f"{stem}.jsonl"
-                metrics_path = output_dir / f"{stem}_metrics.json"
-                run_eval(experiment, args=args, k=k, seed=seed, output_jsonl=predictions)
-                metrics_payload = None
-                if not args.dry_run:
-                    metrics_payload = run_metrics(experiment, predictions, metrics_path)
-                rows.append(
-                    summarize_row(
+            controls_for_k = ["normal"] if k == 0 else few_shot_controls
+            for few_shot_control in controls_for_k:
+                for seed in seeds_for_k:
+                    stem = output_stem(
                         experiment,
+                        k,
+                        seed,
+                        args.reasoning_effort,
+                        few_shot_control,
+                    )
+                    output_dir = output_root / experiment.name
+                    predictions = output_dir / f"{stem}.jsonl"
+                    metrics_path = output_dir / f"{stem}_metrics.json"
+                    run_eval(
+                        experiment,
+                        args=args,
                         k=k,
                         seed=seed,
-                        predictions=predictions,
-                        metrics_payload=metrics_payload,
-                        args=args,
+                        few_shot_control=few_shot_control,
+                        output_jsonl=predictions,
                     )
-                )
+                    metrics_payload = run_metrics(experiment, predictions, metrics_path)
+                    rows.append(
+                        summarize_row(
+                            experiment,
+                            k=k,
+                            seed=seed,
+                            predictions=predictions,
+                            metrics_payload=metrics_payload,
+                            args=args,
+                            few_shot_control=few_shot_control,
+                        )
+                    )
 
     write_reports(rows, Path(args.report_dir))
 

@@ -16,7 +16,7 @@ run_python() {
   PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" python3 "$@"
 }
 
-OUTDIR="$ROOT_DIR/data"
+OUTDIR="$ROOT_DIR/data/synthetic"
 SAMPLES_PER_FAMILY=40
 TEST_RATIO=0.2
 VAL_RATIO=0.1
@@ -37,8 +37,3 @@ run_python "$ROOT_DIR/scripts/dataset/build_ecg_dataset.py" \
   --component-test-count 20 \
   --transfer-count 40 \
   --transfer-source-family BRUGADA
-
-run_python "$ROOT_DIR/scripts/dataset/build_vlm_instruction_dataset.py" \
-  --dataset-root "$OUTDIR" \
-  --output-dir "$OUTDIR/vlm" \
-  --seed "$SEED"

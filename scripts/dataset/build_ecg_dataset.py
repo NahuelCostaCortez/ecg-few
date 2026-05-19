@@ -25,8 +25,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ecg_vlm.simulator import LABEL_NAMES, SOURCE_FAMILIES, generate_beat
-from ecg_vlm.simulator.plotting import plot_beat
+from ecg_few.simulator import LABEL_NAMES, SOURCE_FAMILIES, generate_beat
+from ecg_few.simulator.plotting import plot_beat
 
 
 LABEL_COLUMNS = {

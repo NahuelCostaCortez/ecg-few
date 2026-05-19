@@ -7,6 +7,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+tests/*
+jobs/vlm_server.sh
 
 # Generated experiment artifacts
 data/**
@@ -15,12 +17,15 @@ data/**
 reports/**
 !reports/
 !reports/.gitkeep
-notebooks/.ipynb_checkpoints/
+notebooks/
+outputs/
 
 # Local task-board/tooling files for this workspace
 .obsidian/
+.codex
 AGENTS.md
 CLAUDE.md
 Project.canvas
 RULES.md
 canvas-tool.py
+docs/**

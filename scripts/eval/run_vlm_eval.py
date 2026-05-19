@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
-"""Run ECG visual QA evaluation against OpenAI or OpenAI-compatible VLM backends."""
+"""
+Run ECG visual QA evaluation.
+
+Supports OpenAI or OpenAI-compatible backends.
+"""
 
 from __future__ import annotations
 
 import argparse
 import base64
+import copy
 import json
 import os
 import random
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
 
-from ecg_vlm.prompts import (
+from ecg_few.prompts import (
     DEFAULT_SYSTEM_INSTRUCTIONS,
     load_markdown_prompt,
     multilabel_answer_text,
     multilabel_json_schema,
 )
-from ecg_vlm.simulator.constants import LABEL_NAMES
-
-OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+from ecg_few.simulator.constants import LABEL_NAMES
+from openai import APIConnectionError, APIStatusError, OpenAI
 BINARY_PROMPT_FILES = {
     "RBBB": "rbbb.md",
     "ST_ELEVATION": "st_elevation.md",
@@ -47,6 +49,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt-name", default="")
     parser.add_argument("--mode", choices=("zero-shot", "few-shot"), default="zero-shot")
     parser.add_argument("--few-shot-k", type=int, default=4)
+    parser.add_argument(
+        "--few-shot-control",
+        choices=("normal", "shuffled_answers", "text_only_examples"),
+        default="normal",
+        help="Counterfactual control to apply to few-shot examples.",
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=0.0)
@@ -61,9 +69,8 @@ def parse_args() -> argparse.Namespace:
         "--response-format",
         choices=("json_schema", "json_object", "none"),
         default="json_schema",
-        help="Structured output mode for vLLM. OpenAI always uses JSON schema.",
+        help="Structured output mode for the Responses API. OpenAI always uses JSON schema.",
     )
-    parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true")
     return parser.parse_args()
 
@@ -172,27 +179,80 @@ def select_few_shot_records(
     return selected[:k]
 
 
-def openai_user_message(prompt: str, image_path: Path) -> dict[str, Any]:
+def apply_few_shot_control(
+    records: list[dict[str, Any]],
+    *,
+    control: str,
+    seed: int,
+    explicit_task: str,
+) -> list[dict[str, Any]]:
+    if control in {"normal", "text_only_examples"}:
+        return records
+    if control != "shuffled_answers":
+        raise ValueError(f"Unknown few-shot control: {control}")
+    if len(records) <= 1:
+        return records
+
+    rng = random.Random(seed + 10_000)
+    controlled = copy.deepcopy(records)
+    answers = [copy.deepcopy(record["expected_answer"]) for record in records]
+    rng.shuffle(answers)
+
+    for record, shuffled_answer in zip(controlled, answers, strict=True):
+        kind = task_type(record, explicit_task)
+        if kind == "binary":
+            record["expected_answer"]["present"] = bool(shuffled_answer["present"])
+        else:
+            record["expected_answer"] = shuffled_answer
+    return controlled
+
+
+def responses_user_message(prompt: str, image_path: Path | None) -> dict[str, Any]:
+    content: list[dict[str, Any]] = [
+        {"type": "input_text", "text": prompt},
+    ]
+    if image_path is not None:
+        content.append(
+            {
+                "type": "input_image",
+                "image_url": data_url_for_image(image_path),
+                "detail": "auto",
+            }
+        )
     return {
+        "type": "message",
         "role": "user",
+        "content": content,
+    }
+
+
+def responses_assistant_message(text: str) -> dict[str, Any]:
+    return {
+        "type": "message",
+        "role": "assistant",
         "content": [
-            {"type": "input_text", "text": prompt},
-            {"type": "input_image", "image_url": data_url_for_image(image_path)},
+            {
+                "type": "output_text",
+                "text": text,
+            }
         ],
     }
 
 
-def vllm_user_message(prompt: str, image_path: Path) -> dict[str, Any]:
-    return {
-        "role": "user",
-        "content": [
-            {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": data_url_for_image(image_path)}},
-        ],
-    }
+def text_format_for_task(kind: str, args: argparse.Namespace) -> dict[str, Any] | None:
+    if args.provider == "openai" or args.response_format == "json_schema":
+        return {
+            "type": "json_schema",
+            "name": "ecg_binary_finding" if kind == "binary" else "ecg_findings",
+            "schema": schema_for_task(kind),
+            "strict": True,
+        }
+    if args.response_format == "json_object":
+        return {"type": "json_object"}
+    return None
 
 
-def build_openai_payload(
+def build_responses_payload(
     record: dict[str, Any],
     *,
     dataset_root: Path,
@@ -201,9 +261,7 @@ def build_openai_payload(
     system_prompt: str,
 ) -> dict[str, Any]:
     kind = task_type(record, args.task)
-    messages: list[dict[str, Any]] = [
-        {"role": "system", "content": [{"type": "input_text", "text": system_prompt}]}
-    ]
+    messages: list[dict[str, Any]] = []
     if args.mode == "few-shot":
         for example in few_shot_records:
             example_kind = task_type(example, args.task)
@@ -213,14 +271,16 @@ def build_openai_payload(
                 binary_prompt_dir=args.binary_prompt_dir,
                 explicit_task=args.task,
             )
+            example_image = None
+            if args.few_shot_control != "text_only_examples":
+                example_image = dataset_root / example["image_path"]
             messages.append(
-                openai_user_message(example_prompt, dataset_root / example["image_path"])
+                responses_user_message(example_prompt, example_image)
             )
             messages.append(
-                {
-                    "role": "assistant",
-                    "content": answer_text(example["expected_answer"], example_kind),
-                }
+                responses_assistant_message(
+                    answer_text(example["expected_answer"], example_kind)
+                )
             )
 
     prompt = prompt_for_record(
@@ -229,136 +289,72 @@ def build_openai_payload(
         binary_prompt_dir=args.binary_prompt_dir,
         explicit_task=args.task,
     )
-    messages.append(openai_user_message(prompt, dataset_root / record["image_path"]))
+    messages.append(responses_user_message(prompt, dataset_root / record["image_path"]))
 
     payload: dict[str, Any] = {
         "model": args.model,
+        "instructions": system_prompt,
         "input": messages,
         "max_output_tokens": args.max_output_tokens,
-        "text": {
-            "format": {
-                "type": "json_schema",
-                "name": "ecg_binary_finding" if kind == "binary" else "ecg_findings",
-                "schema": schema_for_task(kind),
-                "strict": True,
-            }
-        },
     }
+    text_format = text_format_for_task(kind, args)
+    if text_format is not None:
+        payload["text"] = {"format": text_format}
     if args.temperature != 0:
         payload["temperature"] = args.temperature
-    if args.reasoning_effort != "none":
+    if args.provider == "openai" and args.reasoning_effort != "none":
         payload["reasoning"] = {"effort": args.reasoning_effort}
     return payload
 
 
-def build_vllm_payload(
-    record: dict[str, Any],
+def truncate_error_body(body: str, *, limit: int = 4000) -> str:
+    body = body.strip()
+    if len(body) <= limit:
+        return body
+    return body[:limit] + f"... [truncated {len(body) - limit} chars]"
+
+
+def provider_name(provider: str) -> str:
+    return "vLLM" if provider == "vllm" else "OpenAI"
+
+
+def call_responses_api(
+    payload: dict[str, Any],
     *,
-    dataset_root: Path,
-    args: argparse.Namespace,
-    few_shot_records: list[dict[str, Any]],
-    system_prompt: str,
+    provider: str,
+    api_base: str | None,
+    api_key: str,
+    timeout: float,
 ) -> dict[str, Any]:
-    kind = task_type(record, args.task)
-    messages: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
-    if args.mode == "few-shot":
-        for example in few_shot_records:
-            example_kind = task_type(example, args.task)
-            example_prompt = prompt_for_record(
-                example,
-                prompt_file=args.prompt_file,
-                binary_prompt_dir=args.binary_prompt_dir,
-                explicit_task=args.task,
-            )
-            messages.append(
-                vllm_user_message(example_prompt, dataset_root / example["image_path"])
-            )
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": answer_text(example["expected_answer"], example_kind),
-                }
-            )
-
-    prompt = prompt_for_record(
-        record,
-        prompt_file=args.prompt_file,
-        binary_prompt_dir=args.binary_prompt_dir,
-        explicit_task=args.task,
-    )
-    messages.append(vllm_user_message(prompt, dataset_root / record["image_path"]))
-
-    payload: dict[str, Any] = {
-        "model": args.model,
-        "messages": messages,
-        "temperature": args.temperature,
-        "max_tokens": args.max_output_tokens,
+    client_kwargs: dict[str, Any] = {
+        "api_key": api_key or "EMPTY",
+        "timeout": timeout,
     }
-    if args.response_format == "json_schema":
-        payload["response_format"] = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "ecg_binary_finding" if kind == "binary" else "ecg_findings",
-                "schema": schema_for_task(kind),
-                "strict": True,
-            },
-        }
-    elif args.response_format == "json_object":
-        payload["response_format"] = {"type": "json_object"}
-    return payload
+    if api_base:
+        client_kwargs["base_url"] = api_base.rstrip("/") + "/"
 
-
-def call_openai_responses(
-    payload: dict[str, Any],
-    *,
-    api_key: str,
-    timeout: float,
-) -> dict[str, Any]:
-    request = urllib.request.Request(
-        OPENAI_RESPONSES_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+    client = OpenAI(**client_kwargs)
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"OpenAI API HTTP {exc.code}: {body}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"OpenAI API connection failed: {exc.reason}") from exc
+        response = client.responses.create(**payload)
+        return response.model_dump(mode="json")
+    except APIStatusError as exc:
+        body = ""
+        if exc.response is not None:
+            try:
+                body = exc.response.text
+            except Exception:  # noqa: BLE001
+                body = str(exc.response)
+        body = truncate_error_body(body or str(exc))
+        raise RuntimeError(
+            f"{provider_name(provider)} Responses API HTTP {exc.status_code}: {body}"
+        ) from exc
+    except APIConnectionError as exc:
+        raise RuntimeError(
+            f"{provider_name(provider)} Responses API connection failed: {exc}"
+        ) from exc
 
 
-def call_vllm_chat_completions(
-    payload: dict[str, Any],
-    *,
-    api_base: str,
-    api_key: str,
-    timeout: float,
-) -> dict[str, Any]:
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    request = urllib.request.Request(
-        api_base.rstrip("/") + "/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"vLLM API HTTP {exc.code}: {body}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"vLLM API connection failed: {exc.reason}") from exc
-
-
-def extract_output_text(response: dict[str, Any], provider: str) -> str:
-    if provider == "vllm":
-        return str(response["choices"][0]["message"]["content"]).strip()
+def extract_output_text(response: dict[str, Any]) -> str:
     if isinstance(response.get("output_text"), str):
         return response["output_text"]
     chunks: list[str] = []
@@ -434,7 +430,7 @@ def result_record(
         "usage": response.get("usage") if response else None,
         "latency_seconds": latency_seconds,
         "error": error,
-        "dry_run": args.dry_run,
+        "few_shot_control": args.few_shot_control,
         "few_shot_ids": few_shot_ids,
         "metadata": record["metadata"],
     }
@@ -454,6 +450,12 @@ def main() -> None:
             k=args.few_shot_k,
             seed=args.seed,
         )
+        few_shot_records = apply_few_shot_control(
+            few_shot_records,
+            control=args.few_shot_control,
+            seed=args.seed,
+            explicit_task=args.task,
+        )
     few_shot_ids = [record["id"] for record in few_shot_records]
 
     output_path = Path(args.output)
@@ -464,8 +466,8 @@ def main() -> None:
     api_key = args.api_key
     if args.provider == "openai":
         api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
-        if not args.dry_run and not api_key:
-            raise RuntimeError("OPENAI_API_KEY is required unless --dry-run is set.")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is required.")
     else:
         api_key = api_key or os.environ.get("VLLM_API_KEY", "")
 
@@ -484,55 +486,33 @@ def main() -> None:
             binary_prompt_dir=args.binary_prompt_dir,
             explicit_task=args.task,
         )
-        if args.provider == "openai":
-            payload = build_openai_payload(
-                record,
-                dataset_root=dataset_root,
-                args=args,
-                few_shot_records=few_shot_records,
-                system_prompt=system_prompt,
-            )
-        else:
-            payload = build_vllm_payload(
-                record,
-                dataset_root=dataset_root,
-                args=args,
-                few_shot_records=few_shot_records,
-                system_prompt=system_prompt,
-            )
+        payload = build_responses_payload(
+            record,
+            dataset_root=dataset_root,
+            args=args,
+            few_shot_records=few_shot_records,
+            system_prompt=system_prompt,
+        )
 
-        if args.dry_run:
+        started = time.monotonic()
+        try:
+            response = call_responses_api(
+                payload,
+                provider=args.provider,
+                api_base=args.api_base if args.provider == "vllm" else None,
+                api_key=api_key,
+                timeout=args.timeout,
+            )
+            latency_seconds = time.monotonic() - started
+            raw_output_text = extract_output_text(response)
+            prediction = parse_prediction(raw_output_text, kind)
+            error = None
+        except Exception as exc:  # noqa: BLE001
             response = None
-            latency_seconds = None
+            latency_seconds = time.monotonic() - started
             raw_output_text = ""
             prediction = None
-            error = None
-        else:
-            started = time.monotonic()
-            try:
-                if args.provider == "openai":
-                    response = call_openai_responses(
-                        payload,
-                        api_key=api_key,
-                        timeout=args.timeout,
-                    )
-                else:
-                    response = call_vllm_chat_completions(
-                        payload,
-                        api_base=args.api_base,
-                        api_key=api_key,
-                        timeout=args.timeout,
-                    )
-                latency_seconds = time.monotonic() - started
-                raw_output_text = extract_output_text(response, args.provider)
-                prediction = parse_prediction(raw_output_text, kind)
-                error = None
-            except Exception as exc:  # noqa: BLE001
-                response = None
-                latency_seconds = time.monotonic() - started
-                raw_output_text = ""
-                prediction = None
-                error = str(exc)
+            error = str(exc)
 
         write_jsonl_line(
             output_path,

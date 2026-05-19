@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from ecg_vlm.evaluation.metrics import LABEL_NAMES, multilabel_metrics
+from ecg_few.evaluation.metrics import LABEL_NAMES, multilabel_metrics
 
 
 def parse_args() -> argparse.Namespace:

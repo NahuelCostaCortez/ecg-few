@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-from ecg_vlm.evaluation.metrics import binary_metrics
-from ecg_vlm.simulator.constants import LABEL_NAMES
+from ecg_few.evaluation.metrics import binary_metrics
+from ecg_few.simulator.constants import LABEL_NAMES
 
 
 def parse_args() -> argparse.Namespace:

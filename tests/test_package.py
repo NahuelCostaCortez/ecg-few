@@ -1,4 +1,4 @@
-from ecg_vlm import __version__
+from ecg_few import __version__
 
 
 def test_version() -> None:

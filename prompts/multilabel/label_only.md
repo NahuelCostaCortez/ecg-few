@@ -1,4 +1,4 @@
-Analyze this single-lead ECG beat image.
+Analyze this ECG beat image.
 
 Decide whether each finding is present:
 
@@ -10,8 +10,8 @@ Return only valid JSON with boolean values for exactly these keys:
 
 ```json
 {
-  "RBBB": true,
-  "ST_ELEVATION": false,
-  "T_WAVE_INVERSION": true
+  "RBBB": true/false,
+  "ST_ELEVATION": true/false,
+  "T_WAVE_INVERSION": true/false
 }
 ```
