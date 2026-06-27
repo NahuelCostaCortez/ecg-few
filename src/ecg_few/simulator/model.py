@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 import numpy as np
 
@@ -20,7 +19,7 @@ class GaussianAtom:
     def evaluate(self, t_ms: np.ndarray) -> np.ndarray:
         return self.a * np.exp(-((t_ms - self.mu) ** 2) / (2.0 * self.sigma**2))
 
-    def as_dict(self) -> Dict[str, float]:
+    def as_dict(self) -> dict[str, float]:
         return {
             "name": self.name,
             "a": float(self.a),

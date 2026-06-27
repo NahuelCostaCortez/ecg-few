@@ -1,10 +1,10 @@
-"""Metrics for multi-label ECG finding evaluation."""
+"""Metrics for QRS finding and derived Brugada evaluation."""
 
 from __future__ import annotations
 
 from collections.abc import Iterable
 
-LABEL_NAMES = ("RBBB", "ST_ELEVATION", "T_WAVE_INVERSION")
+from ecg_few.findings import LABEL_NAMES
 
 
 def _empty_counts() -> dict[str, int]:
@@ -28,6 +28,45 @@ def binary_metrics(counts: dict[str, int]) -> dict[str, float | None]:
         "specificity": _safe_divide(tn, tn + fp),
         "precision": _safe_divide(tp, tp + fp),
         "f1": _safe_divide(2 * tp, 2 * tp + fp + fn),
+    }
+
+
+def brugada_metrics(
+    y_true: Iterable[int | bool],
+    y_pred: Iterable[int | bool],
+) -> dict[str, object]:
+    """Return patient-level metrics for the derived Brugada decision."""
+    counts = _empty_counts()
+    true_values = [int(bool(value)) for value in y_true]
+    pred_values = [int(bool(value)) for value in y_pred]
+    if len(true_values) != len(pred_values):
+        raise ValueError("y_true and y_pred must have the same length.")
+
+    for expected, predicted in zip(true_values, pred_values, strict=True):
+        if expected == 1 and predicted == 1:
+            counts["tp"] += 1
+        elif expected == 0 and predicted == 0:
+            counts["tn"] += 1
+        elif expected == 0 and predicted == 1:
+            counts["fp"] += 1
+        else:
+            counts["fn"] += 1
+
+    metrics = binary_metrics(counts)
+    sensitivity = metrics["sensitivity"]
+    specificity = metrics["specificity"]
+    balanced_accuracy = (
+        (sensitivity + specificity) / 2
+        if sensitivity is not None and specificity is not None
+        else None
+    )
+    total = len(true_values)
+    return {
+        **metrics,
+        "balanced_accuracy": balanced_accuracy,
+        "counts": counts,
+        "prevalence": _safe_divide(sum(true_values), total),
+        "predicted_prevalence": _safe_divide(sum(pred_values), total),
     }
 
 
