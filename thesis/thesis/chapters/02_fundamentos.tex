@@ -56,13 +56,32 @@ La etiqueta T\_WAVE\_INVERSION expresa por tanto una propiedad visual localizada
 
 \subsection{Síndrome de Brugada como caso motivador}
 
-El síndrome de Brugada es un síndrome arrítmico hereditario asociado a riesgo de fibrilación ventricular y muerte súbita. Su definición ha evolucionado a medida que se ha estudiado la especificidad de los patrones espontáneos y provocados. El elemento electrocardiográfico central es el patrón tipo 1, que presenta una elevación descendente del segmento ST en derivaciones precordiales derechas y una onda T negativa \cite{sieira2017,zeppenfeld2022}.
+El síndrome de Brugada es un síndrome arrítmico hereditario asociado a riesgo de fibrilación ventricular y muerte súbita. Su definición ha evolucionado a medida que se ha estudiado la especificidad de los patrones espontáneos y provocados. El elemento electrocardiográfico central es el patrón tipo 1, caracterizado por elevación descendente del segmento ST en derivaciones precordiales derechas y onda T negativa \cite{sieira2017,zeppenfeld2022}.
 
-La guía europea de 2022 sitúa el patrón tipo 1 en V1 o V2 colocadas en espacios intercostales estándar o superiores. La interpretación diagnóstica depende de si el patrón es espontáneo, inducido por fiebre o provocado mediante un bloqueante del canal de sodio. También exige excluir otras enfermedades y fenocopias \cite{zeppenfeld2022}. Por este motivo el síndrome no puede reducirse a la presencia simultánea de tres etiquetas sintéticas.
+La guía europea de 2022 sitúa el patrón tipo 1 en V1 o V2 colocadas en espacios intercostales estándar o superiores \cite{zeppenfeld2022}. Esta colocación es relevante porque registrar V1 y V2 más arriba puede aumentar la sensibilidad para observar el patrón \cite{brugadadrugsdiagnostic}. Aun así, el trazado aislado no debe interpretarse fuera del circuito clínico: hay que valorar síntomas, antecedentes familiares, fiebre, fármacos, alteraciones electrolíticas y fenocopias.
+
+Cuando existe sospecha clínica y el ECG basal no es diagnóstico, puede realizarse una prueba farmacológica con bloqueantes del canal de sodio, como ajmalina, flecainida, procainamida o pilsicainida según disponibilidad local. Esta prueba intenta desenmascarar un patrón tipo 1 en un entorno monitorizado. La literatura reciente advierte que no debe usarse como cribado indiscriminado: la especificidad no es perfecta, no existe un patrón oro absoluto independiente del propio ECG y la indicación depende de síntomas, historia familiar y trazado basal \cite{wilde2023scbt}. Por tanto, en este TFG una predicción positiva debe entenderse como señal de triaje que podría conducir a revisión especializada y, si procede, a esta vía diagnóstica, no como diagnóstico final.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.58\textwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{sources/brugada_type1_ecgpedia.png}
+    \caption{ECG con morfología tipo 1 en V1 y V2.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \safeincludegraphics[height=5.0cm]{sources/brugada_patterns_orphanet.png}
+    \caption{Patrones tipo 1, 2 y 3 usados como referencia visual.}
+  \end{subfigure}
+  \caption{Ejemplos clínicos de morfología Brugada. Izquierda: CardioNetworks/ECGpedia, CC BY-SA 3.0 \cite{ecgpediaType1Image}. Derecha: figura de Napolitano y Priori, reutilizada bajo CC BY 2.0 \cite{napolitano2006}.}
+  \label{fig:brugada_clinical_examples}
+\end{figure}
 
 La relación con el bloqueo de rama derecha requiere una precisión adicional. El trazado tipo 1 puede recordar visualmente a una alteración terminal del QRS. Sin embargo, el mecanismo y los criterios no son equivalentes. La onda J del patrón de Brugada se concentra en las derivaciones precordiales derechas y no necesita la onda S lateral recíproca que forma parte del bloqueo de rama derecha \cite{corrado2010}. En este TFG, RBBB se utiliza como una etiqueta morfológica auxiliar y no como requisito clínico para Brugada.
 
-La familia generadora BRUGADA introduce una elevación inicial del segmento ST, una caída progresiva y una onda T negativa. Después de generar la señal, los tres validadores independientes determinan qué hallazgos están presentes. La familia de origen se conserva como metadato, mientras que la tarea predictiva utiliza únicamente las etiquetas observables.
+La familia generadora BRUGADA introduce una elevación inicial del segmento ST, una caída progresiva y una onda T negativa. Después de generar la señal, los tres validadores independientes determinan qué hallazgos están presentes. La familia de origen se conserva como metadato, mientras que la tarea predictiva utiliza únicamente las etiquetas observables. Esta separación es importante: el simulador crea un caso visual para probar modelos, no una reproducción diagnóstica del síndrome.
 
 \begin{figure}[H]
   \centering

@@ -1,17 +1,17 @@
 \chapter{Conclusiones}
 \label{chap:conclusiones}
 
-Este TFG entrega una canalización reproducible para estudiar ECG como imagen en escenarios de pocos datos. La contribución cerrada está en la parte CNN: generación de datos sintéticos, construcción del conjunto HUCA procesado, entrenamiento leave-one-out, evaluación por paciente, adaptación de dominio, gráficas, tablas, Grad CAM y auditoría final de completitud.
+Este TFG entrega una canalización reproducible para estudiar ECG como imagen en escenarios de pocos datos y con orientación de triaje clínico. La comparación completa se plantea entre CNN entrenadas con pocos ejemplos y modelos de visión y lenguaje usados mediante aprendizaje en contexto. La evidencia cuantitativa cerrada corresponde a la primera rama: simulación, entrenamiento CNN, evaluación real, adaptación de dominio, gráficas, tablas, Grad CAM y auditoría final.
 
 \section{Conclusiones principales}
 
 La primera conclusión es que la CNN aprende de forma clara en el dominio sintético. Con \(K=32\), ResNet18 alcanza una exactitud equilibrada de 0,848, sensibilidad de 0,883 y especificidad de 0,812. Esto valida el simulador como entorno de prueba para morfologías QRS/ST y confirma que el protocolo de pocos ejemplos puede capturar señal visual cuando la distribución está controlada.
 
-La segunda conclusión es que la transferencia a ECG clínicos reales es difícil. En Brugada HUCA, la mejor línea base obtiene 0,516 de exactitud equilibrada con \(K=16\). La sensibilidad es moderada, pero la especificidad baja impide usar el modelo como herramienta de diagnóstico o descarte. El resultado es compatible únicamente con investigación en triaje, siempre con revisión clínica posterior.
+La segunda conclusión es que la transferencia a ECG clínicos reales es difícil. En Brugada HUCA, la mejor línea base obtiene 0,516 de exactitud equilibrada con \(K=16\). La sensibilidad es moderada, pero la especificidad baja impide usar el modelo como herramienta de diagnóstico o descarte. El resultado solo es compatible con investigación en triaje, siempre con revisión clínica posterior.
 
 La tercera conclusión es que la adaptación de dominio ayuda de forma limitada. MMD con \(K=32\) mejora el mejor punto real hasta 0,549 de exactitud equilibrada y 0,448 de especificidad. La mejora confirma que alinear dominios puede aportar valor, pero no elimina la brecha entre simulador y HUCA.
 
-La cuarta conclusión es metodológica: separar alcance y evidencia es esencial. El trabajo no presenta resultados VLM porque no existen inferencias completas y auditadas. La pipeline de aprendizaje en contexto queda preparada como siguiente fase, pero las conclusiones cuantitativas se apoyan solo en CNN.
+La cuarta conclusión es la más importante para el diseño global: con estos datos, entrenar una CNN específica no basta. Ni el preentrenamiento visual estándar ni la adaptación de dominio recuperan un rendimiento robusto en Brugada HUCA. Esta evidencia establece el precedente necesario para la fase VLM/ICL, donde los mismos ejemplos \(K\) se usarán como demostraciones en contexto.
 
 \section{Objetivos alcanzados}
 
@@ -24,14 +24,14 @@ Se han alcanzado los objetivos técnicos principales:
   \item comparación sintético-real con métricas agregadas y gráficas;
   \item revisión, corrección y ejecución de la rama de adaptación de dominio;
   \item auditoría final con todos los experimentos CNN marcados como completos;
-  \item documentación de la pipeline VLM como TODO reproducible.
+  \item documentación de la pipeline VLM/ICL como comparador central pendiente.
 \end{itemize}
 
 \section{Respuesta a la pregunta de investigación}
 
-La respuesta es matizada. Sí, una CNN puede aprender señal visual útil a partir de pocos ejemplos cuando la tarea está bien controlada. No, ese rendimiento no se traslada automáticamente a datos reales de Brugada. La adaptación de dominio mejora el resultado, pero todavía no alcanza un nivel suficiente para una herramienta clínica robusta.
+La respuesta actual es parcial pero útil. Sí, una CNN puede aprender señal visual a partir de pocos ejemplos cuando la tarea está controlada. No, ese rendimiento no se traslada automáticamente a datos reales de Brugada. La adaptación de dominio mejora el resultado, pero todavía no alcanza un nivel suficiente para una herramienta clínica robusta.
 
-Por tanto, la estrategia es prometedora como plataforma experimental y como prototipo de apoyo al triaje, pero no como sistema autónomo. La diferencia entre estas dos afirmaciones es central para la interpretación clínica del TFG.
+Por tanto, en este punto no se puede afirmar que entrenar una CNN sea la estrategia adecuada para el régimen de datos disponible. Lo que sí puede afirmarse es que la rama CNN ya proporciona una línea base sólida para medir el valor añadido de VLM/ICL. La comparación final deberá responder si el aprendizaje en contexto consigue una mejor relación entre rendimiento, coste y cantidad de datos etiquetados.
 
 \section{Trabajo futuro}
 
@@ -41,4 +41,4 @@ También sería necesario ampliar la validación real. Las prioridades son obten
 
 \section{Cierre}
 
-El trabajo deja una base experimental cerrada y honesta. La CNN funciona bien en el simulador, funciona solo de manera limitada en HUCA y mejora modestamente con MMD. Esa evidencia no permite diagnóstico autónomo, pero sí aporta un marco reproducible para seguir investigando ECG como imagen, aprendizaje con pocos datos y transferencia hacia escenarios clínicos de triaje.
+El trabajo deja una base experimental cerrada y honesta. La CNN funciona bien en el simulador, funciona solo de manera limitada en HUCA y mejora modestamente con MMD. Esa evidencia no permite diagnóstico autónomo, pero sí aporta un marco reproducible para triaje de sospecha y para la pregunta metodológica que guía la siguiente fase: cuándo renta entrenar modelos visuales específicos y cuándo conviene recurrir a modelos de visión y lenguaje con aprendizaje en contexto.

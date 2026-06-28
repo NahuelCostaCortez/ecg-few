@@ -1,22 +1,28 @@
 \chapter{Modelos}
 \label{chap:modelos}
 
-Este capítulo describe los modelos que sostienen los resultados de la memoria. La parte empírica cerrada corresponde a redes convolucionales. Los modelos de visión y lenguaje se mantienen como canalización preparada para una fase posterior, sin métricas finales.
+Este capítulo describe las dos familias de modelos que definen el TFG. La evidencia empírica cerrada corresponde a la CNN y a sus variantes de adaptación de dominio. Los modelos de visión y lenguaje no se presentan como adorno futuro, sino como el segundo brazo de la comparación metodológica: una forma alternativa de usar los mismos pocos ejemplos sin actualizar pesos.
 
 \section{Entrada común}
 
-Todos los modelos trabajan con imágenes de ECG. En la CNN, cada imagen corresponde a una derivación precordial derecha renderizada y redimensionada a 224 por 224 píxeles. En la línea VLM prevista, la misma imagen se incluirá en un mensaje multimodal junto con instrucciones y, si procede, ejemplos en contexto. La figura \ref{fig:model_routes} muestra la equivalencia conceptual entre ambos recorridos.
+Todos los modelos trabajan con imágenes de ECG. En la CNN, cada imagen corresponde a una derivación precordial derecha renderizada y redimensionada a 224 por 224 píxeles. En la línea VLM prevista, la misma imagen se incluirá en un mensaje multimodal junto con instrucciones y, si procede, ejemplos en contexto. La comparación solo tiene sentido porque ambos enfoques reciben la misma evidencia visual y se evalúan por paciente.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.96\textwidth]{results/fig_pipeline_experimental.pdf}
-  \caption{Recorridos de entrada y evaluación: CNN cerrada y VLM documentado como TODO.}
+  \caption{Recorridos de entrada y evaluación: CNN cerrada y VLM/ICL preparado como comparador de pocos datos.}
   \label{fig:model_routes}
 \end{figure}
 
+\section{Dos formas de usar \texorpdfstring{\(K\)}{K}}
+
+El presupuesto \(K\) tiene significados distintos según el modelo. En la CNN, \(K\) determina cuántos pacientes etiquetados se usan para optimizar los pesos. El aprendizaje ocurre durante el entrenamiento y la inferencia posterior solo aplica la red ajustada. En un VLM con aprendizaje en contexto, \(K\) determina cuántas demostraciones se incluyen en el prompt. Los pesos permanecen fijos y el aprendizaje se produce de forma implícita durante la generación.
+
+Esta diferencia es la razón de la comparación. Si \(K\) es muy pequeño, entrenar una CNN puede producir alta varianza, sobreajuste o dependencia de atajos visuales. Un VLM, en cambio, podría aprovechar conocimiento visual previo y usar los ejemplos para fijar el formato de la tarea. También puede fallar: puede ignorar la imagen, apoyarse en el texto o devolver respuestas inválidas. Por eso la rama VLM requiere controles específicos.
+
 \section{CNN ResNet18}
 
-El modelo principal es una ResNet18 de \texttt{torchvision} con pesos iniciales \texttt{DEFAULT}. La cabeza de clasificación se sustituye por una salida binaria. En los experimentos sintéticos, la etiqueta positiva indica que el paciente simulado cumple simultáneamente los hallazgos operativos asociados al patrón Brugada derivado. En HUCA, la etiqueta positiva indica caso Brugada confirmado frente a control.
+El modelo supervisado ejecutado es una ResNet18 de \texttt{torchvision} con pesos iniciales \texttt{DEFAULT}. La cabeza de clasificación se sustituye por una salida binaria. En los experimentos sintéticos, la etiqueta positiva indica que el paciente simulado cumple simultáneamente los hallazgos operativos asociados al patrón Brugada derivado. En HUCA, la etiqueta positiva indica caso Brugada confirmado frente a control.
 
 La pérdida es \texttt{BCEWithLogitsLoss}. Cuando el pliegue lo requiere, la clase positiva se pondera automáticamente a partir de los ejemplos de entrenamiento. El optimizador es AdamW, con tasa de aprendizaje \(3\times10^{-4}\), lote de 32 imágenes y 20 épocas máximas. La selección de umbral se realiza en validación interna mediante exactitud equilibrada derivada por paciente; si no hay validación suficiente, se conserva el umbral 0,5.
 
@@ -83,18 +89,18 @@ La adaptación de dominio se entrena con el conjunto sintético como origen etiq
   \item \textbf{DANN}. Clasificador de dominio adversario con inversión de gradiente \cite{ganin2016}.
 \end{itemize}
 
-Las pérdidas de adaptación se ponderan con 0,1 y se activan de forma progresiva durante el entrenamiento. Esta rama no cambia el objetivo clínico: solo intenta reducir el cambio de distribución entre renderizados sintéticos y ECG reales.
+Las pérdidas de adaptación se ponderan con 0,1 y se activan de forma progresiva durante el entrenamiento. Esta rama responde a una pregunta concreta: si la CNN falla por cambio de dominio visual, alinear representaciones debería recuperar parte del rendimiento. Los resultados muestran que la mejora existe, pero es demasiado pequeña para cerrar el problema.
 
 \section{Modelos de visión y lenguaje}
 
-La línea VLM queda preparada pero no cerrada. El objetivo de esa fase será comparar aprendizaje supervisado con aprendizaje en contexto: la CNN modifica sus pesos con \(K\) ejemplos, mientras que el VLM mantiene pesos fijos y recibe ejemplos dentro del mensaje. La comparación solo será válida cuando existan inferencias completas, predicciones por muestra y métricas auditadas.
+La línea VLM queda preparada para la siguiente fase experimental. Su objetivo será comparar aprendizaje supervisado con aprendizaje en contexto bajo el mismo presupuesto \(K\). La CNN modifica pesos con ejemplos etiquetados; el VLM mantiene pesos fijos y recibe ejemplos dentro del mensaje. Esta diferencia convierte a los VLM en una alternativa especialmente relevante cuando etiquetar nuevos ECG es lento o caro.
 
-El modelo abierto principal previsto es Gemma 4 y la referencia médica prevista es MedGemma. Ambos se servirán localmente mediante vLLM cuando haya recursos disponibles. La respuesta esperada será un JSON validado, sin explicación libre, para evitar que una salida con formato incorrecto se mezcle con una predicción válida.
+El modelo abierto principal previsto es Gemma 4 y la referencia médica prevista es MedGemma. Ambos se servirán localmente mediante vLLM cuando haya recursos disponibles. La respuesta esperada será un JSON validado, sin explicación libre obligatoria, para evitar que una salida con formato incorrecto se mezcle con una predicción válida.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.96\textwidth]{results/fig_vlm_prompt_pipeline.pdf}
-  \caption{Canalización VLM documentada: mensajes, ejemplos en contexto y validación JSON pendientes de ejecución completa.}
+  \caption{Canalización VLM/ICL prevista: selección de ejemplos, prompt multimodal, modelo local, validación JSON y controles.}
   \label{fig:vlm_prompt_pipeline}
 \end{figure}
 
@@ -104,12 +110,14 @@ Cuando se ejecute la campaña VLM, deberán conservarse al menos tres condicione
 
 \begin{itemize}
   \item \textbf{Normal}: ejemplos con imagen y respuesta correcta.
-  \item \textbf{Respuestas permutadas}: las imágenes de ejemplo se mantienen, pero las respuestas se barajan para medir dependencia real de las etiquetas.
+  \item \textbf{Respuestas permutadas}: las imágenes de ejemplo se mantienen, pero las respuestas se barajan para medir dependencia real de la correspondencia imagen-etiqueta.
   \item \textbf{Ejemplos sin imagen}: el contexto conserva texto y respuestas, pero elimina la evidencia visual de las demostraciones.
 \end{itemize}
 
-Estos controles son necesarios porque un VLM puede aprovechar sesgos textuales, frecuencia de etiquetas o formato del mensaje sin interpretar la morfología del ECG. Hasta que no se ejecuten, el VLM se menciona únicamente como procedimiento reproducible pendiente.
+Estos controles son necesarios porque un VLM puede aprovechar sesgos textuales, frecuencia de etiquetas o formato del mensaje sin interpretar la morfología del ECG. Si el rendimiento no cae con respuestas permutadas o sin imágenes, la mejora no podría atribuirse a aprendizaje multimodal real. Hasta que no existan esos resultados, el VLM se mantiene como procedimiento reproducible pendiente.
 
 \section{Criterio de comparación}
 
-La comparación principal entre métodos se hará con exactitud equilibrada por paciente. F1, sensibilidad, especificidad, área ROC y precisión media se reportan como métricas complementarias. En el cierre actual, todas las conclusiones cuantitativas proceden de CNN y adaptación de dominio. El capítulo siguiente presenta primero el dominio sintético, donde el modelo aprende con claridad, y después HUCA, donde la brecha de dominio limita el uso práctico.
+La comparación principal entre métodos se hará con exactitud equilibrada por paciente. F1, sensibilidad, especificidad, área ROC y precisión media se reportan como métricas complementarias. También se compararán coste de entrenamiento, coste por inferencia, tasa de respuestas inválidas, latencia y necesidad de hardware.
+
+La lectura esperada no será "CNN contra VLM" como competición abstracta. Será una curva de decisión: con qué \(K\), qué coste y qué robustez conviene entrenar un modelo específico; y en qué zona de pocos datos puede rentar usar ICL para obtener una señal preliminar de triaje. En el cierre actual, todas las conclusiones cuantitativas proceden de CNN y adaptación de dominio. Esa base es precisamente el punto de partida de la comparación VLM.

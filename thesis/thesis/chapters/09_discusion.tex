@@ -1,7 +1,7 @@
 \chapter{Discusión}
 \label{chap:discusion}
 
-Los resultados muestran una diferencia clara entre aprender una tarea visual controlada y transferirla a ECG clínicos reales. La CNN funciona de forma consistente en el simulador, donde la exactitud equilibrada alcanza 0,848 con \(K=32\). En Brugada HUCA, en cambio, la línea base se mantiene cerca de 0,50 y solo la adaptación MMD eleva el mejor punto hasta 0,549. Esta diferencia es el resultado principal del trabajo.
+El resultado principal del trabajo no es que la CNN funcione bien. El resultado principal es más matizado: la CNN aprende una tarea visual controlada, pero no consigue trasladar ese aprendizaje a Brugada HUCA de forma robusta cuando el número de ejemplos etiquetados es muy pequeño. En el simulador alcanza 0,848 de exactitud equilibrada con \(K=32\); en HUCA la línea base queda cerca de 0,50 y la mejor adaptación de dominio solo llega a 0,549. Esta brecha es la evidencia que da sentido a la comparación posterior con VLM/ICL.
 
 \section{Qué demuestra el simulador}
 
@@ -13,31 +13,35 @@ Sin embargo, el simulador no demuestra capacidad diagnóstica. Sus etiquetas se 
 
 HUCA introduce la dificultad que faltaba en el simulador. La etiqueta es clínica, los registros son heterogéneos y una ventana de V1, V2 o V3 no contiene por sí sola todo el proceso diagnóstico. El rendimiento obtenido indica que la CNN capta parte de la señal positiva, pero con baja especificidad. En la práctica, esto significa que el modelo avisa demasiado.
 
-Ese comportamiento puede tener sentido en un sistema de triaje preliminar si se presenta como una ayuda para priorizar revisión. No tiene sentido como sistema de descarte. Una herramienta que produce muchos falsos positivos aumenta carga de revisión; una herramienta que produce falsos negativos puede retrasar casos relevantes. Con los números actuales, la única lectura responsable es investigación y apoyo exploratorio.
+Ese comportamiento puede tener sentido en un sistema de triaje preliminar si se presenta como ayuda para priorizar revisión. No tiene sentido como sistema de descarte. Una herramienta que produce muchos falsos positivos aumenta carga de revisión; una herramienta que produce falsos negativos puede retrasar casos relevantes. Con los números actuales, la única lectura responsable es investigación y apoyo exploratorio.
 
-\section{Brecha de dominio}
+\section{Por qué no basta la adaptación de dominio}
 
 La brecha sintético-real tiene dos componentes. El primero es visual: el ECG real contiene ruido, variabilidad de escala, diferencias de adquisición y trazados menos regulares. El segundo es semántico: la etiqueta sintética deriva de una composición de hallazgos, mientras que HUCA aporta una etiqueta clínica binaria. Aunque ambas tareas estén relacionadas con Brugada, no son idénticas.
 
 La adaptación de dominio mejora parcialmente este escenario. CORAL y MMD aumentan la especificidad en \(K=32\), y MMD obtiene el mejor resultado global. Aun así, la mejora es modesta. Esto sugiere que alinear características visuales no basta cuando la etiqueta objetivo cambia de naturaleza o cuando faltan anotaciones morfológicas finas en el dominio real.
 
-\section{Pocos datos e incertidumbre}
+Este punto es importante para la tesis completa. Si el problema fuera solo de estilo visual, una buena adaptación debería acercar mucho más ambos dominios. El resultado sugiere que la dificultad también está en la definición clínica, en la heterogeneidad de casos y en la cantidad de ejemplos disponibles. Por eso la siguiente comparación no debe limitarse a más técnicas de adaptación, sino incorporar modelos que ya contienen conocimiento visual y textual previo.
+
+\section{Pocos datos y decisión de modelo}
 
 El estudio confirma que \(K\) importa, pero no de la misma forma en todos los dominios. En sintético, más ejemplos casi siempre ayudan. En HUCA, aumentar de \(K=16\) a \(K=32\) no mejora la línea base. Esto puede deberse a variabilidad de la selección, al pequeño tamaño efectivo, a que los ejemplos añadidos no cubren subfenotipos relevantes o a que la arquitectura aprende atajos visuales no generalizables.
 
-Las desviaciones estándar entre semillas no son enormes, pero tampoco eliminan la incertidumbre. La validación leave-one-out proporciona muchas evaluaciones de paciente, aunque cada modelo sigue entrenándose con muy pocos ejemplos. Por ello, las diferencias pequeñas deben interpretarse con cautela. La mejora de MMD es interesante porque coincide con una mejora de especificidad, no solo con una redistribución casual de sensibilidad.
+La pregunta útil no es si una CNN es "buena" o "mala". La pregunta útil es en qué región del espacio de datos conviene entrenarla. Con muchos ejemplos, una CNN o un transformer visual especializado puede ser la solución natural. Con muy pocos ejemplos, el coste de ajustar pesos puede no compensar. Ahí aparece la hipótesis VLM/ICL: usar ejemplos como demostraciones y explotar conocimiento previo del modelo. Esta memoria no demuestra esa hipótesis, pero sí demuestra que la línea CNN deja margen para probarla.
 
 \section{Interpretabilidad}
 
 Grad CAM aporta una comprobación cualitativa útil: los mapas no se concentran de forma absurda en márgenes o ruido de fondo. En varios ejemplos aparecen activaciones sobre zonas plausibles del complejo QRS y la repolarización. Pero la interpretabilidad visual no salva el rendimiento. Un mapa razonable puede acompañar a una clasificación incorrecta, y un mapa localizado no equivale a una justificación clínica.
 
-En futuras versiones sería necesario combinar Grad CAM con análisis por subgrupos, calibración, revisión de errores por especialista y anotaciones morfológicas independientes. Sin esas capas, la explicación se debe presentar como diagnóstico técnico del modelo, no como validación médica.
+En futuras versiones será necesario combinar Grad CAM con análisis por subgrupos, calibración, revisión de errores por especialista y anotaciones morfológicas independientes. Sin esas capas, la explicación se debe presentar como diagnóstico técnico del modelo, no como validación médica.
 
 \section{Relación con VLM e ICL}
 
-Los resultados CNN motivan, pero no sustituyen, la línea VLM. La CNN aprende bien cuando puede ajustar pesos en un dominio controlado. En datos reales con pocos ejemplos, el rendimiento es solo moderado. Esa situación hace atractiva la comparación con aprendizaje en contexto: un VLM podría aprovechar conocimiento visual previo y ejemplos demostrativos sin reentrenamiento.
+La línea VLM no se introduce porque las CNN sean irrelevantes, sino porque los resultados CNN son insuficientes en el régimen de datos disponible. La comparación prevista es justa: misma imagen, mismos presupuestos \(K\), separación por paciente y mismas métricas. La diferencia estará en cómo se usan los ejemplos.
 
-Esa hipótesis sigue abierta. La memoria documenta la pipeline VLM, los mensajes, los controles y la validación de JSON, pero no reporta resultados. La comparación CNN frente a VLM debe esperar a inferencias completas. Adelantar conclusiones sobre Gemma 4 o MedGemma sin predicciones auditadas rompería la trazabilidad del estudio.
+Un VLM podría aportar tres ventajas. Primero, conocimiento visual previo aprendido de colecciones amplias. Segundo, capacidad de seguir instrucciones clínicas y devolver salidas estructuradas. Tercero, adaptación rápida mediante demostraciones sin reentrenamiento. También podría fallar por tres razones simétricas: ignorar detalles finos del ECG, depender del texto del prompt o producir respuestas inválidas. Por eso la pipeline incluye controles con etiquetas permutadas y ejemplos sin imagen.
+
+La hipótesis sigue abierta. La memoria documenta mensajes, controles y validación de JSON, pero no reporta resultados. Adelantar conclusiones sobre Gemma 4 o MedGemma sin predicciones auditadas rompería la trazabilidad del estudio. Lo que sí queda demostrado es la necesidad de esa fase: la CNN establece una línea base reproducible y muestra que entrenar un modelo visual específico no resuelve por sí solo el escenario de Brugada HUCA con pocos datos.
 
 \section{Limitaciones}
 
@@ -49,9 +53,11 @@ Las principales limitaciones son:
   \item El preprocesamiento reduce cada ECG a ventanas de V1, V2 y V3 alrededor de un latido central.
   \item Los presupuestos de entrenamiento son deliberadamente pequeños y pueden dejar subgrupos sin representación.
   \item No se ha realizado calibración clínica ni estimación formal de utilidad neta.
-  \item VLM e ICL quedan como trabajo pendiente, no como resultado comparativo.
+  \item VLM e ICL quedan como trabajo pendiente cuantitativo, aunque forman parte central del diseño comparativo.
 \end{itemize}
 
 \section{Lectura final}
 
-La lectura final es doble. Desde ingeniería, el paquete experimental está completo para CNN: datos, simuladores, entrenamientos, adaptación, métricas, gráficas, auditoría y reproducción. Desde clínica, el rendimiento real todavía es insuficiente para una herramienta autónoma. El punto razonable de la contribución es un prototipo reproducible de investigación que ayuda a entender qué parte del problema se aprende con pocos datos y dónde aparece la brecha hacia ECG clínicos.
+Desde ingeniería, el paquete experimental está completo para CNN: datos, simuladores, entrenamientos, adaptación, métricas, gráficas, auditoría y reproducción. Desde clínica, el rendimiento real todavía es insuficiente para una herramienta autónoma. Desde metodología, el valor principal es haber convertido esa insuficiencia en una línea base medible.
+
+La siguiente decisión experimental ya está planteada: ejecutar VLM/ICL con los mismos presupuestos y decidir, con datos, a partir de cuándo renta entrenar un modelo visual específico y cuándo puede ser preferible usar aprendizaje en contexto para triaje preliminar.

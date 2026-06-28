@@ -147,7 +147,7 @@ HUCA no contiene anotaciones independientes para las tres etiquetas morfológica
 
 \section{Configuración VLM pendiente}
 
-La línea VLM no forma parte de las métricas cerradas. La configuración prevista se mantiene para reproducibilidad futura:
+La línea VLM forma parte del diseño comparativo, pero no de las métricas cerradas. La configuración prevista se mantiene para que la siguiente fase use la misma base experimental que la CNN:
 
 \begin{itemize}
   \item modelos abiertos: Gemma 4 y MedGemma;
@@ -158,4 +158,4 @@ La línea VLM no forma parte de las métricas cerradas. La configuración previs
   \item controles con respuestas permutadas y ejemplos sin imagen.
 \end{itemize}
 
-Los resultados VLM deberán añadirse únicamente cuando existan predicciones por muestra, tablas agregadas, matrices de confusión y auditoría equivalente a la de CNN.
+Los resultados VLM deberán añadirse únicamente cuando existan predicciones por muestra, tablas agregadas, matrices de confusión y auditoría equivalente a la de CNN. Hasta entonces, la rama CNN actúa como línea base cerrada y la rama VLM/ICL como comparador central pendiente.

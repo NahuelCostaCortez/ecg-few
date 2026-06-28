@@ -1,7 +1,7 @@
 \chapter{Evaluación con Brugada HUCA}
 \label{chap:datos_reales}
 
-El segundo bloque de resultados utiliza Brugada HUCA, un conjunto de ECG clínicos reales asociado al síndrome de Brugada \cite{morislara2026brugada}. La finalidad de este capítulo es medir cuánto se degrada el modelo al abandonar el simulador y evaluar si la adaptación de dominio recupera parte de esa pérdida.
+El segundo bloque de resultados utiliza Brugada HUCA, un conjunto de ECG clínicos reales asociado al síndrome de Brugada \cite{morislara2026brugada}. La finalidad de este capítulo es medir cuánto se degrada el modelo al abandonar el simulador y evaluar si la adaptación de dominio recupera parte de esa pérdida. Este capítulo es clave para la comparación futura con VLM: si una CNN entrenada y adaptada con pocos ejemplos no supera de forma robusta el dominio real, queda justificada la búsqueda de estrategias que usen conocimiento previo e in-context learning.
 
 \section{Cohorte final}
 
@@ -155,4 +155,4 @@ El Grad CAM real confirma que las activaciones pueden localizarse sobre regiones
 
 La conclusión de HUCA es prudente. La CNN detecta parte de los casos positivos, pero genera demasiados falsos positivos y no supera de forma amplia el azar en exactitud equilibrada. La adaptación de dominio mejora el mejor punto hasta 0,549, con MMD en \(K=32\), pero la brecha sintético-real sigue dominando el comportamiento.
 
-En términos de aplicación, estos resultados solo apoyan un uso de investigación para priorización de revisión. No apoyan diagnóstico autónomo, descarte automático ni toma de decisiones clínicas sin especialista.
+En términos de aplicación, estos resultados solo apoyan un uso de investigación para priorización de revisión. No apoyan diagnóstico autónomo, descarte automático ni toma de decisiones clínicas sin especialista. En términos metodológicos, el resultado deja una línea base exigente: la siguiente fase debe comprobar si VLM/ICL puede mejorar esta situación con los mismos presupuestos \(K\), o si la escasez de datos afecta de forma parecida a ambas familias.
