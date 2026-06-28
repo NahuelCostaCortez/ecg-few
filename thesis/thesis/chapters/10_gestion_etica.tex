@@ -1,0 +1,212 @@
+\chapter{Gestión, ética, privacidad y marco normativo}
+\label{chap:gestion_etica}
+
+\section{Planificación del proyecto}
+
+\subsection{Alcance y carga de trabajo}
+
+El Trabajo de Fin de Grado tiene una carga de 12 créditos ECTS. El Real Decreto 1125/2003 establece una dedicación de entre 25 y 30 horas por crédito \cite{rd1125}. La planificación adopta el límite inferior de 25 horas y fija una referencia de 300 horas. Esta cifra no representa un registro automático del tiempo ya consumido, sino el presupuesto de esfuerzo utilizado para organizar el proyecto.
+
+La tabla \ref{tab:horas_tfg} distribuye la dedicación entre revisión, diseño, implementación, evaluación y documentación. La generación sintética y la infraestructura de experimentación reciben una fracción elevada porque condicionan tanto a las redes convolucionales como a los modelos de visión y lenguaje.
+
+\begin{table}[H]
+  \centering
+  \caption{Distribución prevista de la dedicación del proyecto.}
+  \label{tab:horas_tfg}
+  \begin{tabularx}{0.88\textwidth}{Xr}
+    \toprule
+    Actividad & Horas \\
+    \midrule
+    Revisión bibliográfica y clínica & 28 \\
+    Requisitos y protocolo experimental & 20 \\
+    Simulador y construcción de datos & 48 \\
+    Infraestructura VLM y diseño de mensajes & 35 \\
+    Implementación de redes convolucionales & 35 \\
+    Ejecución de experimentos sintéticos & 42 \\
+    Datos reales y adaptación de dominio & 28 \\
+    Análisis estadístico y visualización & 20 \\
+    Redacción de la memoria & 34 \\
+    Control de calidad y preparación de la defensa & 10 \\
+    \midrule
+    \textbf{Total} & \textbf{300} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Fases y calendario}
+
+El proyecto se estructura entre octubre de 2025 y junio de 2026. Las fases se solapan de forma controlada. La revisión bibliográfica continúa durante el desarrollo, mientras que la redacción se inicia antes de cerrar los resultados para documentar decisiones que de otro modo podrían perderse.
+
+\begin{table}[H]
+  \centering
+  \caption{Calendario general del Trabajo de Fin de Grado.}
+  \label{tab:calendario_tfg}
+  \begin{tabularx}{\textwidth}{p{3.3cm}X}
+    \toprule
+    Periodo & Actividades principales \\
+    \midrule
+    Octubre y noviembre de 2025 & Definición del problema, revisión clínica, análisis de trabajos relacionados y diseño inicial \\
+    Diciembre de 2025 y enero de 2026 & Desarrollo del simulador, validadores y formatos de imagen \\
+    Febrero y marzo de 2026 & Canalización VLM, mensajes, esquemas JSON y controles de aprendizaje en contexto \\
+    Abril de 2026 & Diseño e integración de las redes convolucionales y pruebas de reproducibilidad \\
+    Mayo de 2026 & Experimentos sintéticos, preparación de datos reales y adaptación de dominio \\
+    Junio de 2026 & Análisis, cierre de la memoria, revisión integral y defensa \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.92\textwidth]{results/fig_project_timeline.pdf}
+  \caption{Plan temporal del proyecto y cierre de los experimentos principales.}
+  \label{fig:project_timeline}
+\end{figure}
+
+Los hitos de control son la validación visual del simulador, la reproducción de una ejecución VLM, la integración de la CNN, el cierre de los pliegues de datos reales, la congelación de resultados y la generación de la versión final de la memoria. Cada hito debe producir un artefacto revisable.
+
+\section{Gestión de riesgos}
+
+La tabla \ref{tab:riesgos} recoge los riesgos principales, su efecto y la respuesta prevista. La probabilidad se valora de forma cualitativa antes de cerrar los experimentos.
+
+\begin{table}[H]
+  \centering
+  \caption{Riesgos principales del proyecto.}
+  \label{tab:riesgos}
+  \small
+  \begin{tabularx}{\textwidth}{p{3.0cm}p{1.7cm}X}
+    \toprule
+    Riesgo & Prioridad & Medida de respuesta \\
+    \midrule
+    Retraso en la integración de la CNN & Alta & Definir primero una línea base mínima reproducible y separar mejoras opcionales \\
+    Acceso insuficiente a GPU & Alta & Ejecutar pruebas pequeñas, estimar coste antes del barrido y conservar reanudación por registro \\
+    Salidas VLM inválidas & Media & Forzar esquema JSON, validar cada respuesta y contabilizar los fallos \\
+    Fuga entre entrenamiento y prueba & Alta & Crear divisiones por paciente o semilla generativa antes del ajuste y guardar los identificadores \\
+    Diferencia excesiva entre dominios & Alta & Medir transferencia directa y añadir armonización, ajuste fino y adaptación como experimentos separados \\
+    Etiquetas reales no equivalentes & Alta & Separar diagnóstico y morfología y exigir anotación específica para la segunda tarea \\
+    Cambios de versión del modelo & Media & Registrar identificador exacto, fecha, revisión y parámetros de servicio \\
+    Resultados incompletos al cerrar la memoria & Alta & Mantener marcadores explícitos y no rellenar tablas con estimaciones no ejecutadas \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Los riesgos se revisan al terminar cada bloque. Una desviación no se corrige ocultando el alcance pendiente, sino reduciendo de forma explícita los experimentos secundarios y protegiendo las comparaciones principales.
+
+\section{Recursos y estimación de coste}
+
+El desarrollo local requiere un equipo capaz de ejecutar Python, generar imágenes y compilar LaTeX. El servicio de un modelo abierto de visión y lenguaje requiere una GPU con memoria suficiente. La configuración preparada solicita una NVIDIA A6000 para Gemma 4 E4B. La disponibilidad real, la versión de vLLM y el modelo cargado deberán registrarse en cada ejecución.
+
+No se asigna un importe ficticio al cómputo. El coste de una campaña se calculará mediante
+
+\begin{equation}
+  C_{\mathrm{computo}} =
+  \sum_{j=1}^{m}
+  h_j c_j,
+\end{equation}
+
+donde \(h_j\) es el número de horas consumidas por el recurso \(j\) y \(c_j\) es su precio por hora en la fecha de contratación. El informe final incluirá tiempo de GPU, tiempo de CPU, almacenamiento y, si se emplea un servicio propietario como control, número de tokens y tarifa vigente.
+
+También se registrará el tiempo por muestra y el consumo máximo de memoria. Estas magnitudes permiten comparar métodos aunque el precio comercial cambie. El coste de personal no se monetiza, pero queda representado por la distribución de 300 horas.
+
+\section{Gestión de configuración y trazabilidad}
+
+El repositorio Git actúa como fuente de verdad del código, los mensajes y la memoria. Cada campaña experimental debe guardar:
+
+\begin{itemize}
+  \item revisión del repositorio
+  \item versiones de Python y dependencias
+  \item identificador del modelo y revisión de pesos
+  \item parámetros de generación, servicio y evaluación
+  \item semillas y divisiones de datos
+  \item mensaje de sistema, mensaje de tarea y esquema de respuesta
+  \item predicciones sin procesar, métricas derivadas y registro de errores
+\end{itemize}
+
+Los resultados agregados no sustituyen a las predicciones. Conservar ambos niveles permite detectar errores de análisis y recalcular métricas sin repetir inferencias costosas. Los archivos generados deben ser inmutables o incorporar un identificador de ejecución que evite sobrescrituras accidentales.
+
+Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque la campaña VLM no forma parte de los resultados cerrados. Antes de incorporar esa línea será necesario registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
+
+\section{Principios éticos}
+
+\subsection{Proporcionalidad y finalidad}
+
+La finalidad del trabajo es comparar métodos de reconocimiento de morfologías electrocardiográficas y estudiar su transferencia con pocos datos. No se pretende automatizar decisiones asistenciales. El alcance se limita a investigación retrospectiva y desarrollo metodológico.
+
+La proporcionalidad exige emplear la cantidad mínima de datos necesaria, evitar variables clínicas no relacionadas con los objetivos y escoger modelos cuya complejidad esté justificada por la pregunta experimental. La disponibilidad de una variable no constituye por sí sola una razón para utilizarla.
+
+\subsection{Riesgos para las personas}
+
+Aunque los datos estén anonimizados o seudonimizados, un error metodológico puede generar conclusiones engañosas sobre una población clínica poco numerosa. Los principales riesgos indirectos son la sobreestimación del rendimiento, el sesgo por selección, la ausencia de calibración, la confusión entre morfología y diagnóstico y la generalización fuera del centro de origen.
+
+La mitigación incluye validación por paciente, intervalos de confianza, documentación de exclusiones, análisis por subgrupos cuando el tamaño lo permita y lenguaje prudente. No se presentará una mejora estadística como beneficio clínico sin un estudio diseñado para esa finalidad.
+
+\subsection{Intervención humana}
+
+Las anotaciones clínicas y la interpretación de discrepancias requieren supervisión experta. En un uso futuro, el sistema solo podría actuar como apoyo y sus resultados deberían mostrarse junto con la señal original, la calidad de entrada y una indicación de incertidumbre. La persona responsable de la decisión no debe quedar condicionada por una salida presentada como certeza.
+
+\section{Protección de datos}
+
+\subsection{Marco general}
+
+Los datos de salud son una categoría especial en el artículo 9 del Reglamento General de Protección de Datos \cite{gdpr}. Su tratamiento exige una base jurídica adecuada y garantías reforzadas. Los principios del artículo 5 incluyen licitud, limitación de finalidad, minimización, exactitud, limitación del plazo de conservación, integridad, confidencialidad y responsabilidad proactiva.
+
+La protección desde el diseño y por defecto, recogida en el artículo 25, implica que la arquitectura del proyecto debe reducir la exposición desde el inicio. El artículo 32 exige medidas de seguridad apropiadas al riesgo. Cuando un tratamiento pueda implicar un alto riesgo, el artículo 35 prevé una evaluación de impacto. Para investigación científica, el artículo 89 requiere salvaguardias técnicas y organizativas.
+
+En España, la Ley Orgánica 3/2018 completa este marco \cite{lopdgdd}. Su disposición adicional decimoséptima regula tratamientos de datos de salud con fines de investigación y contempla el uso de datos seudonimizados bajo condiciones específicas. Entre las garantías relevantes se encuentran la separación entre información clínica y datos que permitan reidentificar, el acceso restringido y la revisión ética. La Ley 14/2007 de Investigación biomédica añade principios de consentimiento, confidencialidad y control ético \cite{ley142007}.
+
+\subsection{Aplicación al proyecto}
+
+Brugada HUCA se publica sin información identificativa y su documentación declara anonimización mediante Safe Harbor \cite{morislara2026brugada}. El proyecto conservará únicamente los campos necesarios para las tareas definidas. Los identificadores públicos se transformarán en claves internas cuando se creen derivados, evitando incorporarlos a nombres de figura destinados a difusión.
+
+Las medidas mínimas son almacenamiento local controlado, permisos restringidos, cifrado del dispositivo, ausencia de datos clínicos en servicios no autorizados, copias de seguridad protegidas y registro de procedencia. Las claves de API no se incluyen en el repositorio ni en la memoria. Si se incorporan datos adicionales no anónimos, deberá revisarse la base jurídica y realizarse el análisis de impacto antes del tratamiento.
+
+La guía de la Agencia Española de Protección de Datos sobre gestión del riesgo y evaluaciones de impacto ofrece una referencia práctica para esa revisión \cite{aepd2021risk}. La evaluación no puede sustituirse por una declaración genérica de anonimización.
+
+\section{Licencias y reutilización}
+
+El código propio deberá publicar una licencia compatible con las dependencias y con los objetivos de difusión. Las imágenes sintéticas pueden regenerarse a partir del código y sus metadatos. Para datos externos se respetarán sus términos individuales.
+
+Brugada HUCA utiliza CC BY SA 4.0. Toda redistribución de material derivado debe conservar atribución, indicar cambios y aplicar la licencia correspondiente. PTB XL y MIMIC IV ECG tienen condiciones de acceso y reutilización propias que deben comprobarse en su versión concreta. No se copiarán datos clínicos dentro del repositorio público.
+
+Los pesos de modelos de terceros también pueden imponer condiciones. El identificador comercial o técnico del modelo no basta. Deben conservarse la licencia, la revisión descargada y las restricciones de uso vigentes en la fecha del experimento.
+
+\section{Regulación de sistemas de inteligencia artificial}
+
+\subsection{Reglamento europeo de inteligencia artificial}
+
+El Reglamento 2024/1689 establece las normas europeas en materia de inteligencia artificial \cite{aiact2024}. Su artículo 2 contempla una exclusión para sistemas y modelos desarrollados y puestos en servicio específicamente con la única finalidad de investigación y desarrollo científicos antes de su comercialización o puesta en servicio. Esta exclusión es coherente con el alcance metodológico del TFG, pero no cubre automáticamente una prueba clínica en condiciones reales ni un producto desplegado.
+
+Si el sistema se integrara en un producto sanitario, su clasificación dependería de la finalidad prevista y de su relación con la legislación sectorial. El artículo 6 vincula determinados productos sujetos a evaluación de conformidad por terceros con la categoría de alto riesgo.
+
+A fecha de 22 de junio de 2026, el texto original prevé la aplicación general desde el 2 de agosto de 2026 y un calendario específico para sistemas asociados a productos regulados. El Consejo y el Parlamento anunciaron el 7 de mayo de 2026 un acuerdo político para desplazar determinadas obligaciones de alto riesgo al 2 de diciembre de 2027 y al 2 de agosto de 2028 \cite{consilium2026aiact}. Mientras el cambio no quede consolidado en el texto jurídico aplicable, cualquier proyecto de despliegue debe comprobar de nuevo las fechas y obligaciones vigentes. La memoria evita presentar un calendario legislativo en transición como si fuera definitivo.
+
+\subsection{Producto sanitario}
+
+El Reglamento 2017/745 establece que un programa puede ser producto sanitario cuando el fabricante le atribuye una finalidad médica específica \cite{mdr2017}. La intención declarada, las funciones, los usuarios y el contexto de uso son determinantes. Un prototipo de investigación que clasifica imágenes para comparar algoritmos no adquiere por ello una autorización clínica.
+
+Si se desarrollara una herramienta para apoyar diagnóstico, pronóstico o tratamiento, habría que analizar la cualificación y clasificación del programa, la gestión de riesgos, la evaluación clínica, el ciclo de vida y la vigilancia posterior. La guía MDCG 2019 11, revisada en junio de 2025, orienta la cualificación y clasificación del software \cite{mdcg2019rev1}. La guía MDCG 2025 6 estudia la interacción entre el Reglamento de productos sanitarios y el Reglamento de Inteligencia Artificial \cite{mdcg2025six}.
+
+Por tanto, la memoria y la interfaz deben incluir una limitación visible de uso. El sistema no está validado como producto sanitario y no debe utilizarse para diagnosticar, descartar enfermedad ni decidir tratamiento.
+
+\subsection{Espacio Europeo de Datos de Salud}
+
+El Reglamento 2025/327 crea el Espacio Europeo de Datos de Salud \cite{ehds2025}. Su aplicación comienza de forma escalonada desde el 26 de marzo de 2027. Aunque no constituye la base jurídica inmediata de este trabajo, será relevante para futuros proyectos que reutilicen datos sanitarios a escala europea. Cualquier extensión deberá revisar sus reglas de acceso, finalidad secundaria y entornos seguros.
+
+\section{Equidad, robustez y transparencia}
+
+La base sintética no representa grupos demográficos. Por tanto, no permite medir diferencias de rendimiento por sexo, edad, origen o comorbilidad. La fase real deberá describir las variables disponibles y analizar subgrupos solo cuando exista tamaño suficiente y una razón clínica. La ausencia de un análisis no debe interpretarse como ausencia de sesgo.
+
+El modelo puede aprender propiedades del renderizado, del equipo o del centro. Las pruebas de robustez incluirán cambios de resolución, cuadrícula, recorte, contraste y ruido dentro de límites plausibles. Una caída intensa ante transformaciones inocuas indicaría dependencia de señales espurias.
+
+La transparencia se apoya en mensajes exactos, esquemas de respuesta, versiones, matrices de confusión, ejemplos de error y descripción de datos. Las explicaciones visuales como Grad CAM pueden ayudar a auditar una CNN \cite{selvaraju2017}, pero no demuestran causalidad ni corrección clínica.
+
+\section{Sostenibilidad}
+
+El impacto ambiental se reduce evitando barridos sin hipótesis, reutilizando predicciones, ejecutando primero pruebas pequeñas y deteniendo configuraciones claramente defectuosas según reglas previas. Se preferirán modelos abiertos de tamaño compatible con el objetivo experimental y se informará del tiempo de acelerador.
+
+La comparación entre CNN y VLM debe considerar no solo la métrica, sino también coste de entrenamiento, coste por inferencia, latencia y posibilidad de despliegue local. Un incremento marginal de rendimiento puede no justificar un aumento grande de consumo.
+
+\section{Compromiso de uso responsable}
+
+El producto de este TFG es un prototipo de investigación reproducible. Sus resultados deberán leerse dentro del conjunto, las etiquetas y el protocolo empleados. No se autoriza su uso autónomo con pacientes. Cualquier evolución clínica necesitará validación externa, evaluación prospectiva, supervisión profesional, revisión ética y cumplimiento regulatorio específico.
+
+Esta limitación no reduce el valor del trabajo. Al contrario, delimita con precisión qué evidencia aporta y qué preguntas permanecen abiertas.

@@ -1,0 +1,125 @@
+\chapter{Reproducción}
+\label{app:reproduccion}
+
+Este apéndice describe el procedimiento utilizado para regenerar datos, entrenar las CNN, construir los informes y compilar la memoria. Los comandos se ejecutan desde la raíz del repositorio.
+
+\section{Preparación del entorno}
+
+\begin{lstlisting}[language=bash]
+uv sync --extra dev --extra cnn --extra real-data
+uv run --no-sync python --version
+\end{lstlisting}
+
+Para las campañas CNN se recomienda fijar el backend de Matplotlib:
+
+\begin{lstlisting}[language=bash]
+export MPLBACKEND=Agg
+\end{lstlisting}
+
+\section{Generación de datos}
+
+El conjunto sintético QRS/ST se regenera con:
+
+\begin{lstlisting}[language=bash]
+scripts/run/build_simulator_qrs_dataset.sh
+\end{lstlisting}
+
+El conjunto Brugada HUCA procesado se construye desde la descarga local de PhysioNet:
+
+\begin{lstlisting}[language=bash]
+scripts/run/build_brugada_huca_dataset.sh
+\end{lstlisting}
+
+Los resultados esperados son:
+
+\begin{itemize}
+  \item \texttt{data/simulator\_qrs}: 100 pacientes, 300 imágenes y pliegues LOOCV;
+  \item \texttt{data/brugada\_huca}: 317 pacientes incluidos, 951 imágenes y 46 exclusiones documentadas.
+\end{itemize}
+
+\section{Entrenamiento CNN}
+
+La campaña sintética se lanza con:
+
+\begin{lstlisting}[language=bash]
+RESUME=0 scripts/run/run_cnn_simulator_qrs_loocv.sh
+\end{lstlisting}
+
+La campaña real HUCA se lanza con:
+
+\begin{lstlisting}[language=bash]
+RESUME=0 scripts/run/run_cnn_loocv.sh
+\end{lstlisting}
+
+Ambos scripts usan por defecto \(K=2,4,8,16,32\), semillas 42, 123 y 2026, ResNet18, 20 épocas, lote 32 y selección de umbral por exactitud equilibrada de validación.
+
+\section{Adaptación de dominio}
+
+La rama de adaptación se ejecuta método a método:
+
+\begin{lstlisting}[language=bash]
+METHOD=ssl   RESUME=0 scripts/run/run_cnn_domain_adaptation_loocv.sh
+METHOD=coral RESUME=0 scripts/run/run_cnn_domain_adaptation_loocv.sh
+METHOD=mmd   RESUME=0 scripts/run/run_cnn_domain_adaptation_loocv.sh
+METHOD=dann  RESUME=0 scripts/run/run_cnn_domain_adaptation_loocv.sh
+\end{lstlisting}
+
+El método \texttt{ssl} se reproduce como preentrenamiento SimCLR de tres épocas y ajuste supervisado sin pérdida adicional de adaptación. CORAL, MMD y DANN usan el peso de adaptación 0,1. La salida queda en \texttt{outputs/cnn\_domain\_adaptation/} y \texttt{reports/loocv/cnn\_domain\_adaptation/}.
+
+\section{Comparaciones e informes}
+
+La comparación sintético-real se reconstruye con:
+
+\begin{lstlisting}[language=bash]
+scripts/run/build_loocv_comparison.sh
+\end{lstlisting}
+
+La comparación de adaptación de dominio se genera con:
+
+\begin{lstlisting}[language=bash]
+uv run --no-sync python scripts/eval/compare_cnn_domain_adaptation_reports.py
+\end{lstlisting}
+
+La auditoría final se lanza con:
+
+\begin{lstlisting}[language=bash]
+scripts/run/audit_loocv_results.sh
+\end{lstlisting}
+
+El cierre correcto debe incluir:
+
+\begin{itemize}
+  \item \texttt{all\_cnn\_experiments\_complete: OK};
+  \item \texttt{cnn\_domain\_adaptation\_complete: OK};
+  \item \texttt{final\_cnn\_package\_ready: OK};
+  \item \texttt{vlm\_results\_status: TODO}.
+\end{itemize}
+
+\section{VLM como TODO reproducible}
+
+La infraestructura VLM queda preparada pero no forma parte de las métricas de esta memoria. Cuando se disponga del servidor y del modelo, la campaña deberá ejecutarse con:
+
+\begin{lstlisting}[language=bash]
+scripts/run/run_vlm_loocv.sh
+scripts/run/validate_vlm_loocv.sh
+\end{lstlisting}
+
+Antes de incorporar resultados VLM al documento deben existir, como mínimo:
+
+\begin{itemize}
+  \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_seed.csv};
+  \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_k.csv};
+  \item matrices de confusión por \(K\);
+  \item predicciones por muestra;
+  \item auditoría sin elementos TODO para VLM.
+\end{itemize}
+
+\section{Compilación de la memoria}
+
+La memoria se compila desde el helper local de LaTeX:
+
+\begin{lstlisting}[language=bash]
+python scripts/compile_latex.py D:/Python_D/ecg/ecg-few/thesis/thesis/main.tex --compiler tectonic --json
+\end{lstlisting}
+
+Después de compilar, el PDF debe renderizarse a imágenes y revisarse visualmente para comprobar que las tablas, figuras, cabeceras, pies de página y referencias no presentan solapes ni elementos pendientes.

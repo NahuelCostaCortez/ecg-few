@@ -1,0 +1,57 @@
+\chapter{Discusión}
+\label{chap:discusion}
+
+Los resultados muestran una diferencia clara entre aprender una tarea visual controlada y transferirla a ECG clínicos reales. La CNN funciona de forma consistente en el simulador, donde la exactitud equilibrada alcanza 0,848 con \(K=32\). En Brugada HUCA, en cambio, la línea base se mantiene cerca de 0,50 y solo la adaptación MMD eleva el mejor punto hasta 0,549. Esta diferencia es el resultado principal del trabajo.
+
+\section{Qué demuestra el simulador}
+
+El simulador demuestra que la formulación como imagen es viable para una CNN. La red aprende rasgos relacionados con QRS, punto J, segmento ST y onda T, y mejora al aumentar el presupuesto de ejemplos. El salto entre \(K=8\) y \(K=16\) sugiere que la tarea necesita una cobertura mínima de variabilidad morfológica; por debajo de ese rango, la selección de ejemplos pesa demasiado.
+
+Sin embargo, el simulador no demuestra capacidad diagnóstica. Sus etiquetas se generan con reglas internas, las imágenes son limpias y las familias morfológicas están más separadas que en práctica clínica. El valor del simulador es experimental: permite comprobar código, métricas, agregación por paciente y sensibilidad al número de ejemplos antes de utilizar datos reales.
+
+\section{Qué demuestra HUCA}
+
+HUCA introduce la dificultad que faltaba en el simulador. La etiqueta es clínica, los registros son heterogéneos y una ventana de V1, V2 o V3 no contiene por sí sola todo el proceso diagnóstico. El rendimiento obtenido indica que la CNN capta parte de la señal positiva, pero con baja especificidad. En la práctica, esto significa que el modelo avisa demasiado.
+
+Ese comportamiento puede tener sentido en un sistema de triaje preliminar si se presenta como una ayuda para priorizar revisión. No tiene sentido como sistema de descarte. Una herramienta que produce muchos falsos positivos aumenta carga de revisión; una herramienta que produce falsos negativos puede retrasar casos relevantes. Con los números actuales, la única lectura responsable es investigación y apoyo exploratorio.
+
+\section{Brecha de dominio}
+
+La brecha sintético-real tiene dos componentes. El primero es visual: el ECG real contiene ruido, variabilidad de escala, diferencias de adquisición y trazados menos regulares. El segundo es semántico: la etiqueta sintética deriva de una composición de hallazgos, mientras que HUCA aporta una etiqueta clínica binaria. Aunque ambas tareas estén relacionadas con Brugada, no son idénticas.
+
+La adaptación de dominio mejora parcialmente este escenario. CORAL y MMD aumentan la especificidad en \(K=32\), y MMD obtiene el mejor resultado global. Aun así, la mejora es modesta. Esto sugiere que alinear características visuales no basta cuando la etiqueta objetivo cambia de naturaleza o cuando faltan anotaciones morfológicas finas en el dominio real.
+
+\section{Pocos datos e incertidumbre}
+
+El estudio confirma que \(K\) importa, pero no de la misma forma en todos los dominios. En sintético, más ejemplos casi siempre ayudan. En HUCA, aumentar de \(K=16\) a \(K=32\) no mejora la línea base. Esto puede deberse a variabilidad de la selección, al pequeño tamaño efectivo, a que los ejemplos añadidos no cubren subfenotipos relevantes o a que la arquitectura aprende atajos visuales no generalizables.
+
+Las desviaciones estándar entre semillas no son enormes, pero tampoco eliminan la incertidumbre. La validación leave-one-out proporciona muchas evaluaciones de paciente, aunque cada modelo sigue entrenándose con muy pocos ejemplos. Por ello, las diferencias pequeñas deben interpretarse con cautela. La mejora de MMD es interesante porque coincide con una mejora de especificidad, no solo con una redistribución casual de sensibilidad.
+
+\section{Interpretabilidad}
+
+Grad CAM aporta una comprobación cualitativa útil: los mapas no se concentran de forma absurda en márgenes o ruido de fondo. En varios ejemplos aparecen activaciones sobre zonas plausibles del complejo QRS y la repolarización. Pero la interpretabilidad visual no salva el rendimiento. Un mapa razonable puede acompañar a una clasificación incorrecta, y un mapa localizado no equivale a una justificación clínica.
+
+En futuras versiones sería necesario combinar Grad CAM con análisis por subgrupos, calibración, revisión de errores por especialista y anotaciones morfológicas independientes. Sin esas capas, la explicación se debe presentar como diagnóstico técnico del modelo, no como validación médica.
+
+\section{Relación con VLM e ICL}
+
+Los resultados CNN motivan, pero no sustituyen, la línea VLM. La CNN aprende bien cuando puede ajustar pesos en un dominio controlado. En datos reales con pocos ejemplos, el rendimiento es solo moderado. Esa situación hace atractiva la comparación con aprendizaje en contexto: un VLM podría aprovechar conocimiento visual previo y ejemplos demostrativos sin reentrenamiento.
+
+Esa hipótesis sigue abierta. La memoria documenta la pipeline VLM, los mensajes, los controles y la validación de JSON, pero no reporta resultados. La comparación CNN frente a VLM debe esperar a inferencias completas. Adelantar conclusiones sobre Gemma 4 o MedGemma sin predicciones auditadas rompería la trazabilidad del estudio.
+
+\section{Limitaciones}
+
+Las principales limitaciones son:
+
+\begin{itemize}
+  \item El conjunto real procede de un único dominio clínico y necesita validación externa.
+  \item La etiqueta HUCA disponible no separa hallazgos morfológicos individuales.
+  \item El preprocesamiento reduce cada ECG a ventanas de V1, V2 y V3 alrededor de un latido central.
+  \item Los presupuestos de entrenamiento son deliberadamente pequeños y pueden dejar subgrupos sin representación.
+  \item No se ha realizado calibración clínica ni estimación formal de utilidad neta.
+  \item VLM e ICL quedan como trabajo pendiente, no como resultado comparativo.
+\end{itemize}
+
+\section{Lectura final}
+
+La lectura final es doble. Desde ingeniería, el paquete experimental está completo para CNN: datos, simuladores, entrenamientos, adaptación, métricas, gráficas, auditoría y reproducción. Desde clínica, el rendimiento real todavía es insuficiente para una herramienta autónoma. El punto razonable de la contribución es un prototipo reproducible de investigación que ayuda a entender qué parte del problema se aprende con pocos datos y dónde aparece la brecha hacia ECG clínicos.

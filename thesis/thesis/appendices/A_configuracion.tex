@@ -1,0 +1,161 @@
+\chapter{Configuración experimental}
+\label{app:configuracion}
+
+Este apéndice resume la configuración necesaria para reproducir los experimentos cerrados. Los valores proceden de los scripts y artefactos generados en el repositorio, no de un plan prospectivo.
+
+\section{Entorno de software}
+
+El proyecto declara Python 3.12 o posterior y utiliza \texttt{uv} como gestor de entorno. Las dependencias directas y opcionales relevantes se recogen en la tabla \ref{tab:dependencias_python_final}.
+
+\begin{table}[H]
+  \centering
+  \caption{Dependencias principales declaradas por el proyecto.}
+  \label{tab:dependencias_python_final}
+  \small
+  \begin{tabularx}{0.92\textwidth}{Xl}
+    \toprule
+    Paquete & Versión mínima \\
+    \midrule
+    Matplotlib & 3.9 \\
+    NumPy & 2.0 \\
+    OpenAI Python & 2.35.1 \\
+    pandas & 2.2 \\
+    Pillow & 10.4 \\
+    Pydantic & 2.8 \\
+    scikit-learn & 1.5 \\
+    tqdm & 4.66 \\
+    PyTorch, extra \texttt{cnn} & 2.3 \\
+    Torchvision, extra \texttt{cnn} & 0.18 \\
+    WFDB, extra \texttt{real-data} & 4.1 \\
+    pytest, extra \texttt{dev} & 8.3 \\
+    Ruff, extra \texttt{dev} & 0.6 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+La memoria se compila con XeLaTeX a través del helper local de compilación. Los experimentos CNN se ejecutan con backend Matplotlib \texttt{Agg} para generar informes sin interfaz gráfica.
+
+\section{Conjunto sintético QRS/ST}
+
+\begin{table}[H]
+  \centering
+  \caption{Configuración del conjunto sintético final.}
+  \label{tab:config_sintetico_final}
+  \small
+  \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
+    \toprule
+    Propiedad & Valor \\
+    \midrule
+    Fuente & \texttt{ecg\_few.simulator} \\
+    Pacientes & 100 \\
+    Imágenes & 300 \\
+    Familias fuente & NORMAL, RBBB, ST\_ELEVATION, T\_WAVE\_INVERSION, COMBINED\_QRS\_ST \\
+    Pacientes por familia & 20 \\
+    Derivaciones renderizadas & V1, V2 y V3 \\
+    Frecuencia de muestreo & 500 Hz \\
+    Duración del beat & 900 ms \\
+    Resolución de guardado & 130 ppp \\
+    Positivos derivados & 20 \\
+    Negativos o incompletos & 80 \\
+    Presupuestos & \(K=\{2,4,8,16,32\}\) \\
+    Semillas & 42, 123 y 2026 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están presentes simultáneamente. La agregación de paciente promedia las probabilidades de las derivaciones y después aplica el umbral seleccionado.
+
+\section{Brugada HUCA}
+
+\begin{table}[H]
+  \centering
+  \caption{Configuración del conjunto real procesado.}
+  \label{tab:config_huca_final}
+  \small
+  \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
+    \toprule
+    Propiedad & Valor \\
+    \midrule
+    Fuente & Brugada HUCA 1.0.0 \\
+    Pacientes brutos & 363 \\
+    Pacientes excluidos & 46 por patrón basal limítrofe \\
+    Pacientes incluidos & 317 \\
+    Imágenes incluidas & 951 \\
+    Casos confirmados & 116 \\
+    Controles & 201 \\
+    Derivaciones & V1, V2 y V3 \\
+    Ventana & 300 ms antes de R y 600 ms después de R \\
+    Frecuencia de origen & 100 Hz \\
+    Resolución de guardado & 130 ppp \\
+    Separación & Leave-one-out por paciente \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+HUCA no contiene anotaciones independientes para las tres etiquetas morfológicas del simulador. La tarea real utiliza la etiqueta clínica \texttt{clinical\_brugada}.
+
+\section{Configuración CNN}
+
+\begin{table}[H]
+  \centering
+  \caption{Hiperparámetros de la CNN final.}
+  \label{tab:config_cnn_appendix}
+  \small
+  \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
+    \toprule
+    Propiedad & Valor \\
+    \midrule
+    Arquitectura & ResNet18 \\
+    Pesos iniciales & \texttt{default} de Torchvision \\
+    Entrada & RGB, 224 por 224 \\
+    Salida & Un logit binario \\
+    Pérdida & \texttt{BCEWithLogitsLoss} con \texttt{loss\_pos\_weight=auto} \\
+    Optimizador & AdamW \\
+    Tasa de aprendizaje & \(3\times10^{-4}\) \\
+    Lote & 32 \\
+    Épocas máximas & 20 \\
+    Estrategia de umbral & \texttt{val\_derived\_balanced\_accuracy} \\
+    Métrica principal & Exactitud equilibrada por paciente \\
+    Grad CAM & 12 paneles en sintético y 6 en HUCA por ejecución agregada \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Configuración de adaptación de dominio}
+
+\begin{table}[H]
+  \centering
+  \caption{Configuración de la rama de adaptación de dominio.}
+  \label{tab:config_domain_appendix}
+  \small
+  \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
+    \toprule
+    Propiedad & Valor \\
+    \midrule
+    Origen etiquetado & \texttt{data/simulator\_qrs} \\
+    Destino no etiquetado & \texttt{data/brugada\_huca} \\
+    Métodos & SSL, CORAL, MMD y DANN \\
+    Presupuestos & \(K=16\) y \(K=32\) \\
+    Semillas & 42, 123 y 2026 \\
+    Peso de adaptación & 0,1 \\
+    Escalas MMD & 0,5, 1,0, 2,0 y 4,0 \\
+    SSL & SimCLR durante 3 épocas, \texttt{ssl\_pretrain\_lr=0.0001} \\
+    Política de destino & Transductiva compartida, sin etiquetas destino en la pérdida supervisada \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Configuración VLM pendiente}
+
+La línea VLM no forma parte de las métricas cerradas. La configuración prevista se mantiene para reproducibilidad futura:
+
+\begin{itemize}
+  \item modelos abiertos: Gemma 4 y MedGemma;
+  \item servidor local compatible con API de vLLM;
+  \item temperatura 0;
+  \item salida JSON validada;
+  \item presupuestos \(K=\{0,2,4,8,16,32\}\) o el subconjunto que se congele antes de ejecutar;
+  \item controles con respuestas permutadas y ejemplos sin imagen.
+\end{itemize}
+
+Los resultados VLM deberán añadirse únicamente cuando existan predicciones por muestra, tablas agregadas, matrices de confusión y auditoría equivalente a la de CNN.

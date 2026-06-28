@@ -1,0 +1,86 @@
+\chapter{Introducción}
+\label{chap:introduccion}
+
+El electrocardiograma es una señal temporal, pero gran parte de su uso clínico y documental se realiza sobre una representación visual: papel, PDF, imagen escaneada o captura incorporada a una historia clínica. Esta doble naturaleza hace que el análisis automático de ECG como imagen sea una línea práctica de investigación. Trabajos previos han mostrado que las redes convolucionales pueden extraer información diagnóstica de trazados renderizados a gran escala \cite{sangha2022}, aunque esa evidencia no elimina la necesidad de validación específica en cada tarea.
+
+Este Trabajo de Fin de Grado estudia un escenario más restrictivo: pocos datos etiquetados, un problema clínicamente motivado y necesidad de trazabilidad. El caso de uso se orienta al síndrome de Brugada, una entidad donde el patrón electrocardiográfico de las derivaciones precordiales derechas puede ser relevante, pero no agota el diagnóstico. Por ello, el sistema desarrollado no se presenta como diagnóstico autónomo. Su lectura correcta es la de un prototipo de investigación para triaje: ayudar a priorizar trazados que deben revisar especialistas.
+
+\section{Motivación}
+
+En proyectos biomédicos reales es frecuente empezar con pocos ejemplos revisados. Entrenar un modelo profundo desde cero puede ser inestable, pero esperar a tener una gran cohorte retrasa el aprendizaje metodológico. Una alternativa es construir un simulador controlado que permita verificar si la tarea visual es aprendible, probar métricas, depurar el flujo de datos y preparar la evaluación clínica.
+
+El trabajo combina esa estrategia con un conjunto real, Brugada HUCA. El simulador permite estudiar morfologías QRS/ST bajo reglas explícitas; HUCA introduce variabilidad clínica y una etiqueta de caso Brugada confirmado frente a control. La comparación entre ambos dominios es tan importante como las métricas individuales, porque revela cuánto se pierde al pasar de una imagen limpia y etiquetada por reglas a un ECG real.
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.96\textwidth]{results/fig_flujo_conceptual.pdf}
+  \caption{Flujo conceptual del trabajo: simulación controlada, evaluación CNN, validación en HUCA y VLM como línea pendiente.}
+  \label{fig:flujo_conceptual}
+\end{figure}
+
+\section{Pregunta de investigación}
+
+La pregunta principal es:
+
+\begin{quote}
+¿Puede una CNN entrenada con pocos ejemplos aprender señales visuales útiles en imágenes de ECG y conservar parte de ese rendimiento al pasar de un simulador controlado a datos clínicos reales de Brugada?
+\end{quote}
+
+La pregunta secundaria es:
+
+\begin{quote}
+¿Las técnicas de adaptación de dominio reducen de forma medible la brecha entre el dominio sintético y Brugada HUCA?
+\end{quote}
+
+Los modelos abiertos de visión y lenguaje se mantienen como una línea futura documentada. La comparación con aprendizaje en contexto es relevante, pero no se incluye en las conclusiones cuantitativas porque la campaña VLM no dispone aún de inferencias completas y auditadas.
+
+\section{Hipótesis}
+
+El trabajo parte de cuatro hipótesis operativas:
+
+\begin{enumerate}
+  \item El simulador QRS/ST genera diferencias visuales suficientes para que una CNN aprenda por encima del azar.
+  \item El rendimiento mejora al aumentar el presupuesto de ejemplos \(K\) en el dominio sintético.
+  \item El rendimiento en datos reales es menor que en el simulador por cambio de dominio visual y por cambio de definición de etiqueta.
+  \item La adaptación de dominio mejora el resultado real, aunque no necesariamente hasta un nivel clínicamente suficiente.
+\end{enumerate}
+
+\section{Objetivos}
+
+El objetivo general es construir y evaluar una canalización reproducible de ECG como imagen para pocos datos, con énfasis en redes convolucionales y transferencia sintético-real.
+
+Los objetivos específicos son:
+
+\begin{enumerate}
+  \item Generar un conjunto sintético QRS/ST con imágenes de V1, V2 y V3 y etiquetas derivadas de reglas morfológicas.
+  \item Construir un conjunto Brugada HUCA procesado, separado por paciente y con exclusiones documentadas.
+  \item Entrenar ResNet18 mediante validación leave-one-out para \(K=\{2,4,8,16,32\}\) y tres semillas.
+  \item Medir exactitud equilibrada, F1, sensibilidad, especificidad, área ROC, precisión media y matrices de confusión.
+  \item Comparar rendimiento sintético y real para cuantificar la brecha de dominio.
+  \item Revisar, corregir y ejecutar una rama de adaptación de dominio con SSL, CORAL, MMD y DANN.
+  \item Documentar la pipeline VLM/ICL como TODO reproducible, sin presentar métricas no ejecutadas.
+\end{enumerate}
+
+\section{Contribuciones}
+
+Las contribuciones cerradas son:
+
+\begin{itemize}
+  \item un simulador y un conjunto sintético auditado con 100 pacientes y 300 imágenes;
+  \item un preprocesado real de Brugada HUCA con 317 pacientes, 951 imágenes y 46 exclusiones;
+  \item resultados CNN completos en sintético y HUCA;
+  \item resultados de adaptación de dominio para cuatro métodos;
+  \item gráficas, tablas, matrices de confusión y ejemplos Grad CAM;
+  \item una auditoría que marca como completo el paquete CNN y como TODO la línea VLM;
+  \item una memoria orientada a triaje clínico prudente, no a diagnóstico autónomo.
+\end{itemize}
+
+\section{Alcance}
+
+El trabajo no valida un producto sanitario. No estima utilidad clínica prospectiva ni sustituye revisión por especialista. La etiqueta sintética deriva de reglas internas y la etiqueta real de HUCA representa caso Brugada confirmado frente a control. Estas dos tareas están relacionadas, pero no son equivalentes.
+
+La línea VLM se conserva porque es una extensión natural del problema de pocos datos. Gemma 4 y MedGemma pueden recibir ejemplos en contexto y producir respuestas estructuradas, pero sus resultados quedan pendientes. Incluirlos sin inferencias completas rompería la trazabilidad del estudio.
+
+\section{Estructura de la memoria}
+
+El capítulo \ref{chap:fundamentos} presenta los fundamentos clínicos y técnicos. El capítulo \ref{chap:relacionados} revisa trabajos relacionados. El capítulo \ref{chap:diseno} fija el diseño experimental. El capítulo \ref{chap:simulador} describe el simulador. El capítulo \ref{chap:modelos} detalla la CNN, la adaptación de dominio y la pipeline VLM pendiente. Los capítulos \ref{chap:resultados} y \ref{chap:datos_reales} presentan los resultados sintéticos y reales. El capítulo \ref{chap:discusion} discute las implicaciones y el capítulo \ref{chap:conclusiones} cierra el trabajo.

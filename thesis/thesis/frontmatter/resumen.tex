@@ -1,0 +1,15 @@
+\chapter*{Resumen}
+\addcontentsline{toc}{chapter}{Resumen}
+\markboth{Resumen}{Resumen}
+
+Este Trabajo de Fin de Grado estudia el análisis de electrocardiogramas representados como imagen en un escenario de pocos datos etiquetados. El objetivo práctico no es construir un sistema autónomo de diagnóstico, sino medir si una canalización reproducible puede servir como apoyo de triaje: priorizar trazados que merecen revisión clínica sin descartar por sí sola a ningún paciente.
+
+La memoria integra dos dominios. El primero es un simulador controlado de morfología QRS/ST que genera imágenes de V1, V2 y V3 con etiquetas derivadas de reglas observables. El segundo es el conjunto Brugada HUCA, procesado desde registros clínicos reales para obtener ventanas de las derivaciones precordiales derechas y una etiqueta binaria de caso Brugada confirmado frente a control. La evaluación se organiza por paciente mediante validación leave-one-out, presupuestos reducidos de \(K=\{2,4,8,16,32\}\) ejemplos y tres semillas por presupuesto.
+
+La red convolucional final utiliza ResNet18 con salida binaria y entrenamiento supervisado con selección interna de umbral. En el simulador, el rendimiento aumenta de forma clara al crecer \(K\): la exactitud equilibrada media pasa de 0,625 con \(K=2\) a 0,848 con \(K=32\), con sensibilidad 0,883, especificidad 0,812, F1 0,673 y área ROC 0,857. Estos resultados indican que la tarea sintética contiene señal visual aprendible y que el protocolo de pocos ejemplos funciona en un dominio controlado.
+
+En Brugada HUCA el comportamiento es mucho más limitado. La mejor exactitud equilibrada del modelo base se obtiene con \(K=16\), 0,516, mientras que \(K=32\) queda en 0,499. La sensibilidad permanece moderada, entre 0,644 y 0,730 según \(K\), pero la especificidad es baja, entre 0,289 y 0,375. Esta asimetría es coherente con una herramienta de alerta preliminar, pero insuficiente para diagnóstico clínico o cribado autónomo.
+
+Se revisa además una rama de adaptación de dominio con aprendizaje autosupervisado, CORAL, MMD y DANN. Las cuatro variantes se ejecutan para \(K=16\) y \(K=32\). El mejor resultado real aparece con MMD y \(K=32\), con exactitud equilibrada 0,549, F1 0,498, sensibilidad 0,649 y especificidad 0,448. La mejora es medible pero modesta, por lo que se interpreta como evidencia de una brecha de dominio todavía relevante entre imágenes sintéticas y ECG clínicos reales.
+
+Los modelos abiertos de visión y lenguaje quedan documentados como trabajo pendiente. La memoria describe la canalización prevista para aprendizaje en contexto, validación de JSON y comparación con CNN, pero no reporta métricas VLM al no existir aún inferencias completas y auditadas. La contribución cerrada del TFG es, por tanto, un paquete reproducible de simulación, entrenamiento CNN, adaptación de dominio, métricas, gráficas y conclusiones orientadas a triaje clínico prudente.
