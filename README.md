@@ -1,4 +1,4 @@
-# ECG Few-Shot Brugada
+# Análisis de ECGs con grandes modelos de lenguaje
 
 Pipeline experimental del TFG para comparar CNN entrenadas con pocos ejemplos
 frente a modelos de vision y lenguaje (VLM) usados con in-context learning
@@ -309,20 +309,67 @@ Semantica prevista:
 imagen ECG -> JSON con RBBB/ST_ELEVATION/T_WAVE_INVERSION -> regla AND
 ```
 
-Validacion de contrato y configuracion, sin cargar modelo ni hacer llamadas de red:
+Celda unica para que el tutor ejecute toda la evaluacion VLM sobre simulador y
+HUCA real. Requiere tener ya levantado un servidor vLLM/OpenAI-compatible en
+`VLM_API_BASE` que sirva los modelos indicados, o un router que acepte ambos
+identificadores.
 
 ```bash
-VLM_RUNTIME=local_gpu \
-VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+# 0) Ejecutar desde la raiz del repositorio.
+set -eu
+export MPLBACKEND=Agg
+export VLM_API_BASE="${VLM_API_BASE:-http://your-host:8000/v1}"
+export VLM_MODELS="${VLM_MODELS:-google/gemma-4-E4B-it,google/medgemma-4b-it}"
+export VLM_RUNTIME="${VLM_RUNTIME:-remote_api}"
+export K_VALUES="${K_VALUES:-0,2,4,8,16,32}"
+export CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
+export SEEDS="${SEEDS:-42,123,2026}"
+export CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
+
+# 1) Validar plan VLM en el simulador QRS/ST, sin inferencia.
+DATASET_ROOT="$PWD/data/simulator_qrs" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+REPORT_DIR="$PWD/reports/loocv/vlm_simulator_qrs" \
+OUTPUT="$PWD/reports/loocv/vlm_simulator_qrs/vlm_setup_validation.json" \
 scripts/run/validate_vlm_loocv.sh
-```
 
-Campania completa contra un servidor vLLM compatible con OpenAI:
-
-```bash
-VLM_API_BASE=http://your-host:8000/v1 \
-VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+# 2) Ejecutar inferencia VLM en el simulador QRS/ST.
+DATASET_ROOT="$PWD/data/simulator_qrs" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+OUTPUT_ROOT="$PWD/outputs/vlm_simulator_qrs_loocv" \
+REPORT_DIR="$PWD/reports/loocv/vlm_simulator_qrs" \
 scripts/run/run_vlm_loocv.sh
+
+# 3) Validar plan VLM en Brugada-HUCA real, usando el simulador como contexto
+# etiquetado QRS/ST y HUCA solo como conjunto de evaluacion clinica.
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+REPORT_DIR="$PWD/reports/loocv/vlm" \
+OUTPUT="$PWD/reports/loocv/vlm/vlm_setup_validation.json" \
+scripts/run/validate_vlm_loocv.sh
+
+# 4) Ejecutar inferencia VLM en Brugada-HUCA real.
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+OUTPUT_ROOT="$PWD/outputs/vlm_loocv" \
+REPORT_DIR="$PWD/reports/loocv/vlm" \
+scripts/run/run_vlm_loocv.sh
+
+# 5) Comparar CNN frente a VLM en simulador y en HUCA real.
+CNN_SUMMARY="$PWD/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
+VLM_SUMMARY="$PWD/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
+VLM_CONDITION=normal \
+OUTPUT_DIR="$PWD/reports/loocv/comparison_vlm_simulator_qrs" \
+scripts/run/build_loocv_comparison.sh
+
+CNN_SUMMARY="$PWD/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+VLM_SUMMARY="$PWD/reports/loocv/vlm/vlm_summary_by_seed.csv" \
+VLM_CONDITION=normal \
+OUTPUT_DIR="$PWD/reports/loocv/comparison" \
+scripts/run/build_loocv_comparison.sh
+
+# 6) Auditar que los artefactos finales existen.
+scripts/run/audit_loocv_results.sh
 ```
 
 Prompts:
@@ -377,11 +424,9 @@ reports/loocv/vlm/balanced_accuracy_by_k.png
 reports/loocv/vlm/f1_by_k.png
 ```
 
-Cuando existan inferencias auditadas, la comparacion CNN vs VLM se reconstruye con:
-
-```bash
-VLM_CONDITION=normal scripts/run/build_loocv_comparison.sh
-```
+Si se ejecuta un unico modelo por servidor, basta con cambiar `VLM_MODELS` por
+un solo identificador y repetir la celda para cada modelo; las salidas quedan
+separadas por modelo, condicion, `k` y semilla.
 
 El capitulo `thesis/thesis/chapters/09_vlm_icl.tex` contiene las tablas
 reservadas para Gemma 4, MedGemma 1.5, controles multimodales y matriz de

@@ -221,16 +221,20 @@
 }
 
 \newcommand{\safetitlelogo}{
+  \IfFileExists{assets/logo_uniovi_portada.png}{
+    \includegraphics[width=5.0cm]{logo_uniovi_portada.png}
+  }{
   \IfFileExists{assets/logo_uniovi.png}{
-    \includegraphics[width=6.9cm]{logo_uniovi.png}
+    \includegraphics[width=5.0cm]{logo_uniovi.png}
   }{
     \fcolorbox{MidGray}{PaperGray}{
-      \parbox[c][2.8cm][c]{6.9cm}{
+      \parbox[c][2.8cm][c]{5.0cm}{
         \centering
         \small\textbf{Universidad de Oviedo}\\[0.4em]
         \footnotesize Logotipo pendiente de incorporación
       }
     }
+  }
   }
 }
 

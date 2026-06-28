@@ -98,23 +98,66 @@ El cierre correcto debe incluir:
 
 \section{Ejecución VLM/ICL}
 
-La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. Antes de lanzar inferencias se valida el plan completo sin cargar modelos ni hacer llamadas de red:
+La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. La evaluación final debe lanzarse desde la raíz del repositorio con una única celda de comandos. El bloque valida primero el plan sin inferencia, ejecuta después el simulador QRS/ST, repite el proceso sobre Brugada-HUCA real usando el simulador como banco de demostraciones etiquetadas y, finalmente, reconstruye las comparaciones CNN frente a VLM.
 
 \begin{lstlisting}[language=bash]
-VLM_RUNTIME=local_gpu \
-VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+# 0) Ejecutar desde la raiz del repositorio.
+set -eu
+export MPLBACKEND=Agg
+export VLM_API_BASE="${VLM_API_BASE:-http://servidor:8000/v1}"
+export VLM_MODELS="${VLM_MODELS:-google/gemma-4-E4B-it,google/medgemma-4b-it}"
+export VLM_RUNTIME="${VLM_RUNTIME:-remote_api}"
+export K_VALUES="${K_VALUES:-0,2,4,8,16,32}"
+export CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
+export SEEDS="${SEEDS:-42,123,2026}"
+export CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
+
+# 1) Validar plan VLM en el simulador QRS/ST, sin inferencia.
+DATASET_ROOT="$PWD/data/simulator_qrs" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+REPORT_DIR="$PWD/reports/loocv/vlm_simulator_qrs" \
+OUTPUT="$PWD/reports/loocv/vlm_simulator_qrs/vlm_setup_validation.json" \
 scripts/run/validate_vlm_loocv.sh
-\end{lstlisting}
 
-La campaña completa contra un servidor vLLM compatible con la API de OpenAI se ejecuta con:
-
-\begin{lstlisting}[language=bash]
-VLM_API_BASE=http://servidor:8000/v1 \
-VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+# 2) Ejecutar inferencia VLM en el simulador QRS/ST.
+DATASET_ROOT="$PWD/data/simulator_qrs" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+OUTPUT_ROOT="$PWD/outputs/vlm_simulator_qrs_loocv" \
+REPORT_DIR="$PWD/reports/loocv/vlm_simulator_qrs" \
 scripts/run/run_vlm_loocv.sh
+
+# 3) Validar plan VLM en Brugada-HUCA real.
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+REPORT_DIR="$PWD/reports/loocv/vlm" \
+OUTPUT="$PWD/reports/loocv/vlm/vlm_setup_validation.json" \
+scripts/run/validate_vlm_loocv.sh
+
+# 4) Ejecutar inferencia VLM en Brugada-HUCA real.
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="$PWD/data/simulator_qrs" \
+OUTPUT_ROOT="$PWD/outputs/vlm_loocv" \
+REPORT_DIR="$PWD/reports/loocv/vlm" \
+scripts/run/run_vlm_loocv.sh
+
+# 5) Comparar CNN frente a VLM en simulador y en HUCA real.
+CNN_SUMMARY="$PWD/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
+VLM_SUMMARY="$PWD/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
+VLM_CONDITION=normal \
+OUTPUT_DIR="$PWD/reports/loocv/comparison_vlm_simulator_qrs" \
+scripts/run/build_loocv_comparison.sh
+
+CNN_SUMMARY="$PWD/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+VLM_SUMMARY="$PWD/reports/loocv/vlm/vlm_summary_by_seed.csv" \
+VLM_CONDITION=normal \
+OUTPUT_DIR="$PWD/reports/loocv/comparison" \
+scripts/run/build_loocv_comparison.sh
+
+# 6) Auditar que los artefactos finales existen.
+scripts/run/audit_loocv_results.sh
 \end{lstlisting}
 
-Por defecto se ejecutan \(K=\{0,2,4,8,16,32\}\), semillas 42, 123 y 2026, y las condiciones \texttt{zero\_shot}, \texttt{normal}, \texttt{balanced}, \texttt{permuted} y \texttt{no\_support\_images}. Los controles usan \texttt{CONTROL\_K\_VALUES=8,16,32}. Para probar la ruta de artefactos sin GPU ni API puede usarse:
+Por defecto se ejecutan \(K=\{0,2,4,8,16,32\}\), semillas 42, 123 y 2026, y las condiciones \texttt{zero\_shot}, \texttt{normal}, \texttt{balanced}, \texttt{permuted} y \texttt{no\_support\_images}. Los controles usan \texttt{CONTROL\_K\_VALUES=8,16,32}. Si el servidor vLLM solo sirve un modelo cada vez, se cambia \texttt{VLM\_MODELS} a un único identificador y se repite la celda por modelo. Para probar la ruta de artefactos sin GPU ni API puede usarse:
 
 \begin{lstlisting}[language=bash]
 VLM_RUNTIME=local_gpu \
@@ -138,12 +181,6 @@ Antes de incorporar resultados VLM al documento deben existir, como mínimo:
   \item predicciones por muestra bajo \texttt{outputs/vlm\_loocv/}, separadas por modelo, condición, \(K\) y semilla;
   \item auditoría con métricas VLM completas.
 \end{itemize}
-
-La comparación CNN frente a VLM se reconstruye, una vez existan inferencias, con:
-
-\begin{lstlisting}[language=bash]
-VLM_CONDITION=normal scripts/run/build_loocv_comparison.sh
-\end{lstlisting}
 
 \section{Compilación de la memoria}
 
