@@ -1,9 +1,15 @@
-# ECG Few-Shot QRS/ST
+# ECG Few-Shot Brugada
 
-Pipeline experimental del TFG para detectar criterios morfologicos QRS/ST en
-ECG y derivar una decision Brugada de forma interpretable.
+Pipeline experimental del TFG para comparar CNN entrenadas con pocos ejemplos
+frente a modelos de vision y lenguaje (VLM) usados con in-context learning
+(ICL) en ECG de sospecha de Brugada.
 
-Ultima regeneracion local: 2026-06-27.
+El objetivo no es diagnosticar de forma autonoma. El sistema se plantea como
+triaje investigacional: priorizar revision experta de trazados sospechosos y,
+si procede, activar el circuito clinico que puede incluir recolocacion de V1/V2
+y prueba farmacologica con bloqueantes del canal de sodio.
+
+Ultima regeneracion local: 2026-06-28.
 
 ## Estado
 
@@ -16,11 +22,22 @@ Ultima regeneracion local: 2026-06-27.
 | Comparacion sintetico vs HUCA | completo |
 | Domain adaptation sin etiquetas HUCA | completo |
 | Auditoria CNN end-to-end | completa |
-| VLM / ICL | TODO documentado |
+| VLM / ICL | protocolo completo; metricas numericas por ejecutar |
 
-La idea central es no entrenar una caja negra `Brugada/Normal` cuando el origen
-del dato no permite justificarlo. La CNN aprende tres criterios morfologicos y
-la decision clinica final se obtiene con una regla explicita:
+## Pregunta experimental
+
+La pregunta principal es: con muy pocos ejemplos etiquetados, cuando merece la
+pena entrenar un modelo visual especifico y cuando conviene usar esos mismos
+ejemplos como demostraciones en contexto para un VLM?
+
+La rama CNN ya esta ejecutada y sirve como precedente empirico: en sintetico
+aprende, pero en HUCA real no logra un triaje robusto ni siquiera con adaptacion
+de dominio. La rama VLM/ICL usa la misma imagen, los mismos pacientes, los
+mismos presupuestos `k` y las mismas metricas; solo cambia como se usan los
+ejemplos.
+
+La ruta CNN mantiene una decision interpretable: aprende criterios
+morfologicos y deriva Brugada mediante una regla explicita:
 
 ```text
 ECG -> CNN multi-label -> RBBB, ST_ELEVATION, T_WAVE_INVERSION
@@ -278,9 +295,13 @@ Ejemplo HUCA:
 
 ![Grad-CAM HUCA](assets/readme/cnn_huca_gradcam_example.png)
 
-## VLM / ICL TODO
+## VLM / ICL
 
-La ruta VLM queda preparada, pero no forma parte del cierre numerico actual.
+La ruta VLM/ICL es el segundo brazo de la comparacion. El diseno queda
+especificado para Gemma 4 y MedGemma 1.5 con los mismos pacientes, el mismo
+plan leave-one-out, los mismos presupuestos `k = 0, 2, 4, 8, 16, 32` y las
+mismas metricas patient-level usadas por la CNN. Las celdas numericas se
+rellenaran unicamente cuando existan inferencias auditadas por muestra.
 
 Semantica prevista:
 
@@ -288,7 +309,7 @@ Semantica prevista:
 imagen ECG -> JSON con RBBB/ST_ELEVATION/T_WAVE_INVERSION -> regla AND
 ```
 
-Comando de inferencia previsto:
+Comando de inferencia:
 
 ```bash
 API_BASE=http://your-host:8000/v1 \
@@ -296,7 +317,7 @@ MODEL=google/medgemma-4b-it \
 scripts/run/run_vlm_loocv.sh
 ```
 
-Validacion sin inferencia:
+Validacion de contrato y configuracion:
 
 ```bash
 API_BASE=http://your-host:8000/v1 \
@@ -311,13 +332,26 @@ prompts/system/qrs_huca.md
 prompts/qrs/right_precordial_morphology.md
 ```
 
-TODO para cerrar VLM:
+Condiciones previstas:
 
-- Ejecutar inferencia completa con el mismo fold plan.
-- Validar JSON, votos por lead y agregacion por paciente.
-- Generar `reports/loocv/vlm`.
-- Activar auditoria con `--vlm-policy required`.
-- Comparar CNN vs VLM en `reports/loocv/comparison`.
+- zero-shot (`k=0`), sin demostraciones;
+- ICL normal con pares imagen-etiqueta correctos;
+- ICL balanceado cuando el fold lo permita;
+- etiquetas permutadas para detectar dependencia espuria del prompt;
+- demostraciones sin imagen de apoyo para comprobar uso visual real.
+
+Artefactos esperados tras ejecutar inferencia:
+
+```text
+reports/loocv/vlm/vlm_summary_by_seed.csv
+reports/loocv/vlm/vlm_summary_by_k.csv
+reports/loocv/vlm/confusion_matrices/
+reports/loocv/vlm/predictions/
+```
+
+El capitulo `thesis/thesis/chapters/09_vlm_icl.tex` contiene las tablas
+reservadas para Gemma 4, MedGemma 1.5, controles multimodales y matriz de
+decision CNN frente a VLM/ICL.
 
 ## Artefactos
 
@@ -413,5 +447,7 @@ uv run --no-sync python -m compileall -q src scripts
 - La decision derivada es interpretable, pero la especificidad real sigue baja.
 - La adaptacion de dominio no supervisada mejora el mejor punto `k=32`, con MMD
   como configuracion mas fuerte de esta bateria.
-- VLM queda preparado como siguiente bloque, no como resultado final de esta
-  entrega CNN.
+- Estos resultados justifican la comparacion VLM/ICL: la CNN establece que
+  entrenar pesos con `k <= 32` no basta en HUCA.
+- VLM/ICL queda documentado como segundo brazo experimental completo; sus
+  metricas numericas dependen de ejecutar inferencias auditadas.

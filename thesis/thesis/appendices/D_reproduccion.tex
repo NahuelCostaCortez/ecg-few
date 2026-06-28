@@ -92,12 +92,13 @@ El cierre correcto debe incluir:
   \item \texttt{all\_cnn\_experiments\_complete: OK};
   \item \texttt{cnn\_domain\_adaptation\_complete: OK};
   \item \texttt{final\_cnn\_package\_ready: OK};
-  \item \texttt{vlm\_results\_status: TODO}.
+  \item \texttt{vlm\_protocol\_ready: OK};
+  \item \texttt{vlm\_numeric\_results: por\_ejecutar}.
 \end{itemize}
 
-\section{VLM como TODO reproducible}
+\section{Ejecución VLM/ICL}
 
-La infraestructura VLM queda preparada como segundo brazo de la comparación, aunque no forma parte de las métricas de esta memoria. Cuando se disponga del servidor y del modelo, la campaña deberá ejecutarse con:
+La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. Cuando se disponga del servidor y del modelo, la campaña deberá ejecutarse con:
 
 \begin{lstlisting}[language=bash]
 scripts/run/run_vlm_loocv.sh
@@ -111,7 +112,7 @@ Antes de incorporar resultados VLM al documento deben existir, como mínimo:
   \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_k.csv};
   \item matrices de confusión por \(K\);
   \item predicciones por muestra;
-  \item auditoría sin elementos TODO para VLM.
+  \item auditoría con métricas VLM completas.
 \end{itemize}
 
 \section{Compilación de la memoria}

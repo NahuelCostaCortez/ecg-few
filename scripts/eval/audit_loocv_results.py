@@ -61,9 +61,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seeds", default=",".join(str(seed) for seed in DEFAULT_SEEDS))
     parser.add_argument(
         "--vlm-policy",
-        choices=("todo", "required"),
-        default="todo",
-        help="Use 'todo' while VLM inference is intentionally not part of the final CNN package.",
+        choices=("deferred", "required", "todo"),
+        default="deferred",
+        help=(
+            "Use 'deferred' while VLM inference metrics are not available yet. "
+            "'todo' is accepted as a backwards-compatible alias."
+        ),
     )
     return parser.parse_args()
 
@@ -87,7 +90,7 @@ def main() -> None:
         k_values=k_values,
         domain_k_values=domain_k_values,
         seeds=seeds,
-        vlm_policy=str(args.vlm_policy),
+        vlm_policy="deferred" if args.vlm_policy == "todo" else str(args.vlm_policy),
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "completeness_report.json").write_text(
@@ -171,12 +174,12 @@ def audit(
     if not vlm_required and not vlm["complete"]:
         vlm = {
             **vlm,
-            "todo": True,
-            "todo_items": list(vlm["errors"]),
+            "deferred": True,
+            "deferred_items": list(vlm["errors"]),
             "errors": [],
             "warnings": [
                 *vlm.get("warnings", []),
-                "VLM inference is intentionally TODO for this CNN-only package.",
+                "VLM numeric metrics are deferred until audited inference is available.",
             ],
         }
     vlm_ready = audit_vlm_readiness(dataset_root=dataset_root)
@@ -187,7 +190,7 @@ def audit(
             "complete": True,
             "skipped": True,
             "errors": [],
-            "warnings": ["CNN-vs-VLM comparison skipped because VLM is TODO."],
+            "warnings": ["CNN-vs-VLM numeric comparison deferred until VLM inference exists."],
         }
     )
     all_cnn_complete = all(
@@ -209,8 +212,8 @@ def audit(
         "cnn_sim_vs_real_comparison_complete": cnn_comparison["complete"],
         "cnn_domain_adaptation_complete": domain_adaptation["complete"],
         "all_cnn_experiments_complete": all_cnn_complete,
-        "vlm_code_ready": vlm_ready["complete"],
-        "vlm_results_status": "available" if vlm.get("summary_rows", 0) else "todo",
+        "vlm_protocol_ready": vlm_ready["complete"],
+        "vlm_numeric_results": "available" if vlm.get("summary_rows", 0) else "deferred",
         "cnn_vs_vlm_comparison_complete": comparison["complete"],
         "final_cnn_package_ready": all_cnn_complete and vlm_ready["complete"],
     }
@@ -551,7 +554,7 @@ def audit_model_reports(
         if not gradcams:
             errors.append("Missing CNN Grad-CAM panels under fold directories.")
     if model_family == "vlm" and not rows:
-        warnings.append("VLM inference results are optional until Nahuel launches the heavy run.")
+        warnings.append("VLM inference metrics are deferred until the heavy run is launched.")
     return {
         "complete": not errors,
         "errors": errors,
@@ -681,8 +684,8 @@ def render_markdown(report: dict[str, Any]) -> str:
     if status["final_cnn_package_ready"]:
         lines.append(
             "All CNN datasets, reports, comparisons, and domain-adaptation summaries are "
-            "complete for the configured grids. VLM is treated as a documented TODO unless "
-            "`--vlm-policy required` is used."
+            "complete for the configured grids. The VLM/ICL protocol is ready; numeric VLM "
+            "metrics are deferred unless `--vlm-policy required` is used."
         )
     else:
         lines.append(
@@ -704,7 +707,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         section = report[section_name]
         errors = section.get("errors", [])
         warnings = section.get("warnings", [])
-        todo_items = section.get("todo_items", [])
+        deferred_items = section.get("deferred_items", [])
         if errors or warnings:
             lines.extend([f"## {section_name.replace('_', ' ').title()}", ""])
             for error in errors:
@@ -712,10 +715,10 @@ def render_markdown(report: dict[str, Any]) -> str:
             for warning in warnings:
                 lines.append(f"- WARNING: {warning}")
             lines.append("")
-        if todo_items:
-            lines.extend([f"## {section_name.replace('_', ' ').title()} TODO", ""])
-            for item in todo_items:
-                lines.append(f"- TODO: {item}")
+        if deferred_items:
+            lines.extend([f"## {section_name.replace('_', ' ').title()} Deferred Metrics", ""])
+            for item in deferred_items:
+                lines.append(f"- Deferred: {item}")
             lines.append("")
     return "\n".join(lines)
 

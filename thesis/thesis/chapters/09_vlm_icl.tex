@@ -1,0 +1,195 @@
+\chapter{Evaluación VLM/ICL}
+\label{chap:vlm}
+
+Este capítulo desarrolla el segundo brazo del estudio: modelos de visión y lenguaje con aprendizaje en contexto. Su papel dentro del TFG tiene el mismo peso metodológico que la rama CNN. La diferencia es que aquí los valores numéricos de resultados se dejan como celdas reservadas para ejecución, mientras que el diseño experimental, las condiciones, los controles, el contrato de salida y las tablas de comparación quedan definidos por completo.
+
+\newcommand{\vlmpending}{--}
+
+\section{Objetivo del brazo VLM}
+
+La rama CNN ha establecido la línea base supervisada: con \(K \leq 32\), ResNet18 aprende en el simulador, pero no alcanza rendimiento robusto sobre Brugada HUCA. El brazo VLM/ICL evalúa la hipótesis complementaria: si los ejemplos etiquetados son demasiado escasos para actualizar pesos de forma fiable, quizá puedan ser más útiles como demostraciones dentro del contexto de un modelo multimodal preentrenado.
+
+La comparación se formula con la misma entrada visual, los mismos pacientes, los mismos presupuestos \(K\), la misma separación leave-one-out y las mismas métricas por paciente. La diferencia experimental es una sola: la CNN usa los ejemplos para entrenar; el VLM los usa para condicionar la inferencia.
+
+\section{Modelos evaluados}
+
+El protocolo contempla dos modelos abiertos:
+
+\begin{itemize}
+  \item \textbf{Gemma 4}. Modelo multimodal generalista con entrada de texto e imagen \cite{gemma4card}. Actúa como referencia abierta no especializada. Su papel es medir cuánto puede aportar un VLM general con contexto visual y textual amplio.
+  \item \textbf{MedGemma 1.5}. Modelo multimodal médico basado en la familia Gemma y adaptado con modalidades clínicas \cite{medgemma15}. Actúa como referencia médica. Su papel es medir si el preentrenamiento biomédico general aporta ventaja en ECG, aun cuando el ECG no figure como modalidad principal de su tarjeta.
+\end{itemize}
+
+Ambos modelos se sirven localmente mediante vLLM siempre que el hardware lo permita. Esta decisión evita depender de APIs externas y permite registrar versión de pesos, plantilla de conversación, resolución visual, temperatura y parámetros de generación.
+
+\section{Presupuestos y demostraciones}
+
+Los presupuestos son \(K=\{0,2,4,8,16,32\}\). El caso \(K=0\) mide comportamiento \emph{zero-shot}: el modelo recibe instrucciones y la imagen objetivo, pero ninguna demostración etiquetada. Los valores positivos de \(K\) miden aprendizaje en contexto con ejemplos imagen-respuesta.
+
+Para que la comparación con la CNN sea directa, las demostraciones se seleccionan a nivel de paciente y nunca incluyen el paciente reservado para test. Cuando un paciente aporta varias derivaciones, la demostración conserva la misma lógica de agregación que el resto del estudio: V1, V2 y V3 son evidencia visual del mismo paciente, no muestras independientes para filtrar entre entrenamiento y prueba.
+
+\section{Contrato de salida}
+
+La salida esperada es JSON estricto. Para Brugada HUCA, la respuesta mínima es:
+
+\begin{lstlisting}
+{
+  "clinical_brugada": true
+}
+\end{lstlisting}
+
+Opcionalmente puede añadirse una confianza discreta si se congela antes de ejecutar la campaña:
+
+\begin{lstlisting}
+{
+  "clinical_brugada": true,
+  "confidence": "medium"
+}
+\end{lstlisting}
+
+El análisis principal no interpreta texto libre. Una respuesta no parseable, con claves ausentes, tipos incorrectos o valores fuera del esquema, se registra como fallo de formato. Esta tasa de fallos se reporta junto con las métricas clínicas porque forma parte del comportamiento real de un VLM.
+
+\section{Condiciones experimentales}
+
+La tabla \ref{tab:vlm_conditions} fija las condiciones de la campaña. Las tres primeras condiciones miden rendimiento; las dos últimas son controles de causalidad multimodal.
+
+\begin{table}[H]
+  \centering
+  \caption{Condiciones experimentales VLM/ICL.}
+  \label{tab:vlm_conditions}
+  \small
+  \begin{tabularx}{\textwidth}{p{3.2cm}p{2.2cm}X}
+    \toprule
+    Condición & \(K\) & Propósito \\
+    \midrule
+    Zero-shot & 0 & Medir conocimiento previo sin demostraciones. \\
+    ICL normal & 2, 4, 8, 16, 32 & Medir aprendizaje en contexto con pares imagen-etiqueta correctos. \\
+    ICL balanceado & 2, 4, 8, 16, 32 & Mantener proporción positiva/negativa controlada cuando el pliegue lo permita. \\
+    Etiquetas permutadas & 8, 16, 32 & Romper la correspondencia imagen-etiqueta para detectar uso espurio del contexto. \\
+    Sin imagen de apoyo & 8, 16, 32 & Mantener etiquetas de demostración, pero retirar las imágenes de apoyo. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Agregación por paciente}
+
+Cada predicción se obtiene por imagen y se agrega a nivel de paciente para conservar la misma unidad de evaluación que en la CNN. Si el modelo produce una respuesta válida para V1, V2 y V3, se calcula una decisión de paciente por voto mayoritario o por media de probabilidades si se activa la confianza numérica. Si alguna derivación produce JSON inválido, se conserva el fallo en la auditoría. El análisis principal contabiliza los fallos como errores; un análisis secundario puede informar métricas sobre respuestas válidas, pero nunca sustituye al análisis principal.
+
+\section{Tablas de resultados preparadas}
+
+Las tablas siguientes forman parte del documento aunque las celdas numéricas VLM estén reservadas. Esto evita que la rama VLM aparezca como una nota futura: el experimento está especificado, sus salidas están definidas y solo falta rellenar los valores tras ejecutar las inferencias. En estas tablas, \(\vlmpending\) indica valor por ejecutar.
+
+\begin{table}[H]
+  \centering
+  \caption{Resultados VLM/ICL previstos para Gemma 4 sobre Brugada HUCA.}
+  \label{tab:vlm_gemma4_results}
+  \small
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    \(K\) & BA & F1 & Sens. & Esp. & JSON inválido & Latencia media \\
+    \midrule
+    0  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    2  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    4  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    8  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    16 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    32 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Resultados VLM/ICL previstos para MedGemma 1.5 sobre Brugada HUCA.}
+  \label{tab:vlm_medgemma_results}
+  \small
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    \(K\) & BA & F1 & Sens. & Esp. & JSON inválido & Latencia media \\
+    \midrule
+    0  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    2  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    4  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    8  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    16 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    32 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Controles VLM/ICL previstos para verificar uso multimodal real.}
+  \label{tab:vlm_controls_results}
+  \small
+  \begin{tabularx}{\textwidth}{p{3.1cm}p{2.2cm}XXXX}
+    \toprule
+    Modelo & Condición & \(K\) & BA & Caída frente a normal & Lectura \\
+    \midrule
+    Gemma 4 & Etiquetas permutadas & 16 & \vlmpending & \vlmpending & \vlmpending \\
+    Gemma 4 & Sin imagen de apoyo & 16 & \vlmpending & \vlmpending & \vlmpending \\
+    MedGemma 1.5 & Etiquetas permutadas & 16 & \vlmpending & \vlmpending & \vlmpending \\
+    MedGemma 1.5 & Sin imagen de apoyo & 16 & \vlmpending & \vlmpending & \vlmpending \\
+    Gemma 4 & Etiquetas permutadas & 32 & \vlmpending & \vlmpending & \vlmpending \\
+    Gemma 4 & Sin imagen de apoyo & 32 & \vlmpending & \vlmpending & \vlmpending \\
+    MedGemma 1.5 & Etiquetas permutadas & 32 & \vlmpending & \vlmpending & \vlmpending \\
+    MedGemma 1.5 & Sin imagen de apoyo & 32 & \vlmpending & \vlmpending & \vlmpending \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Comparación final prevista}
+
+La comparación final se leerá como una curva de decisión. La CNN ya aporta los valores de referencia. Las celdas VLM se rellenarán tras ejecutar las inferencias con la misma auditoría.
+
+\begin{table}[H]
+  \centering
+  \caption{Matriz de decisión CNN frente a VLM/ICL.}
+  \label{tab:cnn_vlm_decision_matrix}
+  \small
+  \begin{tabularx}{\textwidth}{p{1.2cm}p{3.0cm}p{3.0cm}p{3.0cm}X}
+    \toprule
+    \(K\) & CNN HUCA base BA & Mejor CNN+DA BA & Mejor VLM BA & Lectura esperada \\
+    \midrule
+    2  & 0,509 & -- & \vlmpending & Régimen extremo. \\
+    4  & 0,509 & -- & \vlmpending & CNN inestable. \\
+    8  & 0,490 & -- & \vlmpending & Transición inicial. \\
+    16 & 0,516 & 0,524 (CORAL) & \vlmpending & Ref. CORAL. \\
+    32 & 0,499 & 0,549 (MMD) & \vlmpending & Ref. MMD. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Figuras de resultados reservadas}
+
+\begin{figure}[H]
+  \centering
+  \fcolorbox{MidGray}{PaperGray}{
+    \parbox[c][4.2cm][c]{0.88\textwidth}{
+      \centering
+      \textbf{Panel reservado para curva CNN vs VLM/ICL}\\[0.7em]
+      \small Exactitud equilibrada por \(K\), con CNN base, mejor adaptación de dominio, Gemma 4 y MedGemma 1.5.
+    }
+  }
+  \caption{Figura prevista para la comparación final de exactitud equilibrada entre CNN y VLM/ICL.}
+  \label{fig:vlm_cnn_comparison_reserved}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fcolorbox{MidGray}{PaperGray}{
+    \parbox[c][4.2cm][c]{0.88\textwidth}{
+      \centering
+      \textbf{Panel reservado para matrices de confusión VLM}\\[0.7em]
+      \small Matrices por modelo y \(K\), incluyendo conteo de respuestas JSON inválidas.
+    }
+  }
+  \caption{Figura prevista para matrices de confusión de Gemma 4 y MedGemma 1.5.}
+  \label{fig:vlm_confusion_reserved}
+\end{figure}
+
+\section{Criterio de lectura}
+
+Si un VLM supera de forma consistente a la CNN en \(K\) bajo, la conclusión será que el conocimiento multimodal previo aporta valor en la zona donde entrenar pesos no compensa. Si la CNN alcanza o supera al VLM cuando \(K\) aumenta, aparecerá un punto de cruce práctico: por debajo conviene ICL; por encima conviene entrenamiento supervisado. Si ninguno de los dos enfoques supera un rendimiento aceptable, el resultado también será informativo: indicará que la tarea requiere más datos, mejores anotaciones morfológicas o modelos específicamente preentrenados en ECG.
+
+En todos los casos, la lectura clínica se mantiene constante. La salida del modelo solo prioriza revisión experta dentro del circuito de Brugada; no confirma ni descarta el síndrome.

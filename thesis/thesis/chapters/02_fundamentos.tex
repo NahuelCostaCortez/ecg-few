@@ -21,13 +21,6 @@ El segmento ST se evalúa con respecto a una referencia isoeléctrica. En un reg
 
 La onda T también depende de la derivación. Una deflexión negativa puede ser fisiológica en algunas posiciones y patológica en otras. Su significado cambia según la edad, el sexo, la secuencia de activación ventricular, los cambios del segmento ST y la presencia de otras alteraciones. El proyecto no intenta resolver esta interpretación completa. La etiqueta de inversión de T indica únicamente que la región tardía del latido sintético presenta una deflexión negativa que satisface las reglas operativas del conjunto.
 
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.94\textwidth]{results/fig_morfologia_ecg.pdf}
-  \caption{Morfología básica de un latido electrocardiográfico renderizado como imagen.}
-  \label{fig:morfologia_ecg}
-\end{figure}
-
 \section{Hallazgos morfológicos utilizados en el proyecto}
 
 \subsection{Morfología compatible con bloqueo de rama derecha}
@@ -54,13 +47,28 @@ En el conjunto sintético, la inversión se define mediante una deflexión tard�
 
 La etiqueta T\_WAVE\_INVERSION expresa por tanto una propiedad visual localizada. No determina si la inversión es primaria, secundaria, fisiológica o patológica. Esta limitación deberá conservarse cuando el modelo se evalúe con datos reales.
 
-\subsection{Síndrome de Brugada como caso motivador}
+\subsection{Síndrome de Brugada: caso motivador y circuito diagnóstico}
 
-El síndrome de Brugada es un síndrome arrítmico hereditario asociado a riesgo de fibrilación ventricular y muerte súbita. Su definición ha evolucionado a medida que se ha estudiado la especificidad de los patrones espontáneos y provocados. El elemento electrocardiográfico central es el patrón tipo 1, caracterizado por elevación descendente del segmento ST en derivaciones precordiales derechas y onda T negativa \cite{sieira2017,zeppenfeld2022}.
+El síndrome de Brugada es una canalopatía hereditaria del canal de sodio, frecuentemente asociada a mutaciones en el gen \emph{SCN5A}, que predispone a fibrilación ventricular y muerte súbita cardíaca. Su prevalencia se estima entre 1 y 5 por cada 10\,000 personas, con predominio en varones adultos jóvenes, aunque puede manifestarse a cualquier edad. A pesar de su baja prevalencia, su asociación con arritmias malignas lo convierte en un problema clínico relevante \cite{sieira2017}.
 
-La guía europea de 2022 sitúa el patrón tipo 1 en V1 o V2 colocadas en espacios intercostales estándar o superiores \cite{zeppenfeld2022}. Esta colocación es relevante porque registrar V1 y V2 más arriba puede aumentar la sensibilidad para observar el patrón \cite{brugadadrugsdiagnostic}. Aun así, el trazado aislado no debe interpretarse fuera del circuito clínico: hay que valorar síntomas, antecedentes familiares, fiebre, fármacos, alteraciones electrolíticas y fenocopias.
+El elemento electrocardiográfico central es el patrón tipo 1, también denominado patrón \emph{coved}: una elevación descendente del segmento ST de al menos 2 mm en las derivaciones precordiales derechas V1 o V2, seguida de una onda T negativa. Este patrón es el único considerado diagnóstico según las guías vigentes \cite{zeppenfeld2022}. Los patrones tipo 2 y tipo 3, descritos históricamente, ya no se consideran suficientes por sí solos para establecer el diagnóstico.
 
-Cuando existe sospecha clínica y el ECG basal no es diagnóstico, puede realizarse una prueba farmacológica con bloqueantes del canal de sodio, como ajmalina, flecainida, procainamida o pilsicainida según disponibilidad local. Esta prueba intenta desenmascarar un patrón tipo 1 en un entorno monitorizado. La literatura reciente advierte que no debe usarse como cribado indiscriminado: la especificidad no es perfecta, no existe un patrón oro absoluto independiente del propio ECG y la indicación depende de síntomas, historia familiar y trazado basal \cite{wilde2023scbt}. Por tanto, en este TFG una predicción positiva debe entenderse como señal de triaje que podría conducir a revisión especializada y, si procede, a esta vía diagnóstica, no como diagnóstico final.
+La definición ha evolucionado con el tiempo. Los criterios actuales aceptan que el patrón tipo 1, ya sea espontáneo o inducido, es suficiente para el diagnóstico de síndrome de Brugada en ausencia de otras causas que lo expliquen \cite{zeppenfeld2022}. No obstante, el contexto clínico es fundamental: síntomas como síncope inexplicado, respiración agónica nocturna, antecedentes familiares de muerte súbita o arritmias ventriculares documentadas refuerzan la sospecha y orientan la estratificación del riesgo.
+
+\subsubsection{Circuito diagnóstico clínico}
+
+El diagnóstico del síndrome de Brugada sigue un circuito clínico estructurado que no puede reducirse al reconocimiento automático de un patrón en una imagen:
+
+\begin{enumerate}
+  \item \textbf{ECG basal de 12 derivaciones.} La evaluación comienza con un ECG estándar. Si el trazado muestra un patrón tipo 1 espontáneo en V1 o V2, el diagnóstico se puede establecer tras excluir fenocopias y otras causas de elevación del ST.
+  \item \textbf{Recolocación de derivaciones precordiales.} Cuando el ECG basal es sospechoso pero no concluyente, las guías recomiendan registrar V1 y V2 en espacios intercostales superiores (segundo o tercero en lugar del cuarto estándar). Esta maniobra aumenta la sensibilidad para detectar el patrón tipo 1, porque la posición más alta acerca el electrodo al tracto de salida del ventrículo derecho \cite{brugadadrugsdiagnostic}.
+  \item \textbf{Valoración clínica integral.} Se evalúan síntomas actuales y pasados, historia familiar de muerte súbita o síndrome de Brugada confirmado, exposición a fármacos o situaciones que puedan provocar fenocopias (fiebre, trastornos electrolíticos, isquemia) y comorbilidades.
+  \item \textbf{Prueba farmacológica con bloqueantes del canal de sodio.} En pacientes seleccionados con sospecha persistente y ECG basal no diagnóstico, se realiza una prueba de provocación farmacológica. Los fármacos empleados son bloqueantes del canal de sodio de clase I: ajmalina (la más utilizada, administrada por vía intravenosa a dosis aproximada de 1 mg/kg durante 10 minutos), flecainida, procainamida o pilsicainida según la disponibilidad local \cite{wilde2023scbt}. La prueba se administra en un entorno monitorizado con personal entrenado en reanimación cardiopulmonar avanzada y con equipo de desfibrilación disponible, dado el riesgo, infrecuente pero real, de desencadenar arritmias ventriculares malignas (taquicardia ventricular polimórfica o fibrilación ventricular). La monitorización electrocardiográfica continua debe prolongarse después de finalizar la infusión, ya que el patrón tipo 1 puede aparecer de forma diferida, incluso cuando los intervalos QRS y QTc han comenzado a normalizarse. La prueba se considera positiva si aparece un patrón tipo 1 durante o después de la administración del fármaco. La prueba está contraindicada en pacientes que ya presentan un patrón tipo 1 espontáneo, puesto que el diagnóstico ya está establecido \cite{wilde2023scbt}.
+  \item \textbf{Estudio genético.} Se recomienda la secuenciación del gen \emph{SCN5A} en pacientes índice para confirmar la base molecular y facilitar el cribado familiar.
+  \item \textbf{Decisión clínica final.} La decisión sobre estratificación de riesgo y tratamiento (seguimiento, modificación del estilo de vida, evitación de fármacos arritmogénicos, valoración de desfibrilador automático implantable) es siempre clínica, multifactorial y realizada por especialistas.
+\end{enumerate}
+
+Este circuito subraya por qué el sistema desarrollado en este TFG se plantea exclusivamente como herramienta de triaje. Una predicción positiva del modelo no equivale a un diagnóstico de síndrome de Brugada. Equivale a una señal que sugiere priorizar la revisión del trazado por un especialista y, si procede, iniciar el circuito diagnóstico descrito. La decisión de realizar una prueba farmacológica, su interpretación y las consecuencias clínicas permanecen bajo responsabilidad médica \cite{wilde2023scbt}.
 
 \begin{figure}[H]
   \centering
@@ -117,6 +125,8 @@ La imagen posee una ventaja práctica cuando la señal original no está disponi
 
 La alternativa consiste en digitalizar primero la imagen. El trabajo de Wu y colaboradores desarrolló una herramienta automática para segmentar trazados impresos y reconstruir las señales \cite{wu2022digitization}. La digitalización permite reutilizar modelos temporales, pero introduce errores cuando las derivaciones se solapan o la calidad del documento es baja. El análisis directo de imagen y la digitalización no son soluciones excluyentes. Responden a compromisos distintos.
 
+Esta doble naturaleza del ECG, señal temporal e imagen, es precisamente lo que hace relevante la comparación entre CNN y VLM. Una CNN entrenada con pocos ejemplos necesita extraer toda la información visual de los píxeles disponibles. Un modelo de visión y lenguaje puede complementar la información visual con conocimiento previo adquirido durante su preentrenamiento sobre colecciones masivas de imágenes y texto médico. La pregunta es si ese conocimiento previo compensa la escasez de datos etiquetados.
+
 \begin{table}[H]
   \centering
   \caption{Comparación entre la señal temporal y la imagen electrocardiográfica}
@@ -135,13 +145,6 @@ La alternativa consiste en digitalizar primero la imagen. El trabajo de Wu y col
     \bottomrule
   \end{tabularx}
 \end{table}
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.96\textwidth]{results/fig_signal_to_image.pdf}
-  \caption{Transformación de una señal numérica a una imagen de ECG y ejemplos de cambio de dominio visual.}
-  \label{fig:signal_to_image}
-\end{figure}
 
 \section{Datos sintéticos y modelos gaussianos}
 
@@ -217,21 +220,23 @@ El uso de pesos compartidos aporta cierta tolerancia a desplazamientos pequeños
 
 En este trabajo la referencia convolucional cerrada es una ResNet18 preentrenada. Las conexiones residuales facilitan la optimización de redes profundas al aprender transformaciones relativas a la entrada de cada bloque \cite{he2016}. El uso de pesos de ImageNet no garantiza una ventaja en ECG, pero aporta filtros visuales iniciales útiles para contornos, trazos y texturas cuando el número de ejemplos etiquetados es pequeño.
 
-La evaluación debe comprobar si esa transferencia visual se mantiene fuera del simulador. Un resultado alto en imágenes sintéticas puede reflejar que la red aprendió reglas de renderizado, mientras que un resultado más bajo en datos reales puede revelar ruido, variabilidad clínica o diferencias en la definición de etiqueta.
+La evaluación debe comprobar si esa transferencia visual se mantiene fuera del simulador. Un resultado alto en imágenes sintéticas puede reflejar que la red aprendió reglas de renderizado, mientras que un resultado más bajo en datos reales puede revelar ruido, variabilidad clínica o diferencias en la definición de etiqueta. Los resultados de este TFG confirman que la CNN aprende bien en sintético pero falla en datos reales, lo que motiva la exploración de alternativas que no dependan exclusivamente del entrenamiento supervisado con pocos ejemplos.
 
 \section{Modelos de visión y lenguaje}
 
-Un modelo de visión y lenguaje combina una representación visual con un modelo generativo de texto. La imagen se transforma en vectores que el componente lingüístico puede atender durante la generación. La salida puede adoptar la forma de una respuesta libre, una explicación o una estructura con campos definidos.
+Un modelo de visión y lenguaje (VLM) combina una representación visual con un modelo generativo de texto. La imagen se transforma en vectores que el componente lingüístico puede atender durante la generación. La salida puede adoptar la forma de una respuesta libre, una explicación o una estructura con campos definidos. Esta arquitectura introduce una capacidad fundamentalmente nueva respecto a las CNN: el modelo no solo procesa imágenes, sino que integra conocimiento visual y textual adquirido durante un preentrenamiento masivo.
 
-Flamingo mostró que un modelo multimodal entrenado con secuencias intercaladas de imagen y texto podía adaptarse a tareas mediante ejemplos incluidos en el contexto \cite{alayrac2022}. Este paradigma evita actualizar los pesos para cada tarea. Las demostraciones especifican la relación entre entrada y salida durante la inferencia.
+Flamingo mostró que un modelo multimodal entrenado con secuencias intercaladas de imagen y texto podía adaptarse a tareas mediante ejemplos incluidos en el contexto \cite{alayrac2022}. Este paradigma evita actualizar los pesos para cada tarea. Las demostraciones especifican la relación entre entrada y salida durante la inferencia, eliminando la necesidad de un conjunto de entrenamiento propio.
 
-Gemma 4 admite texto e imagen y permite ajustar el número de tokens visuales dedicados a cada imagen \cite{gemma4card}. Un presupuesto visual mayor conserva más detalle, aunque incrementa el coste. Esta decisión es relevante para ECG porque los cambios morfológicos pueden ocupar una región pequeña del lienzo.
+Esta propiedad es especialmente relevante para el problema de este TFG. Cuando solo se dispone de pocos ejemplos etiquetados de un fenómeno raro como el patrón de Brugada, el entrenamiento supervisado de una CNN puede resultar insuficiente, como demuestran los resultados experimentales. Un VLM, en cambio, puede aprovechar su conocimiento visual previo, que incluye trazados, diagramas médicos, texto clínico y relaciones entre morfología y diagnóstico, para interpretar nuevas imágenes sin necesidad de ajustar sus parámetros. La hipótesis central del TFG es que este conocimiento previo puede compensar la escasez de datos etiquetados.
 
-MedGemma 1.5 es un modelo multimodal médico basado en Gemma 3. Su entrenamiento incluye radiología, histopatología, dermatología, fondo de ojo, documentos y registros clínicos \cite{medgemma15}. La documentación oficial no presenta el ECG como modalidad principal de entrenamiento. También indica que el modelo debe adaptarse y validarse antes de cualquier uso específico. Por tanto, su condición de modelo médico no permite asumir un mejor rendimiento sobre trazados electrocardiográficos.
+Gemma 4 admite texto e imagen y permite ajustar el número de tokens visuales dedicados a cada imagen \cite{gemma4card}. Un presupuesto visual mayor conserva más detalle, aunque incrementa el coste. Esta decisión es relevante para ECG porque los cambios morfológicos pueden ocupar una región pequeña del lienzo. La posibilidad de ejecución local facilita experimentos reproducibles y reduce la necesidad de enviar imágenes a un servicio externo.
+
+MedGemma 1.5 es un modelo multimodal médico basado en Gemma 3. Su entrenamiento incluye radiología, histopatología, dermatología, fondo de ojo, documentos y registros clínicos \cite{medgemma15}. La documentación oficial no presenta el ECG como modalidad principal de entrenamiento. También indica que el modelo debe adaptarse y validarse antes de cualquier uso específico. La comparación entre Gemma 4 (modelo generalista de última generación) y MedGemma (modelo con adaptación médica sobre una base anterior) permitirá evaluar si el preentrenamiento médico específico aporta ventaja adicional en un dominio no cubierto explícitamente.
 
 \section{Aprendizaje multimodal en contexto}
 
-En aprendizaje en contexto se proporciona una secuencia de demostraciones
+El aprendizaje en contexto (ICL) es la estrategia central propuesta en este TFG como alternativa al entrenamiento supervisado. En ICL se proporciona una secuencia de demostraciones
 
 \begin{equation}
 \mathcal{D}_K =
@@ -251,7 +256,9 @@ x^\ast,
 \right),
 \end{equation}
 
-sin modificar los parámetros \(\theta\).
+sin modificar los parámetros \(\theta\). Esta diferencia con el entrenamiento supervisado es fundamental. Los mismos \(K\) ejemplos etiquetados que una CNN utilizaría para actualizar millones de pesos, un VLM los recibe como contexto dentro del prompt. Los pesos del modelo permanecen fijos y el aprendizaje se produce de forma implícita durante la generación.
+
+Esta formulación convierte al número de ejemplos \(K\) en la variable de comparación natural entre ambos enfoques. Con un mismo presupuesto de \(K\) ejemplos etiquetados, la CNN debe aprender a distinguir patrones visuales; el VLM solo necesita que esos ejemplos le muestren qué significa cada clase. La pregunta experimental es directa: ¿a partir de qué valor de \(K\) compensa entrenar un modelo específico y en qué rango resulta más razonable aprovechar el conocimiento previo del VLM?
 
 El número de ejemplos no determina por sí solo la calidad del contexto. Importan la selección, la diversidad, el orden y la coherencia entre la imagen y la etiqueta. Qin y colaboradores identificaron la recuperación multimodal, el orden interno de cada demostración y la posición de la instrucción como factores relevantes \cite{zhang2024mmicl}.
 
@@ -275,14 +282,16 @@ Una red puede obtener un rendimiento elevado en sintético y fallar en real si a
 
 El entrenamiento adversarial de dominio introduce un clasificador que intenta distinguir muestras fuente y objetivo. El extractor recibe una señal de gradiente invertida para reducir esa capacidad de discriminación \cite{ganin2016}. Gliner y colaboradores aplicaron este principio a imágenes de ECG capturadas con teléfono y mostraron que datos objetivo sin etiqueta podían mejorar la transferencia \cite{gliner2023}.
 
-La adaptación no sustituye la evaluación externa. Alinear distribuciones puede ocultar diferencias relevantes si las prevalencias o las relaciones entre etiquetas cambian. El protocolo deberá comparar el rendimiento antes y después, conservar un conjunto real independiente y analizar cada etiqueta.
+La adaptación no sustituye la evaluación externa. Alinear distribuciones puede ocultar diferencias relevantes si las prevalencias o las relaciones entre etiquetas cambian. El protocolo deberá comparar el rendimiento antes y después, conservar un conjunto real independiente y analizar cada etiqueta. Los resultados de este TFG muestran que incluso con técnicas de adaptación de dominio, la CNN no supera de forma robusta el dominio real con pocos datos, lo que refuerza la necesidad de explorar enfoques que no dependan exclusivamente del entrenamiento supervisado.
 
 \section{Implicaciones para el diseño experimental}
 
-Los fundamentos anteriores determinan varias decisiones. La primera es que las etiquetas se describirán como hallazgos morfológicos. La segunda es que la familia BRUGADA no se convertirá en un diagnóstico automático. La tercera es que CNN y modelos de visión y lenguaje recibirán exactamente la misma imagen objetivo.
+Los fundamentos anteriores determinan varias decisiones de diseño que sitúan la comparación CNN frente a VLM/ICL en el centro del trabajo.
+
+La primera decisión es que las etiquetas se describirán como hallazgos morfológicos. La segunda es que la familia BRUGADA no se convertirá en un diagnóstico automático, sino en una señal de triaje que remite al circuito clínico descrito anteriormente. La tercera, y más importante para la pregunta de investigación, es que CNN y modelos de visión y lenguaje recibirán exactamente la misma imagen objetivo y el mismo presupuesto de ejemplos \(K\). La diferencia estará en cómo usan esos ejemplos: la CNN para actualizar pesos; el VLM como demostraciones en contexto.
 
 La separación por pacientes no puede evaluarse en el conjunto sintético porque cada imagen se genera de forma independiente. En datos reales será obligatoria para impedir que registros de una misma persona aparezcan en entrenamiento y test. También será necesario preservar la escala o documentar cualquier normalización.
 
-El rendimiento se analizará por etiqueta porque cada hallazgo ocupa una región distinta. La coincidencia exacta medirá si se recupera el conjunto completo. La sensibilidad y la especificidad mostrarán qué tipo de error domina. La medida F1 resumirá el equilibrio entre precisión y sensibilidad.
+El rendimiento se analizará por etiqueta porque cada hallazgo ocupa una región distinta. La coincidencia exacta medirá si se recupera el conjunto completo. La sensibilidad y la especificidad mostrarán qué tipo de error domina. La medida F1 resumirá el equilibrio entre precisión y sensibilidad. Estas métricas serán idénticas para CNN y VLM/ICL, garantizando una comparación justa.
 
-Finalmente, cualquier conclusión sobre utilidad clínica quedará condicionada a una evaluación real. El dominio sintético responde preguntas sobre aprendibilidad, sensibilidad al contexto y comportamiento relativo de los modelos. No permite estimar por sí solo la seguridad de un sistema médico.
+Finalmente, cualquier conclusión sobre utilidad clínica quedará condicionada a una evaluación real. El dominio sintético responde preguntas sobre aprendibilidad, sensibilidad al contexto y comportamiento relativo de los modelos. No permite estimar por sí solo la seguridad de un sistema médico. La lectura clínica de los resultados debe interpretarse siempre dentro del circuito de triaje: priorización de revisión seguida de circuito diagnóstico completo cuando proceda.

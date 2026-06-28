@@ -123,7 +123,7 @@ El repositorio Git actúa como fuente de verdad del código, los mensajes y la m
 
 Los resultados agregados no sustituyen a las predicciones. Conservar ambos niveles permite detectar errores de análisis y recalcular métricas sin repetir inferencias costosas. Los archivos generados deben ser inmutables o incorporar un identificador de ejecución que evite sobrescrituras accidentales.
 
-Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque la campaña VLM no forma parte de los resultados cerrados. Antes de incorporar esa línea será necesario registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
+Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque las inferencias VLM/ICL requieren trazabilidad específica de pesos, servidor, plantilla de conversación y contrato de salida. Antes de rellenar sus celdas numéricas será necesario registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
 
 \section{Principios éticos}
 

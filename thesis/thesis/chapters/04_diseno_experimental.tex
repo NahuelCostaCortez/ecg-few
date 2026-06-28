@@ -1,41 +1,46 @@
 \chapter{Diseño experimental}
 \label{chap:diseno}
 
-El diseño experimental se organiza alrededor de dos decisiones. La primera es clínica: el sistema se plantea como apoyo de triaje para sospecha de Brugada, no como diagnóstico autónomo. La segunda es metodológica: se comparan dos formas de usar pocos ejemplos etiquetados. La CNN aprende modificando sus pesos; el VLM previsto aprenderá en contexto, sin ajuste de parámetros.
+La pregunta central de este TFG es si un modelo de visión y lenguaje (VLM) con aprendizaje en contexto (ICL) puede compensar la escasez de datos etiquetados en la detección de sospecha de patrón Brugada a partir de imágenes de ECG, un escenario en el que el entrenamiento supervisado convencional tropieza. Para responderla, el diseño experimental se organiza en dos brazos complementarios. El primero ---una CNN ResNet18 entrenada con presupuestos reducidos--- no es el objetivo final, sino el brazo que establece la línea base y proporciona la evidencia empírica de que el enfoque supervisado clásico resulta insuficiente cuando las etiquetas son escasas. El segundo brazo ---un VLM abierto que recibe los mismos ejemplos como demostraciones dentro del prompt--- constituye la solución propuesta y el eje principal de la comparación.
 
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.96\textwidth]{results/fig_triaje_clinico.pdf}
-  \caption{Orientación clínica del prototipo: una alerta prioriza revisión y posible circuito diagnóstico, pero no decide el diagnóstico.}
-  \label{fig:triaje_clinico}
-\end{figure}
+Desde el punto de vista clínico, el sistema se concibe como herramienta de triaje, no como diagnóstico autónomo. Cualquier predicción positiva del modelo coloca al paciente dentro del circuito clínico de Brugada: una alerta prioriza la revisión experta del ECG, que puede conducir al reposicionamiento de las derivaciones V1/V2, y, en los pacientes seleccionados, a la provocación farmacológica con ajmalina o flecainida. La decisión diagnóstica definitiva recae siempre en el especialista. El modelo actúa, por tanto, como filtro de priorización que reduce el tiempo hasta la evaluación experta, sin sustituir ningún paso del protocolo.
 
 \section{Pregunta experimental}
 
-La pregunta completa del TFG es cuándo renta entrenar un modelo visual específico frente a utilizar un modelo de visión y lenguaje con aprendizaje en contexto. Como la campaña VLM no dispone todavía de inferencias auditadas, esta memoria cierra el primer brazo de la comparación: la rama CNN.
+La pregunta experimental completa puede formularse así: \emph{¿puede un VLM con ICL, aprovechando su conocimiento multimodal preexistente, alcanzar un rendimiento diagnóstico útil con los mismos pocos ejemplos con los que una CNN supervisada fracasa?}
 
-El brazo CNN debe responder si el enfoque supervisado clásico es suficiente con tan pocos datos. Para ello se evalúa primero en un dominio controlado, después en Brugada HUCA y finalmente con adaptación de dominio. Si la CNN falla en el dominio real incluso tras estas técnicas, el resultado no es accesorio: es la evidencia que justifica ejecutar la comparación VLM/ICL.
+Esta formulación asigna a cada brazo un papel claro:
 
-El estudio se cierra con tres familias de experimentos:
+\begin{enumerate}
+  \item \textbf{Brazo CNN (línea base).} La CNN se entrena con presupuestos progresivos (\(K=2,\dots,32\)) primero sobre datos sintéticos, después sobre datos clínicos reales y, finalmente, con técnicas de adaptación de dominio. Su función es \emph{demostrar} que el aprendizaje supervisado con pocos datos ---incluso reforzado con preentrenamiento, aumento de datos y alineación de dominios--- no alcanza un rendimiento suficiente en el escenario real. El resultado negativo o insuficiente de este brazo no es un fracaso del TFG: es la evidencia que justifica la transición hacia el paradigma VLM/ICL.
+  \item \textbf{Brazo VLM/ICL (solución propuesta).} El VLM recibe las mismas imágenes y los mismos presupuestos \(K\), pero los ejemplos se introducen como demostraciones en contexto dentro del prompt, sin modificar los pesos del modelo. La hipótesis es que el conocimiento visual y lingüístico adquirido durante el preentrenamiento a gran escala puede compensar la falta de datos supervisados específicos y ofrecer un rendimiento clínicamente útil donde la CNN no lo consigue.
+\end{enumerate}
 
-\begin{itemize}
-  \item CNN ResNet18 sobre el conjunto sintético QRS/ST con etiqueta derivada de patrón Brugada operativo.
-  \item CNN ResNet18 sobre Brugada HUCA con etiqueta de caso confirmado frente a control.
-  \item Adaptación de dominio desde sintético a HUCA mediante aprendizaje autosupervisado, CORAL, MMD y DANN.
-\end{itemize}
-
-Los modelos abiertos de visión y lenguaje quedan fuera de la evidencia empírica final, pero no fuera del diseño. La infraestructura, los mensajes, los controles y la validación de salida se documentan porque son el segundo brazo de la comparación. No se reportan métricas VLM porque no existen predicciones completas auditadas.
+La comparación entre ambos brazos se realiza sobre las mismas particiones de pacientes, los mismos valores de \(K\) y la misma métrica principal ---exactitud equilibrada--- para garantizar que la diferencia observada procede exclusivamente del paradigma de aprendizaje y no de cambios en el protocolo de evaluación.
 
 \section{Canalización experimental}
 
-La figura \ref{fig:pipeline_experimental} resume la canalización. Las imágenes sintéticas y reales se convierten al mismo formato visual de entrada. La ruta CNN entrena modelos con presupuestos reducidos, evalúa por paciente, agrega predicciones por derivación y produce tablas, curvas, matrices de confusión y Grad CAM. La ruta VLM prevista reutiliza las mismas imágenes y presupuestos \(K\), pero introduce los ejemplos como demostraciones dentro del prompt.
+La figura \ref{fig:pipeline_experimental} resume la canalización completa. Las imágenes sintéticas y reales se convierten al mismo formato visual de entrada. La ruta CNN entrena modelos con presupuestos reducidos, evalúa por paciente, agrega predicciones por derivación y produce tablas, curvas, matrices de confusión y mapas Grad-CAM. La ruta VLM reutiliza las mismas imágenes y los mismos presupuestos \(K\), pero introduce los ejemplos como demostraciones dentro del prompt y obtiene la predicción sin ajuste de pesos. Ambas rutas desembocan en el mismo módulo de evaluación, lo que permite una comparación directa y justa.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.96\textwidth]{results/fig_pipeline_experimental.pdf}
-  \caption{Diseño experimental: CNN como línea base cerrada y VLM/ICL como comparador central pendiente.}
+  \caption{Canalización experimental: la CNN establece la línea base supervisada y el VLM/ICL constituye el comparador central propuesto.}
   \label{fig:pipeline_experimental}
 \end{figure}
+
+\section{Orientación clínica: triaje, no diagnóstico}
+
+El modelo no emite un diagnóstico de síndrome de Brugada, sino una señal de sospecha que prioriza la revisión clínica. En la práctica asistencial, una predicción positiva activa el siguiente circuito:
+
+\begin{enumerate}
+  \item \textbf{Revisión experta del ECG.} El cardiólogo examina el trazado completo para valorar la morfología del segmento ST en las derivaciones precordiales derechas.
+  \item \textbf{Reposicionamiento de derivaciones.} Cuando la sospecha se mantiene, se repite el registro con V1 y V2 colocadas en posiciones superiores (segundo o tercer espacio intercostal), maniobra que aumenta la sensibilidad para detectar el patrón tipo~1.
+  \item \textbf{Provocación farmacológica.} En los pacientes seleccionados por el clínico, se administra ajmalina o flecainida bajo monitorización para desenmascarar un patrón de Brugada tipo~1 oculto.
+  \item \textbf{Decisión clínica.} El diagnóstico definitivo y las decisiones terapéuticas ---seguimiento, estudio genético, implantación de desfibrilador--- corresponden al equipo médico, nunca al modelo.
+\end{enumerate}
+
+Este encuadre tiene implicaciones directas sobre las métricas. Dado que el modelo es un filtro de priorización, un falso negativo (paciente con Brugada no alertado) tiene mayor coste que un falso positivo (control enviado a revisión). Sin embargo, un exceso de falsos positivos sobrecarga el circuito clínico y reduce la confianza de los usuarios. La exactitud equilibrada captura ambos aspectos al ponderar sensibilidad y especificidad por igual, y se complementa con la inspección de la curva ROC para evaluar el compromiso operativo.
 
 \section{Unidades de análisis}
 
@@ -60,7 +65,7 @@ La diferencia entre ambas tareas es deliberada y debe conservarse al interpretar
 
 \section{Presupuestos de pocos ejemplos}
 
-Los presupuestos de entrenamiento son \(K=\{2,4,8,16,32\}\). Para cada \(K\) positivo se ejecutan tres semillas: 42, 123 y 2026. La selección de ejemplos se realiza dentro de cada pliegue, sin utilizar el paciente reservado para test. El objetivo no es maximizar rendimiento con todos los datos, sino medir cómo evoluciona cada estrategia cuando las etiquetas son escasas.
+Los presupuestos de entrenamiento son \(K=\{2,4,8,16,32\}\). Para cada \(K\) positivo se ejecutan tres semillas: 42, 123 y 2026. La selección de ejemplos se realiza dentro de cada pliegue, sin utilizar el paciente reservado para test. El objetivo no es maximizar rendimiento con todos los datos, sino medir cómo evoluciona cada estrategia ---supervisada y en contexto--- cuando las etiquetas son escasas.
 
 \begin{figure}[H]
   \centering
@@ -73,13 +78,15 @@ En cada ejecución se conserva el identificador de pliegue, la semilla, los paci
 
 \section{Modelo CNN evaluado}
 
-El modelo supervisado final es ResNet18 con pesos iniciales de ImageNet y una cabeza binaria. Aunque el simulador original contiene tres hallazgos morfológicos, la campaña cerrada utiliza una etiqueta derivada de patrón Brugada operativo: positiva cuando las condiciones necesarias están simultáneamente presentes y negativa cuando el paciente simulado es normal o incompleto. Esta reducción facilita la comparación con HUCA, donde la etiqueta disponible es binaria.
+El modelo supervisado es ResNet18 con pesos iniciales de ImageNet y una cabeza binaria. Aunque el simulador original contiene tres hallazgos morfológicos, la campaña cerrada utiliza una etiqueta derivada de patrón Brugada operativo: positiva cuando las condiciones necesarias están simultáneamente presentes y negativa cuando el paciente simulado es normal o incompleto. Esta reducción facilita la comparación con HUCA, donde la etiqueta disponible es binaria.
 
 El entrenamiento utiliza \texttt{BCEWithLogitsLoss}, ponderación automática de la clase positiva cuando procede, AdamW y selección interna de umbral sobre el subconjunto de validación del pliegue. La métrica principal es la exactitud equilibrada porque la prevalencia positiva es desigual y porque interesa medir sensibilidad y especificidad de forma simétrica.
 
+La función de este brazo dentro del diseño es doble: por un lado, establece la referencia numérica contra la que se comparará el VLM; por otro, permite cuantificar el grado de deterioro que introduce la escasez de datos en un enfoque supervisado estándar.
+
 \section{Adaptación de dominio}
 
-La rama de adaptación de dominio se revisa y ejecuta como extensión del modelo base. Sus métodos son:
+La rama de adaptación de dominio se ejecuta como extensión del brazo CNN. Su propósito es agotar las opciones de mejora dentro del paradigma supervisado antes de declarar su insuficiencia. Los métodos evaluados son:
 
 \begin{itemize}
   \item \textbf{SSL}: preentrenamiento autosupervisado sobre imágenes sin etiqueta antes del ajuste supervisado.
@@ -88,7 +95,7 @@ La rama de adaptación de dominio se revisa y ejecuta como extensión del modelo
   \item \textbf{DANN}: aprendizaje adversario con inversión de gradiente para reducir información específica del dominio \cite{ganin2016}.
 \end{itemize}
 
-Estas variantes se evalúan en \(K=16\) y \(K=32\), los presupuestos con mayor interés tras observar la curva del modelo base. La comparación se realiza contra la CNN HUCA sin adaptación en los mismos valores de \(K\). Si estas variantes no recuperan rendimiento suficiente, el hallazgo refuerza la necesidad de probar una estrategia distinta, no solo más regularización de la CNN.
+Estas variantes se evalúan en \(K=16\) y \(K=32\), los presupuestos con mayor interés tras observar la curva del modelo base. La comparación se realiza contra la CNN HUCA sin adaptación en los mismos valores de \(K\). Si ninguna de estas variantes recupera un rendimiento suficiente, el hallazgo refuerza la necesidad de abandonar la familia supervisada y probar un paradigma fundamentalmente distinto ---el VLM con ICL---, en lugar de seguir añadiendo regularización a la CNN.
 
 \begin{figure}[H]
   \centering
@@ -107,9 +114,11 @@ La exactitud equilibrada se define como:
   \mathrm{BA}=\frac{1}{2}\left(\frac{TP}{TP+FN}+\frac{TN}{TN+FP}\right).
 \]
 
-Esta métrica es especialmente importante en HUCA, donde un modelo puede obtener sensibilidad moderada a costa de marcar demasiados controles como positivos. En una herramienta de triaje ese comportamiento puede ser tolerable solo si se declara como alerta preliminar y se acompaña de revisión clínica. En la comparación futura con VLM/ICL se usará el mismo criterio principal para evitar que el cambio de familia de modelo cambie la regla de evaluación.
+Esta métrica es especialmente importante en el contexto de triaje: un modelo puede obtener sensibilidad moderada a costa de marcar demasiados controles como positivos. En una herramienta de priorización, ese comportamiento solo es tolerable si se declara como alerta preliminar y se acompaña del circuito de revisión clínica descrito anteriormente. En la comparación con VLM/ICL se emplea el mismo criterio principal para garantizar que el cambio de paradigma de aprendizaje no implique un cambio en la regla de evaluación.
 
 \section{Estado de cierre}
+
+La tabla~\ref{tab:estado_experimentos} resume la matriz de evidencias del documento. El brazo CNN y la adaptación de dominio aportan valores numéricos completos. El brazo VLM/ICL aporta especificación completa de modelos, prompts, controles, contrato JSON y tablas de salida; sus celdas numéricas se reservan para la ejecución de inferencias. Así, la memoria no trata VLM como una nota lateral, sino como el segundo brazo de la comparación.
 
 \begin{table}[H]
   \centering
@@ -120,13 +129,13 @@ Esta métrica es especialmente importante en HUCA, donde un modelo puede obtener
     \toprule
     Bloque & Estado & Evidencia disponible \\
     \midrule
-    Simulador QRS/ST & Completo & Datos, pliegues LOOCV, entrenamiento CNN, tablas, curvas, matriz de confusión y Grad CAM \\
-    Brugada HUCA & Completo & Datos procesados, pliegues por paciente, entrenamiento CNN, comparación sintético-real y Grad CAM \\
+    Simulador QRS/ST & Completo & Datos, pliegues LOOCV, entrenamiento CNN, tablas, curvas, matriz de confusión y Grad-CAM \\
+    Brugada HUCA & Completo & Datos procesados, pliegues por paciente, entrenamiento CNN, comparación sintético-real y Grad-CAM \\
     Adaptación de dominio & Completo & SSL, CORAL, MMD y DANN ejecutados para \(K=16\) y \(K=32\), con comparación agregada \\
-    VLM e ICL & TODO documentado & Segundo brazo de la comparación: código, mensajes, controles y contrato de evaluación preparados; faltan inferencias completas y métricas auditadas \\
-    Auditoría final & Completa para CNN & \texttt{final\_cnn\_package\_ready: OK}; VLM marcado explícitamente como TODO \\
+    \textbf{VLM e ICL (brazo principal)} & \textbf{Especificado} & Modelos, mensajes, controles, contrato JSON, agregación por paciente y tablas de resultados definidos; valores numéricos marcados como \emph{por ejecutar} en el capítulo~\ref{chap:vlm} \\
+    Auditoría final & Completa para CNN & \texttt{final\_cnn\_package\_ready: OK}; esquema de auditoría VLM definido para ejecución conjunta \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-Este estado evita mezclar resultados cerrados con trabajo futuro. Las conclusiones cuantitativas de esta memoria se apoyan únicamente en CNN y adaptación de dominio, pero la interpretación metodológica apunta directamente a la siguiente fase: probar si VLM/ICL mejora la relación entre rendimiento, coste y cantidad de datos etiquetados.
+Esta separación evita inventar valores y, al mismo tiempo, mantiene completo el diseño comparativo. Las conclusiones numéricas actuales proceden de la CNN y de la adaptación de dominio; el capítulo~\ref{chap:vlm} fija la estructura exacta con la que se incorporarán Gemma 4 y MedGemma para determinar si el aprendizaje en contexto ofrece una alternativa viable donde el entrenamiento supervisado con pocos datos ha demostrado ser insuficiente.

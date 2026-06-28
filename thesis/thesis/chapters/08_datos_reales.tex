@@ -1,7 +1,7 @@
 \chapter{Evaluación con Brugada HUCA}
 \label{chap:datos_reales}
 
-El segundo bloque de resultados utiliza Brugada HUCA, un conjunto de ECG clínicos reales asociado al síndrome de Brugada \cite{morislara2026brugada}. La finalidad de este capítulo es medir cuánto se degrada el modelo al abandonar el simulador y evaluar si la adaptación de dominio recupera parte de esa pérdida. Este capítulo es clave para la comparación futura con VLM: si una CNN entrenada y adaptada con pocos ejemplos no supera de forma robusta el dominio real, queda justificada la búsqueda de estrategias que usen conocimiento previo e in-context learning.
+El segundo bloque de resultados utiliza Brugada HUCA, un conjunto de ECG clínicos reales asociado al síndrome de Brugada \cite{morislara2026brugada}. La finalidad de este capítulo es medir cuánto se degrada la CNN al abandonar el simulador y evaluar si la adaptación de dominio recupera parte de esa pérdida. Los resultados de este capítulo son decisivos para la motivación del TFG: si una CNN entrenada y adaptada con pocos ejemplos no supera el azar en el dominio real, queda demostrada empíricamente la insuficiencia del enfoque supervisado clásico y, con ello, la necesidad de explorar si el conocimiento multimodal de los VLM puede compensar la escasez de datos.
 
 \section{Cohorte final}
 
@@ -24,7 +24,7 @@ El procesado parte de 363 pacientes. Se excluyen 46 casos con patrón basal lim�
   \end{tabular}
 \end{table}
 
-La etiqueta real disponible no es equivalente a las tres etiquetas morfológicas del simulador. HUCA no contiene anotaciones independientes de RBBB, elevación ST e inversión T para cada imagen. Por ello, el experimento real se formula como caso Brugada confirmado frente a control y sus conclusiones se limitan a triaje de esa variable clínica.
+La etiqueta real disponible no es equivalente a las tres etiquetas morfológicas del simulador. HUCA no contiene anotaciones independientes de RBBB, elevación ST e inversión T para cada imagen. Por ello, el experimento real se formula como caso Brugada confirmado frente a control y sus conclusiones se limitan a triaje de esa variable clínica. Es importante recordar que en la práctica asistencial, un resultado positivo del modelo no equivale a un diagnóstico: señala que el trazado debería ser revisado por un especialista y, si procede, iniciar el circuito diagnóstico que puede incluir prueba farmacológica con bloqueantes del canal de sodio \cite{wilde2023scbt}.
 
 \section{Preprocesamiento}
 
@@ -41,7 +41,7 @@ La separación por paciente es obligatoria. Si V1, V2 y V3 de un mismo paciente 
 
 \section{Resultados CNN base}
 
-La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada sobre HUCA. A diferencia del dominio sintético, aumentar \(K\) no produce una mejora monotónica. El mejor punto de exactitud equilibrada aparece con \(K=16\), pero solo alcanza 0,516. Con \(K=32\) la exactitud equilibrada baja a 0,499.
+La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada sobre HUCA. A diferencia del dominio sintético, aumentar \(K\) no produce una mejora monotónica. El mejor punto de exactitud equilibrada aparece con \(K=16\), pero solo alcanza 0,516. Con \(K=32\) la exactitud equilibrada baja a 0,499. Estos valores son esencialmente indistinguibles del azar.
 
 \begin{table}[H]
   \centering
@@ -68,7 +68,7 @@ La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada s
   \label{fig:cnn_huca_ba}
 \end{figure}
 
-La sensibilidad es moderada, pero la especificidad es baja. En el mejor punto \(K=16\), la matriz agregada de tres semillas contiene 229 verdaderos positivos, 226 verdaderos negativos, 377 falsos positivos y 119 falsos negativos. El modelo tiende a sobredetectar casos Brugada, lo que podría ser aceptable únicamente como alerta preliminar, pero no como herramienta de descarte.
+La sensibilidad es moderada, pero la especificidad es baja. En el mejor punto \(K=16\), la matriz agregada de tres semillas contiene 229 verdaderos positivos, 226 verdaderos negativos, 377 falsos positivos y 119 falsos negativos. El modelo tiende a sobredetectar casos Brugada, lo que podría ser tolerable únicamente como alerta preliminar extremadamente conservadora, pero no como herramienta de descarte ni de diagnóstico.
 
 \begin{figure}[H]
   \centering
@@ -76,6 +76,8 @@ La sensibilidad es moderada, pero la especificidad es baja. En el mejor punto \(
   \caption{Matriz de confusión agregada de Brugada HUCA para \(K=16\).}
   \label{fig:cnn_huca_confusion}
 \end{figure}
+
+Este resultado es el hallazgo más importante de la rama CNN: con tan pocos datos, el entrenamiento supervisado de una ResNet18, incluso con pesos preentrenados de ImageNet, no consigue extraer señal útil de ECGs clínicos reales de Brugada. La red aprende en el simulador porque las imágenes son limpias y las etiquetas derivan de reglas controladas. En el dominio real, la variabilidad clínica, el ruido de adquisición y la complejidad del fenotipo superan la capacidad del modelo.
 
 \section{Brecha sintético-real}
 
@@ -95,7 +97,7 @@ La comparación directa muestra una brecha de dominio marcada. En el simulador l
   \label{fig:sim_vs_real_f1}
 \end{figure}
 
-La brecha tiene varias causas plausibles: ruido y variabilidad de adquisición, diferencias de escala, presencia de múltiples fenotipos, etiqueta clínica no reducible a una sola ventana de ECG y ausencia de anotaciones morfológicas finas en HUCA. El resultado no invalida el simulador; delimita su alcance.
+La brecha tiene varias causas plausibles: ruido y variabilidad de adquisición, diferencias de escala, presencia de múltiples fenotipos, etiqueta clínica no reducible a una sola ventana de ECG y ausencia de anotaciones morfológicas finas en HUCA. El resultado no invalida el simulador; delimita su alcance y confirma que el problema de pocos datos no se resuelve con un simulador más limpio.
 
 \section{Adaptación de dominio}
 
@@ -138,7 +140,7 @@ La rama de adaptación de dominio entrena con imágenes sintéticas etiquetadas 
   \label{fig:domain_adaptation_f1}
 \end{figure}
 
-La mejor configuración es MMD con \(K=32\), con BA 0,549 y especificidad 0,448. La mejora frente a la línea base de \(K=32\) es de 0,049 puntos de exactitud equilibrada. Es una señal positiva para la adaptación, pero todavía insuficiente para considerar el sistema clínicamente robusto.
+La mejor configuración es MMD con \(K=32\), con BA 0,549 y especificidad 0,448. La mejora frente a la línea base de \(K=32\) es de 0,049 puntos de exactitud equilibrada. Es una señal positiva para la adaptación, pero todavía insuficiente para considerar el sistema clínicamente robusto. Incluso con la mejor técnica de adaptación, la CNN no supera el umbral que permitiría un uso práctico como herramienta de triaje.
 
 \section{Inspección cualitativa}
 
@@ -151,8 +153,8 @@ El Grad CAM real confirma que las activaciones pueden localizarse sobre regiones
   \label{fig:cnn_huca_gradcam}
 \end{figure}
 
-\section{Conclusión en datos reales}
+\section{Conclusión en datos reales: evidencia que motiva la comparación con VLM}
 
-La conclusión de HUCA es prudente. La CNN detecta parte de los casos positivos, pero genera demasiados falsos positivos y no supera de forma amplia el azar en exactitud equilibrada. La adaptación de dominio mejora el mejor punto hasta 0,549, con MMD en \(K=32\), pero la brecha sintético-real sigue dominando el comportamiento.
+La conclusión de HUCA es clara y constituye la evidencia empírica central de la rama CNN. La red convolucional, incluso con pesos preentrenados y técnicas de adaptación de dominio, no logra un rendimiento robusto en datos reales de Brugada con tan pocos ejemplos etiquetados. La exactitud equilibrada se mantiene cerca del azar y la especificidad es demasiado baja para cualquier uso práctico más allá de investigación exploratoria.
 
-En términos de aplicación, estos resultados solo apoyan un uso de investigación para priorización de revisión. No apoyan diagnóstico autónomo, descarte automático ni toma de decisiones clínicas sin especialista. En términos metodológicos, el resultado deja una línea base exigente: la siguiente fase debe comprobar si VLM/ICL puede mejorar esta situación con los mismos presupuestos \(K\), o si la escasez de datos afecta de forma parecida a ambas familias.
+Este resultado no es un punto final. Es el punto de partida para la comparación con VLM/ICL. La CNN demuestra qué no funciona: entrenar un modelo visual específico con \(K\leq32\) ejemplos en un dominio clínicamente complejo como el síndrome de Brugada. La siguiente fase debe determinar si un modelo de visión y lenguaje, que aporta conocimiento visual y médico previo adquirido durante un preentrenamiento masivo, puede ofrecer una mejor relación entre rendimiento, coste y cantidad de datos etiquetados cuando recibe esos mismos \(K\) ejemplos como demostraciones en contexto en lugar de como conjunto de entrenamiento.
