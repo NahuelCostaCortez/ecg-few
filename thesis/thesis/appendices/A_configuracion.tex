@@ -150,12 +150,13 @@ HUCA no contiene anotaciones independientes para las tres etiquetas morfológica
 La línea VLM/ICL forma parte del diseño comparativo al mismo nivel que la CNN. La configuración queda congelada para que las inferencias usen la misma base experimental, las mismas particiones por paciente y los mismos presupuestos \(K\):
 
 \begin{itemize}
-  \item modelos abiertos: Gemma 4 y MedGemma;
-  \item servidor local compatible con API de vLLM;
+  \item modelos abiertos: \texttt{google/gemma-4-E4B-it} y \texttt{google/medgemma-4b-it}, configurables mediante \texttt{VLM\_MODELS};
+  \item servidor local compatible con API de vLLM/OpenAI, configurado con \texttt{VLM\_API\_BASE};
   \item temperatura 0;
-  \item salida JSON validada;
+  \item salida JSON validada con las claves \texttt{RBBB}, \texttt{ST\_ELEVATION} y \texttt{T\_WAVE\_INVERSION};
   \item presupuestos \(K=\{0,2,4,8,16,32\}\);
-  \item controles con respuestas permutadas y ejemplos sin imagen.
+  \item condiciones \texttt{zero\_shot}, \texttt{normal}, \texttt{balanced}, \texttt{permuted} y \texttt{no\_support\_images};
+  \item salidas en \texttt{outputs/vlm\_loocv/} y \texttt{reports/loocv/vlm/}.
 \end{itemize}
 
 El capítulo~\ref{chap:vlm} ya incluye las tablas de salida, las condiciones experimentales y los criterios de comparación. Las celdas numéricas se rellenarán únicamente cuando existan predicciones por muestra, matrices de confusión y auditoría equivalente a la de CNN.

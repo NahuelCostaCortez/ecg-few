@@ -4,9 +4,10 @@ SLRCORES=1
 # GPU
 # 1 H100 (slave 6), 2 A100 (slave1), 2 A6000 (slave2), 1 P100 (slave3), 5 2080 (slave 4-5)
 #SLRNGPU=H100
-SLRNGPU=A6000
-SLRGPUS=1
-MODEL="google/gemma-4-E4B-it"
+SLRNGPU=${SLRNGPU:-A6000}
+SLRGPUS=${SLRGPUS:-1}
+MODEL="${MODEL:-google/gemma-4-E4B-it}"
+PORT="${PORT:-8000}"
 
 set -euo pipefail
 
@@ -17,7 +18,7 @@ source .venv/bin/activate
 vllm serve \
   --model "${MODEL}" \
   --host 0.0.0.0 \
-  --port 8000
+  --port "${PORT}"
 
 # check if the server is up
 # curl http://slave2.pir.uo:8000/v1/models

@@ -27,6 +27,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("reports/loocv/vlm/vlm_summary_by_seed.csv"),
     )
+    parser.add_argument("--vlm-condition", default="normal")
+    parser.add_argument(
+        "--vlm-model",
+        default="",
+        help="Optional model id to compare. Empty means all matching VLM models.",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("reports/loocv/comparison"))
     return parser.parse_args()
 
@@ -34,9 +40,15 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     cnn_rows = read_summary(args.cnn_summary)
-    vlm_rows = read_summary(args.vlm_summary)
-    verify_alignment(cnn_rows, vlm_rows)
-    comparison = build_comparison(cnn_rows, vlm_rows)
+    vlm_rows = filter_vlm_rows(
+        read_summary(args.vlm_summary),
+        condition=args.vlm_condition,
+        model=args.vlm_model,
+    )
+    comparison: list[dict[str, object]] = []
+    for model, model_rows in group_vlm_rows(vlm_rows).items():
+        verify_alignment(cnn_rows, model_rows)
+        comparison.extend(build_comparison(cnn_rows, model_rows, model=model))
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_csv(args.output_dir / "comparison_by_k.csv", comparison)
     plot_comparison(args.output_dir / "balanced_accuracy_by_k.png", comparison)
@@ -57,6 +69,30 @@ def verify_alignment(cnn_rows: list[dict[str, object]], vlm_rows: list[dict[str,
             raise ValueError(f"Fold/test/context mismatch for k={key[0]}, seed={key[1]}.")
 
 
+def filter_vlm_rows(
+    rows: list[dict[str, object]],
+    *,
+    condition: str,
+    model: str,
+) -> list[dict[str, object]]:
+    filtered = [
+        row
+        for row in rows
+        if str(row.get("condition", condition)) == condition
+        and (not model or str(row.get("model", "")) == model)
+    ]
+    if not filtered:
+        raise ValueError(f"No VLM rows found for condition={condition!r} model={model!r}.")
+    return filtered
+
+
+def group_vlm_rows(rows: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for row in rows:
+        grouped.setdefault(str(row.get("model", "vlm")), []).append(row)
+    return grouped
+
+
 def fold_keys(rows: list[dict[str, str]]) -> set[tuple[str, str, str]]:
     return {
         (
@@ -71,6 +107,8 @@ def fold_keys(rows: list[dict[str, str]]) -> set[tuple[str, str, str]]:
 def build_comparison(
     cnn_rows: list[dict[str, object]],
     vlm_rows: list[dict[str, object]],
+    *,
+    model: str,
 ) -> list[dict[str, object]]:
     cnn_by_k = aggregate_metric(cnn_rows)
     vlm_by_k = aggregate_metric(vlm_rows)
@@ -79,6 +117,7 @@ def build_comparison(
         output.append(
             {
                 "k": k,
+                "vlm_model": model,
                 "cnn_balanced_accuracy_mean": format_metric(cnn_by_k[k]["mean"]),
                 "cnn_balanced_accuracy_std": format_metric(cnn_by_k[k]["std"]),
                 "vlm_balanced_accuracy_mean": format_metric(vlm_by_k[k]["mean"]),
@@ -117,19 +156,28 @@ def plot_comparison(path: Path, rows: list[dict[str, object]]) -> None:
     if not plot_rows:
         return
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    k_values = [int(row["k"]) for row in plot_rows]
+    cnn_by_k: dict[int, float] = {}
+    vlm_by_model: dict[str, list[tuple[int, float]]] = {}
+    for row in plot_rows:
+        k = int(row["k"])
+        cnn_by_k.setdefault(k, float(row["cnn_balanced_accuracy_mean"]))
+        vlm_by_model.setdefault(str(row.get("vlm_model", "VLM")), []).append(
+            (k, float(row["vlm_balanced_accuracy_mean"]))
+        )
     ax.plot(
-        k_values,
-        [float(row["cnn_balanced_accuracy_mean"]) for row in plot_rows],
+        sorted(cnn_by_k),
+        [cnn_by_k[k] for k in sorted(cnn_by_k)],
         marker="o",
         label="CNN",
     )
-    ax.plot(
-        k_values,
-        [float(row["vlm_balanced_accuracy_mean"]) for row in plot_rows],
-        marker="o",
-        label="VLM",
-    )
+    for model, points in sorted(vlm_by_model.items()):
+        points = sorted(points)
+        ax.plot(
+            [point[0] for point in points],
+            [point[1] for point in points],
+            marker="o",
+            label=f"VLM: {model}",
+        )
     ax.set_xlabel("k patients")
     ax.set_ylabel("Balanced accuracy")
     ax.set_title("LOOCV few-shot comparison")

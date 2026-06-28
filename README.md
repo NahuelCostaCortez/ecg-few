@@ -309,20 +309,20 @@ Semantica prevista:
 imagen ECG -> JSON con RBBB/ST_ELEVATION/T_WAVE_INVERSION -> regla AND
 ```
 
-Comando de inferencia:
+Validacion de contrato y configuracion, sin cargar modelo ni hacer llamadas de red:
 
 ```bash
-API_BASE=http://your-host:8000/v1 \
-MODEL=google/medgemma-4b-it \
-scripts/run/run_vlm_loocv.sh
+VLM_RUNTIME=local_gpu \
+VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+scripts/run/validate_vlm_loocv.sh
 ```
 
-Validacion de contrato y configuracion:
+Campania completa contra un servidor vLLM compatible con OpenAI:
 
 ```bash
-API_BASE=http://your-host:8000/v1 \
-MODEL=google/medgemma-4b-it \
-scripts/run/validate_vlm_loocv.sh
+VLM_API_BASE=http://your-host:8000/v1 \
+VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+scripts/run/run_vlm_loocv.sh
 ```
 
 Prompts:
@@ -340,13 +340,47 @@ Condiciones previstas:
 - etiquetas permutadas para detectar dependencia espuria del prompt;
 - demostraciones sin imagen de apoyo para comprobar uso visual real.
 
+El wrapper usa por defecto:
+
+```text
+K_VALUES=0,2,4,8,16,32
+CONTROL_K_VALUES=8,16,32
+SEEDS=42,123,2026
+CONDITIONS=zero_shot,normal,balanced,permuted,no_support_images
+```
+
+Prueba de humo sin GPU ni API, generando todos los tipos de artefacto con
+predicciones deterministas negativas:
+
+```bash
+VLM_RUNTIME=local_gpu \
+DRY_RUN_PREDICTIONS=negative \
+LIMIT_FOLDS=2 \
+K_VALUES=0,2 \
+CONTROL_K_VALUES=2 \
+MODELS=fake/gemma4,fake/medgemma \
+scripts/run/run_vlm_loocv.sh
+```
+
 Artefactos esperados tras ejecutar inferencia:
 
 ```text
+outputs/vlm_loocv/<model>/<condition>/k<k>_seed<seed>/fold_predictions.csv
+outputs/vlm_loocv/<model>/<condition>/k<k>_seed<seed>/fold_predictions.jsonl
+outputs/vlm_loocv/<model>/<condition>/k<k>_seed<seed>/metrics.json
+reports/loocv/vlm/vlm_campaign_manifest.json
 reports/loocv/vlm/vlm_summary_by_seed.csv
 reports/loocv/vlm/vlm_summary_by_k.csv
-reports/loocv/vlm/confusion_matrices/
-reports/loocv/vlm/predictions/
+reports/loocv/vlm/vlm_summary_by_model_condition_k.csv
+reports/loocv/vlm/confusion_by_model_condition_k/*.png
+reports/loocv/vlm/balanced_accuracy_by_k.png
+reports/loocv/vlm/f1_by_k.png
+```
+
+Cuando existan inferencias auditadas, la comparacion CNN vs VLM se reconstruye con:
+
+```bash
+VLM_CONDITION=normal scripts/run/build_loocv_comparison.sh
 ```
 
 El capitulo `thesis/thesis/chapters/09_vlm_icl.tex` contiene las tablas

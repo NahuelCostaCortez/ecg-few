@@ -213,6 +213,7 @@ def audit(
         "cnn_domain_adaptation_complete": domain_adaptation["complete"],
         "all_cnn_experiments_complete": all_cnn_complete,
         "vlm_protocol_ready": vlm_ready["complete"],
+        "vlm_scripts_ready": vlm_ready["complete"],
         "vlm_numeric_results": "available" if vlm.get("summary_rows", 0) else "deferred",
         "cnn_vs_vlm_comparison_complete": comparison["complete"],
         "final_cnn_package_ready": all_cnn_complete and vlm_ready["complete"],
@@ -572,6 +573,10 @@ def audit_vlm_readiness(dataset_root: Path) -> dict[str, Any]:
         dataset_root / "labels" / "loocv_folds.jsonl",
         Path("scripts/eval/run_vlm_loocv.py"),
         Path("scripts/eval/validate_vlm_loocv.py"),
+        Path("scripts/eval/compare_loocv_reports.py"),
+        Path("scripts/run/run_vlm_loocv.sh"),
+        Path("scripts/run/validate_vlm_loocv.sh"),
+        Path("scripts/run/build_loocv_comparison.sh"),
         Path("prompts/system/qrs_huca.md"),
         Path("prompts/qrs/right_precordial_morphology.md"),
     ):

@@ -7,6 +7,7 @@ import argparse
 import base64
 import csv
 import json
+import random
 import time
 from pathlib import Path
 from typing import Any
@@ -50,6 +51,19 @@ from ecg_few.vlm.runtime import (
     resolve_model_name,
 )
 
+ZERO_SHOT_CONDITION = "zero_shot"
+NORMAL_CONDITION = "normal"
+BALANCED_CONDITION = "balanced"
+PERMUTED_CONDITION = "permuted"
+NO_SUPPORT_IMAGES_CONDITION = "no_support_images"
+ALL_CONDITIONS = (
+    ZERO_SHOT_CONDITION,
+    NORMAL_CONDITION,
+    BALANCED_CONDITION,
+    PERMUTED_CONDITION,
+    NO_SUPPORT_IMAGES_CONDITION,
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -67,6 +81,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--report-dir", type=Path, default=Path("reports/loocv/vlm"))
     parser.add_argument("--k-values", default=",".join(str(k) for k in DEFAULT_K_VALUES))
     parser.add_argument("--seeds", default=",".join(str(seed) for seed in DEFAULT_SEEDS))
+    parser.add_argument(
+        "--models",
+        default="",
+        help="Comma-separated model ids. Overrides --model when provided.",
+    )
+    parser.add_argument(
+        "--conditions",
+        default=NORMAL_CONDITION,
+        help=(
+            "Comma-separated VLM conditions: "
+            "zero_shot,normal,balanced,permuted,no_support_images."
+        ),
+    )
+    parser.add_argument(
+        "--control-k-values",
+        default="8,16,32",
+        help="K values used by control conditions such as permuted and no_support_images.",
+    )
     parser.add_argument(
         "--vlm-runtime",
         choices=(REMOTE_RUNTIME, LOCAL_RUNTIME),
@@ -131,12 +163,19 @@ def run_with_args(args: argparse.Namespace) -> None:
     folds = read_jsonl(folds_path.resolve())
     k_values = parse_int_list(str(args.k_values))
     seeds = parse_int_list(str(args.seeds))
-    validate_fold_plan(folds, rows, k_values=k_values, seeds=seeds)
+    fold_k_values = [k for k in k_values if k > 0]
+    if fold_k_values:
+        validate_fold_plan(folds, rows, k_values=fold_k_values, seeds=seeds)
     if int(args.limit_folds) > 0:
         folds = folds[: int(args.limit_folds)]
 
     runtime = str(args.vlm_runtime)
-    model = resolve_model_name(str(args.model), runtime)
+    models = resolve_models(args, runtime)
+    conditions = parse_string_list(getattr(args, "conditions", NORMAL_CONDITION))
+    invalid_conditions = sorted(set(conditions) - set(ALL_CONDITIONS))
+    if invalid_conditions:
+        raise ValueError(f"Unsupported VLM conditions: {invalid_conditions}")
+    control_k_values = parse_int_list(str(getattr(args, "control_k_values", "8,16,32")))
     api_base = resolve_api_base(str(args.api_base), runtime)
     api_key = resolve_api_key(str(args.api_key), runtime)
     system_prompt = (
@@ -149,51 +188,102 @@ def run_with_args(args: argparse.Namespace) -> None:
     report_dir = Path(args.report_dir).resolve()
 
     summary_rows: list[dict[str, object]] = []
-    generator: LocalGPUGenerator | None = None
-    if runtime == LOCAL_RUNTIME and args.dry_run_predictions == "none":
-        generator = LocalGPUGenerator(
-            model_id=model,
-            device=str(args.local_device),
-            dtype=str(args.local_dtype),
-            attn_implementation=str(args.local_attn_implementation),
-            offload_dir=Path(args.local_offload_dir),
-            token=api_key,
-        )
-    try:
-        for k in k_values:
-            for seed in seeds:
-                run_dir = output_root / model.replace("/", "_") / f"k{k}_seed{seed}"
-                predictions = run_k_seed(
-                    rows=rows,
-                    context_pool_rows=context_pool_rows,
-                    folds=folds,
-                    dataset_root=dataset_root,
-                    context_dataset_root=context_dataset_root,
-                    run_dir=run_dir,
-                    k=k,
-                    seed=seed,
-                    runtime=runtime,
-                    model=model,
-                    api_base=api_base,
-                    api_key=api_key,
-                    system_prompt=system_prompt,
-                    prompt_template=prompt_template,
-                    args=args,
-                    generator=generator,
+    for model in models:
+        generator: LocalGPUGenerator | None = None
+        if runtime == LOCAL_RUNTIME and args.dry_run_predictions == "none":
+            generator = LocalGPUGenerator(
+                model_id=model,
+                device=str(args.local_device),
+                dtype=str(args.local_dtype),
+                attn_implementation=str(args.local_attn_implementation),
+                offload_dir=Path(args.local_offload_dir) / model_slug(model),
+                token=api_key,
+            )
+        try:
+            for condition in conditions:
+                condition_k_values = k_values_for_condition(
+                    condition,
+                    k_values=k_values,
+                    control_k_values=control_k_values,
                 )
-                summary_rows.append(
-                    summarize_predictions(
-                        predictions,
-                        k=k,
-                        seed=seed,
-                        model=model,
-                        run_dir=run_dir,
-                    )
-                )
-    finally:
-        if generator is not None:
-            generator.close()
+                if not condition_k_values:
+                    continue
+                for k in condition_k_values:
+                    for seed in seeds:
+                        run_dir = (
+                            output_root
+                            / model_slug(model)
+                            / condition
+                            / f"k{k}_seed{seed}"
+                        )
+                        predictions = run_k_seed(
+                            rows=rows,
+                            context_pool_rows=context_pool_rows,
+                            folds=folds,
+                            dataset_root=dataset_root,
+                            context_dataset_root=context_dataset_root,
+                            run_dir=run_dir,
+                            k=k,
+                            seed=seed,
+                            condition=condition,
+                            runtime=runtime,
+                            model=model,
+                            api_base=api_base,
+                            api_key=api_key,
+                            system_prompt=system_prompt,
+                            prompt_template=prompt_template,
+                            args=args,
+                            generator=generator,
+                        )
+                        summary_rows.append(
+                            summarize_predictions(
+                                predictions,
+                                k=k,
+                                seed=seed,
+                                condition=condition,
+                                model=model,
+                                run_dir=run_dir,
+                            )
+                        )
+        finally:
+            if generator is not None:
+                generator.close()
     write_summary_reports(summary_rows, report_dir)
+
+
+def resolve_models(args: argparse.Namespace, runtime: str) -> list[str]:
+    model_list = parse_string_list(str(getattr(args, "models", "") or ""))
+    if model_list:
+        return model_list
+    return [resolve_model_name(str(getattr(args, "model", "")), runtime)]
+
+
+def parse_string_list(text: str) -> list[str]:
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
+def model_slug(model: str) -> str:
+    return (
+        model.replace("/", "_")
+        .replace("\\", "_")
+        .replace(":", "_")
+        .replace(" ", "_")
+    )
+
+
+def k_values_for_condition(
+    condition: str,
+    *,
+    k_values: list[int],
+    control_k_values: list[int],
+) -> list[int]:
+    if condition == ZERO_SHOT_CONDITION:
+        return [0]
+    positive = [k for k in k_values if k > 0]
+    if condition in {PERMUTED_CONDITION, NO_SUPPORT_IMAGES_CONDITION}:
+        controls = [k for k in control_k_values if k > 0]
+        return [k for k in positive if k in set(controls)]
+    return positive
 
 
 def run_k_seed(
@@ -206,6 +296,7 @@ def run_k_seed(
     run_dir: Path,
     k: int,
     seed: int,
+    condition: str,
     runtime: str,
     model: str,
     api_base: str | None,
@@ -224,21 +315,45 @@ def run_k_seed(
     for fold in folds:
         fold_id = int(fold["fold_id"])
         test_patient_id = str(fold["test_patient_id"])
-        key = f"{fold_id}:{test_patient_id}:{k}:{seed}"
+        key = f"{condition}:{fold_id}:{test_patient_id}:{k}:{seed}"
         if key in existing:
             continue
-        selection = selection_for(fold, k=k, seed=seed)
-        if context_pool_rows is rows:
-            context_ids = selection["context_patient_ids"]
-        else:
+        selection = selection_for_condition(
+            fold=fold,
+            rows=rows,
+            context_pool_rows=context_pool_rows,
+            test_patient_id=test_patient_id,
+            k=k,
+            seed=seed,
+            fold_id=fold_id,
+            condition=condition,
+        )
+        context_ids = selection["context_patient_ids"]
+        if context_pool_rows is not rows and condition == NORMAL_CONDITION and k > 0:
             context_ids = select_qrs_context_patient_ids(
                 context_pool_rows,
                 k=k,
                 seed=seed + fold_id * 100_003,
             )
+        elif context_pool_rows is not rows and condition == BALANCED_CONDITION and k > 0:
+            context_ids = select_balanced_context_patient_ids(
+                context_pool_rows,
+                test_patient_id="__real_eval_patient__",
+                k=k,
+                seed=seed + fold_id * 100_003,
+            )
         context_rows = rows_for_patient_ids(context_pool_rows, context_ids)
+        answer_rows = answer_rows_for_condition(
+            context_rows,
+            condition=condition,
+            seed=seed + fold_id * 100_003,
+        )
         test_rows = rows_for_patient_ids(rows, [test_patient_id])
-        print(f"[INFO] VLM k={k} seed={seed} fold={fold_id} test_patient={test_patient_id}")
+        print(
+            "[INFO] VLM "
+            f"model={model} condition={condition} k={k} seed={seed} "
+            f"fold={fold_id} test_patient={test_patient_id}"
+        )
         started = time.perf_counter()
         lead_predictions: dict[str, dict[str, bool]] = {}
         lead_errors: dict[str, str] = {}
@@ -255,7 +370,9 @@ def run_k_seed(
                         system_prompt=system_prompt,
                         prompt_template=prompt_template,
                         context_rows=context_rows,
+                        answer_rows=answer_rows,
                         test_row=test_row,
+                        include_support_images=condition != NO_SUPPORT_IMAGES_CONDITION,
                         local=runtime == LOCAL_RUNTIME,
                     )
                     raw_text = call_model(
@@ -282,6 +399,7 @@ def run_k_seed(
             "fold_id": fold_id,
             "k": k,
             "seed": seed,
+            "condition": condition,
             "test_patient_id": test_patient_id,
             "patient_id": test_patient_id,
             "true_label": int(test_rows[0].reference_brugada),
@@ -289,17 +407,69 @@ def run_k_seed(
             **{f"pred_{label.lower()}": int(pred_findings[label]) for label in LABEL_NAMES},
             "context_patient_ids": "|".join(context_ids),
             "validation_patient_ids": "|".join(selection["validation_patient_ids"]),
+            "valid_leads": len(lead_predictions),
+            "invalid_leads": len(lead_errors),
+            "json_invalid": int(bool(lead_errors)),
             "lead_predictions": json.dumps(lead_predictions, sort_keys=True),
             "raw_outputs": json.dumps(raw_outputs, sort_keys=True),
             "errors": json.dumps(lead_errors, sort_keys=True),
             "latency_seconds": time.perf_counter() - started,
             "model": model,
+            "model_slug": model_slug(model),
             "vlm_runtime": runtime,
         }
         append_jsonl(output_path, record)
         predictions.append(record)
     write_csv(run_dir / "fold_predictions.csv", predictions)
     return predictions
+
+
+def selection_for_condition(
+    *,
+    fold: dict[str, Any],
+    rows: list[BrugadaImageRow],
+    context_pool_rows: list[BrugadaImageRow],
+    test_patient_id: str,
+    k: int,
+    seed: int,
+    fold_id: int,
+    condition: str,
+) -> dict[str, list[str]]:
+    if k == 0 or condition == ZERO_SHOT_CONDITION:
+        return {"context_patient_ids": [], "validation_patient_ids": []}
+    if context_pool_rows is rows and condition == BALANCED_CONDITION:
+        return {
+            "context_patient_ids": select_balanced_context_patient_ids(
+                rows,
+                test_patient_id=test_patient_id,
+                k=k,
+                seed=seed + fold_id * 100_003,
+            ),
+            "validation_patient_ids": selection_for(fold, k=k, seed=seed)[
+                "validation_patient_ids"
+            ],
+        }
+    return selection_for(fold, k=k, seed=seed)
+
+
+def answer_rows_for_condition(
+    context_rows: list[BrugadaImageRow],
+    *,
+    condition: str,
+    seed: int,
+) -> list[BrugadaImageRow]:
+    if condition != PERMUTED_CONDITION or len(context_rows) < 2:
+        return context_rows
+    shuffled = list(context_rows)
+    rng = random.Random(seed)
+    rng.shuffle(shuffled)
+    unchanged = all(
+        left.patient_id == right.patient_id and left.lead == right.lead
+        for left, right in zip(context_rows, shuffled, strict=True)
+    )
+    if unchanged:
+        shuffled = shuffled[1:] + shuffled[:1]
+    return shuffled
 
 
 def build_messages(
@@ -309,24 +479,27 @@ def build_messages(
     system_prompt: str,
     prompt_template: str,
     context_rows: list[BrugadaImageRow],
+    answer_rows: list[BrugadaImageRow],
     test_row: BrugadaImageRow,
+    include_support_images: bool,
     local: bool,
 ) -> list[dict[str, Any]]:
     system_content: str | list[dict[str, str]]
     system_content = [{"type": "text", "text": system_prompt}] if local else system_prompt
     messages: list[dict[str, Any]] = [{"role": "system", "content": system_content}]
-    for row in context_rows:
+    for row, answer_row in zip(context_rows, answer_rows, strict=True):
         messages.append(
-            user_message(
+            support_user_message(
                 prompt_for_row(prompt_template, row),
                 context_dataset_root / row.image_path,
+                include_image=include_support_images,
                 local=local,
             )
         )
         messages.append(
             {
                 "role": "assistant",
-                "content": multilabel_answer_text(row.expected_answer()),
+                "content": multilabel_answer_text(answer_row.expected_answer()),
             }
         )
     messages.append(
@@ -341,6 +514,25 @@ def build_messages(
 
 def prompt_for_row(template: str, row: BrugadaImageRow) -> str:
     return template.replace("{lead}", row.lead)
+
+
+def support_user_message(
+    prompt: str,
+    image_path: Path,
+    *,
+    include_image: bool,
+    local: bool,
+) -> dict[str, Any]:
+    if include_image:
+        return user_message(prompt, image_path, local=local)
+    control_prompt = (
+        f"{prompt}\n\n"
+        "Control condition: the support image for this demonstration is intentionally "
+        "omitted. Use only the label response that follows as context."
+    )
+    if local:
+        return {"role": "user", "content": [{"type": "text", "text": control_prompt}]}
+    return {"role": "user", "content": [{"type": "text", "text": control_prompt}]}
 
 
 def user_message(prompt: str, image_path: Path, *, local: bool) -> dict[str, Any]:
@@ -475,11 +667,48 @@ def select_qrs_context_patient_ids(
     )
 
 
+def select_balanced_context_patient_ids(
+    rows: list[BrugadaImageRow],
+    *,
+    test_patient_id: str,
+    k: int,
+    seed: int,
+) -> list[str]:
+    qrs_rows = [row for row in rows if row.has_qrs_labels]
+    if not qrs_rows:
+        raise ValueError("Context dataset must contain explicit QRS finding labels.")
+    patients = [
+        patient
+        for patient in patients_from_rows(qrs_rows)
+        if patient.patient_id != str(test_patient_id)
+    ]
+    rng = random.Random(seed)
+    by_label = {
+        label: [patient for patient in patients if patient.reference_brugada == label]
+        for label in (0, 1)
+    }
+    for candidates in by_label.values():
+        candidates.sort(key=lambda patient: patient.patient_id)
+        rng.shuffle(candidates)
+    n_positive = k // 2
+    n_negative = k - n_positive
+    selected = by_label[1][:n_positive] + by_label[0][:n_negative]
+    selected_ids = {patient.patient_id for patient in selected}
+    if len(selected) < k:
+        remaining = [patient for patient in patients if patient.patient_id not in selected_ids]
+        remaining.sort(key=lambda patient: patient.patient_id)
+        rng.shuffle(remaining)
+        selected.extend(remaining[: k - len(selected)])
+    selected = selected[:k]
+    return [patient.patient_id for patient in selected]
+
+
 def summarize_predictions(
     predictions: list[dict[str, object]],
     *,
     k: int,
     seed: int,
+    condition: str,
     model: str,
     run_dir: Path,
 ) -> dict[str, object]:
@@ -487,12 +716,24 @@ def summarize_predictions(
     y_pred = [int(row["pred_label"]) for row in predictions]
     metrics = brugada_metrics(y_true, y_pred)
     save_json(run_dir / "metrics.json", {"metrics": metrics})
+    invalid_leads = sum(int(row.get("invalid_leads", 0) or 0) for row in predictions)
+    total_leads = sum(
+        int(row.get("valid_leads", 0) or 0) + int(row.get("invalid_leads", 0) or 0)
+        for row in predictions
+    )
+    latencies = [float(row.get("latency_seconds", 0.0) or 0.0) for row in predictions]
     return {
         "model_family": "vlm",
         "model": model,
+        "model_slug": model_slug(model),
+        "condition": condition,
         "k": k,
         "seed": seed,
         "n_patients": len(predictions),
+        "n_leads": total_leads,
+        "json_invalid_leads": invalid_leads,
+        "json_invalid_rate": invalid_leads / total_leads if total_leads else 0.0,
+        "latency_seconds_mean": float(np.mean(latencies)) if latencies else "",
         "accuracy": metrics["accuracy"],
         "balanced_accuracy": metrics["balanced_accuracy"],
         "sensitivity": metrics["sensitivity"],
@@ -514,21 +755,44 @@ def write_summary_reports(rows: list[dict[str, object]], report_dir: Path) -> No
     report_dir.mkdir(parents=True, exist_ok=True)
     write_csv(report_dir / "vlm_summary_by_seed.csv", rows)
     save_json(report_dir / "vlm_summary_by_seed.json", rows)
-    by_k = aggregate_by_k(rows)
-    write_csv(report_dir / "vlm_summary_by_k.csv", by_k)
-    write_confusion_matrices_by_k(report_dir / "confusion_by_k", rows, prefix="vlm")
-    plot_metric_by_k(report_dir / "balanced_accuracy_by_k.png", by_k)
+    by_model_condition_k = aggregate_by_group(rows, group_keys=("model", "condition", "k"))
+    write_csv(report_dir / "vlm_summary_by_k.csv", by_model_condition_k)
+    write_csv(report_dir / "vlm_summary_by_model_condition_k.csv", by_model_condition_k)
+    write_confusion_matrices_by_group(
+        report_dir / "confusion_by_model_condition_k",
+        rows,
+        prefix="vlm",
+    )
+    plot_metric_by_group(
+        report_dir / "balanced_accuracy_by_k.png",
+        by_model_condition_k,
+        metric="balanced_accuracy",
+    )
+    plot_metric_by_group(report_dir / "f1_by_k.png", by_model_condition_k, metric="f1")
+    write_campaign_manifest(report_dir / "vlm_campaign_manifest.json", rows)
     print(f"[OK] Wrote VLM LOOCV report: {report_dir}")
 
 
-def aggregate_by_k(rows: list[dict[str, object]]) -> list[dict[str, object]]:
-    grouped: dict[int, list[dict[str, object]]] = {}
+def aggregate_by_group(
+    rows: list[dict[str, object]],
+    *,
+    group_keys: tuple[str, ...],
+) -> list[dict[str, object]]:
+    grouped: dict[tuple[object, ...], list[dict[str, object]]] = {}
     for row in rows:
-        grouped.setdefault(int(row["k"]), []).append(row)
+        key = tuple(row[group_key] for group_key in group_keys)
+        grouped.setdefault(key, []).append(row)
     out: list[dict[str, object]] = []
-    for k, group in sorted(grouped.items()):
-        payload: dict[str, object] = {"k": k, "n_runs": len(group)}
-        for count_name in ("tp", "tn", "fp", "fn"):
+    sorted_groups = sorted(
+        grouped.items(),
+        key=lambda item: tuple(str(part) for part in item[0]),
+    )
+    for key, group in sorted_groups:
+        payload: dict[str, object] = {
+            group_key: value for group_key, value in zip(group_keys, key, strict=True)
+        }
+        payload["n_runs"] = len(group)
+        for count_name in ("tp", "tn", "fp", "fn", "json_invalid_leads", "n_leads"):
             payload[count_name] = sum(int(row.get(count_name, 0) or 0) for row in group)
         for metric in (
             "accuracy",
@@ -537,6 +801,8 @@ def aggregate_by_k(rows: list[dict[str, object]]) -> list[dict[str, object]]:
             "specificity",
             "precision",
             "f1",
+            "json_invalid_rate",
+            "latency_seconds_mean",
         ):
             values = [
                 float(row[metric])
@@ -549,21 +815,23 @@ def aggregate_by_k(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     return out
 
 
-def write_confusion_matrices_by_k(
+def write_confusion_matrices_by_group(
     output_dir: Path,
     rows: list[dict[str, object]],
     *,
     prefix: str,
 ) -> None:
-    grouped: dict[int, list[dict[str, object]]] = {}
+    grouped: dict[tuple[str, str, int], list[dict[str, object]]] = {}
     for row in rows:
-        grouped.setdefault(int(row["k"]), []).append(row)
-    for k, group in sorted(grouped.items()):
+        key = (str(row["model_slug"]), str(row["condition"]), int(row["k"]))
+        grouped.setdefault(key, []).append(row)
+    for (slug, condition, k), group in sorted(grouped.items()):
         counts = {
             name: sum(int(row.get(name, 0) or 0) for row in group)
             for name in ("tp", "tn", "fp", "fn")
         }
-        plot_confusion_matrix(output_dir / f"{prefix}_k{k}_confusion_matrix.png", counts)
+        filename = f"{prefix}_{slug}_{condition}_k{k}_confusion_matrix.png"
+        plot_confusion_matrix(output_dir / filename, counts)
 
 
 def plot_confusion_matrix(path: Path, counts: dict[str, int]) -> None:
@@ -582,24 +850,60 @@ def plot_confusion_matrix(path: Path, counts: dict[str, int]) -> None:
     plt.close(fig)
 
 
-def plot_metric_by_k(path: Path, rows: list[dict[str, object]]) -> None:
-    points = [
-        (int(row["k"]), row.get("balanced_accuracy_mean"))
-        for row in rows
-        if row.get("balanced_accuracy_mean") != ""
-    ]
-    if not points:
+def plot_metric_by_group(path: Path, rows: list[dict[str, object]], *, metric: str) -> None:
+    grouped: dict[tuple[str, str], list[tuple[int, float]]] = {}
+    for row in rows:
+        value = row.get(f"{metric}_mean")
+        if value in {None, "", "None"}:
+            continue
+        key = (str(row.get("model", "")), str(row.get("condition", "")))
+        grouped.setdefault(key, []).append((int(row["k"]), float(value)))
+    if not grouped:
         return
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.plot([point[0] for point in points], [float(point[1]) for point in points], marker="o")
+    for (model, condition), points in sorted(grouped.items()):
+        points = sorted(points)
+        ax.plot(
+            [point[0] for point in points],
+            [point[1] for point in points],
+            marker="o",
+            label=f"{model} / {condition}",
+        )
     ax.set_xlabel("k patients")
-    ax.set_ylabel("Balanced accuracy")
-    ax.set_title("VLM LOOCV balanced accuracy by k")
+    ax.set_ylabel(metric.replace("_", " ").title())
+    ax.set_title(f"VLM LOOCV {metric.replace('_', ' ')} by k")
     ax.set_ylim(0, 1.05)
     ax.grid(axis="y", linestyle=":", alpha=0.35)
+    ax.legend(fontsize=7)
     fig.tight_layout()
     fig.savefig(path, dpi=160)
     plt.close(fig)
+
+
+def write_campaign_manifest(path: Path, rows: list[dict[str, object]]) -> None:
+    models = sorted({str(row.get("model", "")) for row in rows if row.get("model")})
+    conditions = sorted({str(row.get("condition", "")) for row in rows if row.get("condition")})
+    k_values = sorted({int(row["k"]) for row in rows}) if rows else []
+    seeds = sorted({int(row["seed"]) for row in rows}) if rows else []
+    payload = {
+        "models": models,
+        "conditions": conditions,
+        "k_values": k_values,
+        "seeds": seeds,
+        "runs": len(rows),
+        "artifacts": {
+            "summary_by_seed": "vlm_summary_by_seed.csv",
+            "summary_by_model_condition_k": "vlm_summary_by_model_condition_k.csv",
+            "confusion_matrices": "confusion_by_model_condition_k/",
+            "balanced_accuracy_plot": "balanced_accuracy_by_k.png",
+            "f1_plot": "f1_by_k.png",
+            "per_run_predictions": (
+                "outputs/vlm_loocv/<model>/<condition>/"
+                "k<k>_seed<seed>/fold_predictions.csv"
+            ),
+        },
+    }
+    save_json(path, payload)
 
 
 def data_url_for_image(path: Path) -> str:

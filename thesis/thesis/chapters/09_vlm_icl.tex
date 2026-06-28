@@ -30,22 +30,17 @@ Para que la comparación con la CNN sea directa, las demostraciones se seleccion
 
 \section{Contrato de salida}
 
-La salida esperada es JSON estricto. Para Brugada HUCA, la respuesta mínima es:
+La salida esperada es JSON estricto con los mismos hallazgos morfológicos que utiliza la CNN. Para cada imagen V1, V2 o V3, la respuesta mínima es:
 
 \begin{lstlisting}
 {
-  "clinical_brugada": true
+  "RBBB": true,
+  "ST_ELEVATION": true,
+  "T_WAVE_INVERSION": true
 }
 \end{lstlisting}
 
-Opcionalmente puede añadirse una confianza discreta si se congela antes de ejecutar la campaña:
-
-\begin{lstlisting}
-{
-  "clinical_brugada": true,
-  "confidence": "medium"
-}
-\end{lstlisting}
+La etiqueta clínica de paciente se deriva después mediante la misma regla AND usada en el resto del TFG: solo se marca sospecha Brugada si los tres hallazgos están presentes tras agregar las derivaciones. Opcionalmente puede añadirse una confianza discreta en versiones posteriores, pero la evaluación principal solo usa las tres claves booleanas anteriores.
 
 El análisis principal no interpreta texto libre. Una respuesta no parseable, con claves ausentes, tipos incorrectos o valores fuera del esquema, se registra como fallo de formato. Esta tasa de fallos se reporta junto con las métricas clínicas porque forma parte del comportamiento real de un VLM.
 
@@ -74,6 +69,10 @@ La tabla \ref{tab:vlm_conditions} fija las condiciones de la campaña. Las tres 
 \section{Agregación por paciente}
 
 Cada predicción se obtiene por imagen y se agrega a nivel de paciente para conservar la misma unidad de evaluación que en la CNN. Si el modelo produce una respuesta válida para V1, V2 y V3, se calcula una decisión de paciente por voto mayoritario o por media de probabilidades si se activa la confianza numérica. Si alguna derivación produce JSON inválido, se conserva el fallo en la auditoría. El análisis principal contabiliza los fallos como errores; un análisis secundario puede informar métricas sobre respuestas válidas, pero nunca sustituye al análisis principal.
+
+\section{Scripts y artefactos de ejecución}
+
+La campaña VLM/ICL queda implementada en dos wrappers reproducibles. \texttt{scripts/run/validate\_vlm\_loocv.sh} valida particiones, prompts, imágenes, modelos configurados y volumen previsto de inferencias sin cargar pesos ni llamar a red. \texttt{scripts/run/run\_vlm\_loocv.sh} ejecuta la campaña completa y genera, para cada modelo, condición, \(K\) y semilla, predicciones por muestra en \texttt{outputs/vlm\_loocv/}. Los resúmenes agregados se escriben en \texttt{reports/loocv/vlm/}: manifiesto de campaña, métricas por ejecución, métricas por modelo-condición-\(K\), matrices de confusión y gráficas de exactitud equilibrada y F1. Cuando existan inferencias auditadas, \texttt{scripts/run/build\_loocv\_comparison.sh} reconstruye la comparación CNN frente a VLM.
 
 \section{Tablas de resultados preparadas}
 

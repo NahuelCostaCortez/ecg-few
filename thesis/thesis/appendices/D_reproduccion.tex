@@ -98,22 +98,52 @@ El cierre correcto debe incluir:
 
 \section{Ejecución VLM/ICL}
 
-La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. Cuando se disponga del servidor y del modelo, la campaña deberá ejecutarse con:
+La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. Antes de lanzar inferencias se valida el plan completo sin cargar modelos ni hacer llamadas de red:
 
 \begin{lstlisting}[language=bash]
-scripts/run/run_vlm_loocv.sh
+VLM_RUNTIME=local_gpu \
+VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
 scripts/run/validate_vlm_loocv.sh
+\end{lstlisting}
+
+La campaña completa contra un servidor vLLM compatible con la API de OpenAI se ejecuta con:
+
+\begin{lstlisting}[language=bash]
+VLM_API_BASE=http://servidor:8000/v1 \
+VLM_MODELS=google/gemma-4-E4B-it,google/medgemma-4b-it \
+scripts/run/run_vlm_loocv.sh
+\end{lstlisting}
+
+Por defecto se ejecutan \(K=\{0,2,4,8,16,32\}\), semillas 42, 123 y 2026, y las condiciones \texttt{zero\_shot}, \texttt{normal}, \texttt{balanced}, \texttt{permuted} y \texttt{no\_support\_images}. Los controles usan \texttt{CONTROL\_K\_VALUES=8,16,32}. Para probar la ruta de artefactos sin GPU ni API puede usarse:
+
+\begin{lstlisting}[language=bash]
+VLM_RUNTIME=local_gpu \
+DRY_RUN_PREDICTIONS=negative \
+LIMIT_FOLDS=2 \
+K_VALUES=0,2 \
+CONTROL_K_VALUES=2 \
+MODELS=fake/gemma4,fake/medgemma \
+scripts/run/run_vlm_loocv.sh
 \end{lstlisting}
 
 Antes de incorporar resultados VLM al documento deben existir, como mínimo:
 
 \begin{itemize}
+  \item \texttt{reports/loocv/vlm/vlm\_campaign\_manifest.json};
   \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_seed.csv};
   \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_k.csv};
-  \item matrices de confusión por \(K\);
-  \item predicciones por muestra;
+  \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_model\_condition\_k.csv};
+  \item matrices de confusión en el subdirectorio \texttt{confusion\_by\_model\_condition\_k/} del informe VLM;
+  \item gráficas \texttt{balanced\_accuracy\_by\_k.png} y \texttt{f1\_by\_k.png};
+  \item predicciones por muestra bajo \texttt{outputs/vlm\_loocv/}, separadas por modelo, condición, \(K\) y semilla;
   \item auditoría con métricas VLM completas.
 \end{itemize}
+
+La comparación CNN frente a VLM se reconstruye, una vez existan inferencias, con:
+
+\begin{lstlisting}[language=bash]
+VLM_CONDITION=normal scripts/run/build_loocv_comparison.sh
+\end{lstlisting}
 
 \section{Compilación de la memoria}
 
