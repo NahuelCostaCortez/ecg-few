@@ -98,7 +98,7 @@ El cierre correcto debe incluir:
 
 \section{Ejecución VLM/ICL}
 
-La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. La evaluación final debe lanzarse desde la raíz del repositorio con una única celda de comandos. El bloque valida primero el plan sin inferencia, ejecuta después el simulador QRS/ST, repite el proceso sobre Brugada-HUCA real usando el simulador como banco de demostraciones etiquetadas y, finalmente, reconstruye las comparaciones CNN frente a VLM.
+La infraestructura VLM/ICL queda preparada como segundo brazo de la comparación. La evaluación final debe lanzarse desde la raíz del repositorio con una única celda de comandos. El bloque valida primero el plan sin inferencia, ejecuta después el simulador QRS/ST, repite el proceso sobre Brugada-HUCA real usando el simulador como banco de demostraciones morfológicas y añade una rama clínica directa en la que el VLM recibe \(K\) pacientes HUCA reales como contexto. En esta rama clínica, cada demostración usa una única derivación fija por paciente, por defecto V2, y para \(K \geq 2\) se fuerzan ejemplos normales y Brugada siempre que existan en el fold. Esto garantiza que Gemma y MedGemma vean exactamente la misma imagen por paciente.
 
 \begin{lstlisting}[language=bash]
 # 0) Ejecutar desde la raiz del repositorio.
@@ -109,6 +109,7 @@ export VLM_MODELS="${VLM_MODELS:-google/gemma-4-E4B-it,google/medgemma-4b-it}"
 export VLM_RUNTIME="${VLM_RUNTIME:-remote_api}"
 export K_VALUES="${K_VALUES:-0,2,4,8,16,32}"
 export CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
+export CLINICAL_LEAD="${CLINICAL_LEAD:-V2}"
 export SEEDS="${SEEDS:-42,123,2026}"
 export CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
 
@@ -140,7 +141,23 @@ OUTPUT_ROOT="$PWD/outputs/vlm_loocv" \
 REPORT_DIR="$PWD/reports/loocv/vlm" \
 scripts/run/run_vlm_loocv.sh
 
-# 5) Comparar CNN frente a VLM en simulador y en HUCA real.
+# 5) Validar ICL clinico real-context -> real-test.
+TASK=clinical \
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="" \
+REPORT_DIR="$PWD/reports/loocv/vlm_real_context" \
+OUTPUT="$PWD/reports/loocv/vlm_real_context/vlm_setup_validation.json" \
+scripts/run/validate_vlm_loocv.sh
+
+# 6) Ejecutar ICL clinico HUCA real-context -> HUCA real-test.
+TASK=clinical \
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="" \
+OUTPUT_ROOT="$PWD/outputs/vlm_real_context_loocv" \
+REPORT_DIR="$PWD/reports/loocv/vlm_real_context" \
+scripts/run/run_vlm_loocv.sh
+
+# 7) Comparar CNN frente a VLM en simulador, HUCA morfologico y HUCA clinico.
 CNN_SUMMARY="$PWD/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
 VLM_SUMMARY="$PWD/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
 VLM_CONDITION=normal \
@@ -153,7 +170,13 @@ VLM_CONDITION=normal \
 OUTPUT_DIR="$PWD/reports/loocv/comparison" \
 scripts/run/build_loocv_comparison.sh
 
-# 6) Auditar que los artefactos finales existen.
+CNN_SUMMARY="$PWD/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+VLM_SUMMARY="$PWD/reports/loocv/vlm_real_context/vlm_summary_by_seed.csv" \
+VLM_CONDITION=normal \
+OUTPUT_DIR="$PWD/reports/loocv/comparison_vlm_real_context" \
+scripts/run/build_loocv_comparison.sh
+
+# 8) Auditar que los artefactos finales existen.
 scripts/run/audit_loocv_results.sh
 \end{lstlisting}
 
@@ -176,9 +199,10 @@ Antes de incorporar resultados VLM al documento deben existir, como mínimo:
   \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_seed.csv};
   \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_k.csv};
   \item \texttt{reports/loocv/vlm/vlm\_summary\_by\_model\_condition\_k.csv};
+  \item resumen clínico real-context con métricas por modelo, condición y \(K\);
   \item matrices de confusión en el subdirectorio \texttt{confusion\_by\_model\_condition\_k/} del informe VLM;
   \item gráficas \texttt{balanced\_accuracy\_by\_k.png} y \texttt{f1\_by\_k.png};
-  \item predicciones por muestra bajo \texttt{outputs/vlm\_loocv/}, separadas por modelo, condición, \(K\) y semilla;
+  \item predicciones por muestra en los árboles de salida morfológico y clínico, separadas por modelo, tarea, condición, \(K\) y semilla;
   \item auditoría con métricas VLM completas.
 \end{itemize}
 

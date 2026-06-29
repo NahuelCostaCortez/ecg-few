@@ -303,10 +303,14 @@ plan leave-one-out, los mismos presupuestos `k = 0, 2, 4, 8, 16, 32` y las
 mismas metricas patient-level usadas por la CNN. Las celdas numericas se
 rellenaran unicamente cuando existan inferencias auditadas por muestra.
 
-Semantica prevista:
+Semanticas previstas:
 
 ```text
-imagen ECG -> JSON con RBBB/ST_ELEVATION/T_WAVE_INVERSION -> regla AND
+TASK=morphology:
+  imagen ECG -> JSON con RBBB/ST_ELEVATION/T_WAVE_INVERSION -> regla AND
+
+TASK=clinical:
+  una derivacion fija HUCA por paciente -> JSON con clinical_brugada
 ```
 
 Celda unica para que el tutor ejecute toda la evaluacion VLM sobre simulador y
@@ -323,6 +327,7 @@ export VLM_MODELS="${VLM_MODELS:-google/gemma-4-E4B-it,google/medgemma-4b-it}"
 export VLM_RUNTIME="${VLM_RUNTIME:-remote_api}"
 export K_VALUES="${K_VALUES:-0,2,4,8,16,32}"
 export CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
+export CLINICAL_LEAD="${CLINICAL_LEAD:-V2}"
 export SEEDS="${SEEDS:-42,123,2026}"
 export CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
 
@@ -355,7 +360,26 @@ OUTPUT_ROOT="$PWD/outputs/vlm_loocv" \
 REPORT_DIR="$PWD/reports/loocv/vlm" \
 scripts/run/run_vlm_loocv.sh
 
-# 5) Comparar CNN frente a VLM en simulador y en HUCA real.
+# 5) Validar ICL clinico real-context -> real-test.
+# Esta rama usa K pacientes HUCA reales como demostraciones y fuerza que,
+# para k>=2, el contexto incluya al menos un normal y un Brugada cuando existan.
+# Todos los modelos ven la misma derivacion fija, por defecto V2.
+TASK=clinical \
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="" \
+REPORT_DIR="$PWD/reports/loocv/vlm_real_context" \
+OUTPUT="$PWD/reports/loocv/vlm_real_context/vlm_setup_validation.json" \
+scripts/run/validate_vlm_loocv.sh
+
+# 6) Ejecutar ICL clinico HUCA real-context -> HUCA real-test.
+TASK=clinical \
+DATASET_ROOT="$PWD/data/brugada_huca" \
+CONTEXT_DATASET_ROOT="" \
+OUTPUT_ROOT="$PWD/outputs/vlm_real_context_loocv" \
+REPORT_DIR="$PWD/reports/loocv/vlm_real_context" \
+scripts/run/run_vlm_loocv.sh
+
+# 7) Comparar CNN frente a VLM en simulador, HUCA morfologico y HUCA clinico.
 CNN_SUMMARY="$PWD/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
 VLM_SUMMARY="$PWD/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
 VLM_CONDITION=normal \
@@ -368,7 +392,13 @@ VLM_CONDITION=normal \
 OUTPUT_DIR="$PWD/reports/loocv/comparison" \
 scripts/run/build_loocv_comparison.sh
 
-# 6) Auditar que los artefactos finales existen.
+CNN_SUMMARY="$PWD/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+VLM_SUMMARY="$PWD/reports/loocv/vlm_real_context/vlm_summary_by_seed.csv" \
+VLM_CONDITION=normal \
+OUTPUT_DIR="$PWD/reports/loocv/comparison_vlm_real_context" \
+scripts/run/build_loocv_comparison.sh
+
+# 8) Auditar que los artefactos finales existen.
 scripts/run/audit_loocv_results.sh
 ```
 
@@ -377,6 +407,8 @@ Prompts:
 ```text
 prompts/system/qrs_huca.md
 prompts/qrs/right_precordial_morphology.md
+prompts/system/clinical_brugada_huca.md
+prompts/clinical/brugada_patient.md
 ```
 
 Condiciones previstas:
@@ -386,6 +418,15 @@ Condiciones previstas:
 - ICL balanceado cuando el fold lo permita;
 - etiquetas permutadas para detectar dependencia espuria del prompt;
 - demostraciones sin imagen de apoyo para comprobar uso visual real.
+
+En `TASK=clinical`, cada demostracion es un paciente HUCA real representado por
+una unica derivacion fija, por defecto `CLINICAL_LEAD=V2`, y una etiqueta
+`clinical_brugada`. La consulta del paciente test usa esa misma derivacion, sin
+enviar V1, V2 y V3 de golpe al VLM. La seleccion de
+contexto es balanceada por diseno: para `k>=2` incluye normales y Brugada
+siempre que el fold lo permita, y el paciente test nunca aparece en sus propios
+ejemplos. Como la derivacion se fija globalmente, ambos modelos ven exactamente
+las mismas imagenes.
 
 El wrapper usa por defecto:
 
@@ -415,7 +456,9 @@ Artefactos esperados tras ejecutar inferencia:
 outputs/vlm_loocv/<model>/<condition>/k<k>_seed<seed>/fold_predictions.csv
 outputs/vlm_loocv/<model>/<condition>/k<k>_seed<seed>/fold_predictions.jsonl
 outputs/vlm_loocv/<model>/<condition>/k<k>_seed<seed>/metrics.json
+outputs/vlm_real_context_loocv/<model>/<condition>/k<k>_seed<seed>/fold_predictions.csv
 reports/loocv/vlm/vlm_campaign_manifest.json
+reports/loocv/vlm_real_context/vlm_campaign_manifest.json
 reports/loocv/vlm/vlm_summary_by_seed.csv
 reports/loocv/vlm/vlm_summary_by_k.csv
 reports/loocv/vlm/vlm_summary_by_model_condition_k.csv

@@ -39,7 +39,6 @@ from ecg_few.prompts import (
     DEFAULT_SYSTEM_INSTRUCTIONS,
     load_markdown_prompt,
     multilabel_answer_text,
-    multilabel_json_schema,
 )
 from ecg_few.vlm.runtime import (
     LOCAL_RUNTIME,
@@ -56,6 +55,13 @@ NORMAL_CONDITION = "normal"
 BALANCED_CONDITION = "balanced"
 PERMUTED_CONDITION = "permuted"
 NO_SUPPORT_IMAGES_CONDITION = "no_support_images"
+MORPHOLOGY_TASK = "morphology"
+CLINICAL_TASK = "clinical"
+CLINICAL_LABEL_NAME = "clinical_brugada"
+DEFAULT_MORPHOLOGY_SYSTEM_PROMPT = "prompts/system/qrs_huca.md"
+DEFAULT_MORPHOLOGY_PROMPT = "prompts/qrs/right_precordial_morphology.md"
+DEFAULT_CLINICAL_SYSTEM_PROMPT = "prompts/system/clinical_brugada_huca.md"
+DEFAULT_CLINICAL_PROMPT = "prompts/clinical/brugada_patient.md"
 ALL_CONDITIONS = (
     ZERO_SHOT_CONDITION,
     NORMAL_CONDITION,
@@ -107,10 +113,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default="")
     parser.add_argument("--api-base", default="")
     parser.add_argument("--api-key", default="")
-    parser.add_argument("--system-prompt-file", default="prompts/system/qrs_huca.md")
+    parser.add_argument(
+        "--task",
+        choices=(MORPHOLOGY_TASK, CLINICAL_TASK),
+        default=MORPHOLOGY_TASK,
+        help=(
+            "morphology predicts RBBB/ST_ELEVATION/T_WAVE_INVERSION per lead; "
+            "clinical predicts clinical_brugada from one fixed lead image per patient."
+        ),
+    )
+    parser.add_argument(
+        "--clinical-lead",
+        default="V2",
+        help="Single lead image used by TASK=clinical for every support and test patient.",
+    )
+    parser.add_argument("--system-prompt-file", default="")
     parser.add_argument(
         "--prompt-file",
-        default="prompts/qrs/right_precordial_morphology.md",
+        default="",
     )
     parser.add_argument(
         "--response-format",
@@ -170,6 +190,7 @@ def run_with_args(args: argparse.Namespace) -> None:
         folds = folds[: int(args.limit_folds)]
 
     runtime = str(args.vlm_runtime)
+    task = str(getattr(args, "task", MORPHOLOGY_TASK))
     models = resolve_models(args, runtime)
     conditions = parse_string_list(getattr(args, "conditions", NORMAL_CONDITION))
     invalid_conditions = sorted(set(conditions) - set(ALL_CONDITIONS))
@@ -178,12 +199,18 @@ def run_with_args(args: argparse.Namespace) -> None:
     control_k_values = parse_int_list(str(getattr(args, "control_k_values", "8,16,32")))
     api_base = resolve_api_base(str(args.api_base), runtime)
     api_key = resolve_api_key(str(args.api_key), runtime)
+    system_prompt_file = resolve_prompt_path(
+        str(args.system_prompt_file),
+        task=task,
+        kind="system",
+    )
+    prompt_file = resolve_prompt_path(str(args.prompt_file), task=task, kind="user")
     system_prompt = (
-        load_markdown_prompt(args.system_prompt_file)
-        if args.system_prompt_file
+        load_markdown_prompt(system_prompt_file)
+        if system_prompt_file
         else DEFAULT_SYSTEM_INSTRUCTIONS
     )
-    prompt_template = load_markdown_prompt(args.prompt_file)
+    prompt_template = load_markdown_prompt(prompt_file)
     output_root = Path(args.output_root).resolve()
     report_dir = Path(args.report_dir).resolve()
 
@@ -225,6 +252,7 @@ def run_with_args(args: argparse.Namespace) -> None:
                             run_dir=run_dir,
                             k=k,
                             seed=seed,
+                            task=task,
                             condition=condition,
                             runtime=runtime,
                             model=model,
@@ -240,6 +268,7 @@ def run_with_args(args: argparse.Namespace) -> None:
                                 predictions,
                                 k=k,
                                 seed=seed,
+                                task=task,
                                 condition=condition,
                                 model=model,
                                 run_dir=run_dir,
@@ -260,6 +289,14 @@ def resolve_models(args: argparse.Namespace, runtime: str) -> list[str]:
 
 def parse_string_list(text: str) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
+
+
+def resolve_prompt_path(path: str, *, task: str, kind: str) -> str:
+    if path:
+        return path
+    if task == CLINICAL_TASK:
+        return DEFAULT_CLINICAL_SYSTEM_PROMPT if kind == "system" else DEFAULT_CLINICAL_PROMPT
+    return DEFAULT_MORPHOLOGY_SYSTEM_PROMPT if kind == "system" else DEFAULT_MORPHOLOGY_PROMPT
 
 
 def model_slug(model: str) -> str:
@@ -296,6 +333,7 @@ def run_k_seed(
     run_dir: Path,
     k: int,
     seed: int,
+    task: str,
     condition: str,
     runtime: str,
     model: str,
@@ -326,10 +364,18 @@ def run_k_seed(
             k=k,
             seed=seed,
             fold_id=fold_id,
+            task=task,
             condition=condition,
         )
         context_ids = selection["context_patient_ids"]
-        if context_pool_rows is not rows and condition == NORMAL_CONDITION and k > 0:
+        if task == CLINICAL_TASK and k > 0 and condition != ZERO_SHOT_CONDITION:
+            context_ids = select_balanced_clinical_context_patient_ids(
+                context_pool_rows,
+                test_patient_id=test_patient_id,
+                k=k,
+                seed=seed + fold_id * 100_003,
+            )
+        elif context_pool_rows is not rows and condition == NORMAL_CONDITION and k > 0:
             context_ids = select_qrs_context_patient_ids(
                 context_pool_rows,
                 k=k,
@@ -351,10 +397,39 @@ def run_k_seed(
         test_rows = rows_for_patient_ids(rows, [test_patient_id])
         print(
             "[INFO] VLM "
-            f"model={model} condition={condition} k={k} seed={seed} "
+            f"model={model} task={task} condition={condition} k={k} seed={seed} "
             f"fold={fold_id} test_patient={test_patient_id}"
         )
         started = time.perf_counter()
+        if task == CLINICAL_TASK:
+            record = run_clinical_fold(
+                rows=rows,
+                context_rows=context_rows,
+                dataset_root=dataset_root,
+                context_dataset_root=context_dataset_root,
+                test_patient_id=test_patient_id,
+                fold_id=fold_id,
+                k=k,
+                seed=seed,
+                key=key,
+                condition=condition,
+                runtime=runtime,
+                model=model,
+                api_base=api_base,
+                api_key=api_key,
+                system_prompt=system_prompt,
+                prompt_template=prompt_template,
+                include_support_images=condition != NO_SUPPORT_IMAGES_CONDITION,
+                clinical_lead=str(args.clinical_lead),
+                started=started,
+                selection=selection,
+                context_ids=context_ids,
+                args=args,
+                generator=generator,
+            )
+            append_jsonl(output_path, record)
+            predictions.append(record)
+            continue
         lead_predictions: dict[str, dict[str, bool]] = {}
         lead_errors: dict[str, str] = {}
         raw_outputs: dict[str, str] = {}
@@ -381,10 +456,11 @@ def run_k_seed(
                         model=model,
                         api_base=api_base,
                         api_key=api_key,
+                        task=task,
                         args=args,
                         generator=generator,
                     )
-                    prediction = parse_prediction(raw_text)
+                    prediction = parse_morphology_prediction(raw_text)
                 lead_predictions[test_row.lead] = {
                     label_name: bool(prediction[label_name]) for label_name in LABEL_NAMES
                 }
@@ -400,6 +476,7 @@ def run_k_seed(
             "k": k,
             "seed": seed,
             "condition": condition,
+            "task": task,
             "test_patient_id": test_patient_id,
             "patient_id": test_patient_id,
             "true_label": int(test_rows[0].reference_brugada),
@@ -433,10 +510,24 @@ def selection_for_condition(
     k: int,
     seed: int,
     fold_id: int,
+    task: str,
     condition: str,
 ) -> dict[str, list[str]]:
     if k == 0 or condition == ZERO_SHOT_CONDITION:
         return {"context_patient_ids": [], "validation_patient_ids": []}
+    if task == CLINICAL_TASK:
+        validation_ids = []
+        if context_pool_rows is rows:
+            validation_ids = selection_for(fold, k=k, seed=seed)["validation_patient_ids"]
+        return {
+            "context_patient_ids": select_balanced_clinical_context_patient_ids(
+                context_pool_rows,
+                test_patient_id=test_patient_id,
+                k=k,
+                seed=seed + fold_id * 100_003,
+            ),
+            "validation_patient_ids": validation_ids,
+        }
     if context_pool_rows is rows and condition == BALANCED_CONDITION:
         return {
             "context_patient_ids": select_balanced_context_patient_ids(
@@ -470,6 +561,155 @@ def answer_rows_for_condition(
     if unchanged:
         shuffled = shuffled[1:] + shuffled[:1]
     return shuffled
+
+
+def run_clinical_fold(
+    *,
+    rows: list[BrugadaImageRow],
+    context_rows: list[BrugadaImageRow],
+    dataset_root: Path,
+    context_dataset_root: Path,
+    test_patient_id: str,
+    fold_id: int,
+    k: int,
+    seed: int,
+    key: str,
+    condition: str,
+    runtime: str,
+    model: str,
+    api_base: str | None,
+    api_key: str,
+    system_prompt: str,
+    prompt_template: str,
+    include_support_images: bool,
+    clinical_lead: str,
+    started: float,
+    selection: dict[str, list[str]],
+    context_ids: list[str],
+    args: argparse.Namespace,
+    generator: LocalGPUGenerator | None,
+) -> dict[str, object]:
+    test_rows = rows_for_patient_ids(rows, [test_patient_id])
+    try:
+        if args.dry_run_predictions != "none":
+            prediction = dry_run_clinical_prediction(
+                test_rows[0],
+                mode=str(args.dry_run_predictions),
+            )
+            raw_text = json.dumps(prediction, sort_keys=True)
+        else:
+            messages = build_clinical_messages(
+                dataset_root=dataset_root,
+                context_dataset_root=context_dataset_root,
+                system_prompt=system_prompt,
+                prompt_template=prompt_template,
+                context_rows=context_rows,
+                condition=condition,
+                seed=seed,
+                test_rows=test_rows,
+                clinical_lead=clinical_lead,
+                include_support_images=include_support_images,
+                local=runtime == LOCAL_RUNTIME,
+            )
+            raw_text = call_model(
+                messages,
+                runtime=runtime,
+                model=model,
+                api_base=api_base,
+                api_key=api_key,
+                task=CLINICAL_TASK,
+                args=args,
+                generator=generator,
+            )
+            prediction = parse_clinical_prediction(raw_text)
+        pred_label = int(bool(prediction[CLINICAL_LABEL_NAME]))
+        error = ""
+        valid_requests = 1
+        invalid_requests = 0
+    except Exception as exc:  # noqa: BLE001
+        pred_label = 0
+        raw_text = ""
+        error = str(exc)
+        valid_requests = 0
+        invalid_requests = 1
+    return {
+        "key": key,
+        "fold_id": fold_id,
+        "k": k,
+        "seed": seed,
+        "condition": condition,
+        "task": CLINICAL_TASK,
+        "test_patient_id": test_patient_id,
+        "patient_id": test_patient_id,
+        "true_label": int(test_rows[0].reference_brugada),
+        "pred_label": pred_label,
+        "pred_clinical_brugada": pred_label,
+        "clinical_lead": clinical_lead.upper(),
+        "context_patient_ids": "|".join(context_ids),
+        "validation_patient_ids": "|".join(selection["validation_patient_ids"]),
+        "valid_leads": valid_requests,
+        "invalid_leads": invalid_requests,
+        "json_invalid": int(bool(error)),
+        "lead_predictions": json.dumps(
+            {CLINICAL_LABEL_NAME: bool(pred_label)} if not error else {},
+            sort_keys=True,
+        ),
+        "raw_outputs": json.dumps({"patient": raw_text}, sort_keys=True),
+        "errors": json.dumps({"patient": error} if error else {}, sort_keys=True),
+        "latency_seconds": time.perf_counter() - started,
+        "model": model,
+        "model_slug": model_slug(model),
+        "vlm_runtime": runtime,
+    }
+
+
+def build_clinical_messages(
+    *,
+    dataset_root: Path,
+    context_dataset_root: Path,
+    system_prompt: str,
+    prompt_template: str,
+    context_rows: list[BrugadaImageRow],
+    condition: str,
+    seed: int,
+    test_rows: list[BrugadaImageRow],
+    clinical_lead: str,
+    include_support_images: bool,
+    local: bool,
+) -> list[dict[str, Any]]:
+    system_content: str | list[dict[str, str]]
+    system_content = [{"type": "text", "text": system_prompt}] if local else system_prompt
+    messages: list[dict[str, Any]] = [{"role": "system", "content": system_content}]
+    context_by_patient = rows_by_patient(context_rows)
+    answers_by_patient = clinical_answer_labels_for_condition(
+        context_rows,
+        condition=condition,
+        seed=seed,
+    )
+    for patient_id in sorted(context_by_patient, key=patient_sort_key):
+        support_row = row_for_lead(context_by_patient[patient_id], clinical_lead)
+        messages.append(
+            support_patient_message(
+                prompt_template,
+                context_dataset_root / support_row.image_path,
+                include_images=include_support_images,
+                local=local,
+            )
+        )
+        messages.append(
+            {
+                "role": "assistant",
+                "content": clinical_answer_text(answers_by_patient[patient_id]),
+            }
+        )
+    messages.append(
+        patient_message(
+            prompt_template,
+            dataset_root / row_for_lead(test_rows, clinical_lead).image_path,
+            local=local,
+        )
+    )
+    return messages
 
 
 def build_messages(
@@ -516,6 +756,70 @@ def prompt_for_row(template: str, row: BrugadaImageRow) -> str:
     return template.replace("{lead}", row.lead)
 
 
+def patient_sort_key(patient_id: str) -> tuple[int, str]:
+    return (int(patient_id), patient_id) if str(patient_id).isdigit() else (10**9, patient_id)
+
+
+def sorted_rows_by_lead(rows: list[BrugadaImageRow]) -> list[BrugadaImageRow]:
+    order = {"V1": 0, "V2": 1, "V3": 2}
+    return sorted(rows, key=lambda row: (order.get(row.lead.upper(), 99), row.lead))
+
+
+def row_for_lead(rows: list[BrugadaImageRow], lead: str) -> BrugadaImageRow:
+    requested = lead.upper()
+    for row in sorted_rows_by_lead(rows):
+        if row.lead.upper() == requested:
+            return row
+    available = ", ".join(row.lead for row in sorted_rows_by_lead(rows))
+    patient_id = rows[0].patient_id if rows else "?"
+    raise ValueError(
+        f"Patient {patient_id} has no {requested}; available: {available}"
+    )
+
+
+def rows_by_patient(rows: list[BrugadaImageRow]) -> dict[str, list[BrugadaImageRow]]:
+    grouped: dict[str, list[BrugadaImageRow]] = {}
+    for row in rows:
+        grouped.setdefault(row.patient_id, []).append(row)
+    return {
+        patient_id: sorted_rows_by_lead(patient_rows)
+        for patient_id, patient_rows in grouped.items()
+    }
+
+
+def clinical_answers_by_patient(rows: list[BrugadaImageRow]) -> dict[str, bool]:
+    return {
+        patient_id: bool(patient_rows[0].reference_brugada)
+        for patient_id, patient_rows in rows_by_patient(rows).items()
+    }
+
+
+def clinical_answer_labels_for_condition(
+    rows: list[BrugadaImageRow],
+    *,
+    condition: str,
+    seed: int,
+) -> dict[str, bool]:
+    answers = clinical_answers_by_patient(rows)
+    if condition != PERMUTED_CONDITION or len(answers) < 2:
+        return answers
+    patient_ids = sorted(answers, key=patient_sort_key)
+    labels = [answers[patient_id] for patient_id in patient_ids]
+    rng = random.Random(seed)
+    rng.shuffle(labels)
+    unchanged = all(
+        answers[patient_id] == label
+        for patient_id, label in zip(patient_ids, labels, strict=True)
+    )
+    if unchanged:
+        labels = labels[1:] + labels[:1]
+    return {patient_id: label for patient_id, label in zip(patient_ids, labels, strict=True)}
+
+
+def clinical_answer_text(value: bool) -> str:
+    return json.dumps({CLINICAL_LABEL_NAME: bool(value)}, sort_keys=True)
+
+
 def support_user_message(
     prompt: str,
     image_path: Path,
@@ -535,7 +839,43 @@ def support_user_message(
     return {"role": "user", "content": [{"type": "text", "text": control_prompt}]}
 
 
+def support_patient_message(
+    prompt: str,
+    image_path: Path,
+    *,
+    include_images: bool,
+    local: bool,
+) -> dict[str, Any]:
+    if include_images:
+        return patient_message(prompt, image_path, local=local)
+    control_prompt = (
+        f"{prompt}\n\n"
+        "Control condition: the support image for this patient demonstration is "
+        "intentionally omitted. Use only the clinical label response that follows "
+        "as context."
+    )
+    return {"role": "user", "content": [{"type": "text", "text": control_prompt}]}
+
+
 def user_message(prompt: str, image_path: Path, *, local: bool) -> dict[str, Any]:
+    if local:
+        return {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image", "image": image_for_local(image_path)},
+            ],
+        }
+    return {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": data_url_for_image(image_path)}},
+        ],
+    }
+
+
+def patient_message(prompt: str, image_path: Path, *, local: bool) -> dict[str, Any]:
     if local:
         return {
             "role": "user",
@@ -560,6 +900,7 @@ def call_model(
     model: str,
     api_base: str | None,
     api_key: str,
+    task: str,
     args: argparse.Namespace,
     generator: LocalGPUGenerator | None,
 ) -> str:
@@ -589,8 +930,8 @@ def call_model(
         payload["response_format"] = {
             "type": "json_schema",
             "json_schema": {
-                "name": "qrs_findings",
-                "schema": multilabel_json_schema(),
+                "name": "clinical_brugada" if task == CLINICAL_TASK else "qrs_findings",
+                "schema": response_schema_for_task(task),
                 "strict": True,
             },
         }
@@ -613,7 +954,31 @@ def dry_run_prediction(row: BrugadaImageRow, *, mode: str) -> dict[str, bool]:
     raise ValueError(f"Unsupported dry-run mode: {mode}")
 
 
-def parse_prediction(text: str) -> dict[str, bool]:
+def dry_run_clinical_prediction(row: BrugadaImageRow, *, mode: str) -> dict[str, bool]:
+    if mode == "expected":
+        return {CLINICAL_LABEL_NAME: bool(row.reference_brugada)}
+    if mode == "negative":
+        return {CLINICAL_LABEL_NAME: False}
+    raise ValueError(f"Unsupported dry-run mode: {mode}")
+
+
+def response_schema_for_task(task: str) -> dict[str, Any]:
+    if task == CLINICAL_TASK:
+        return {
+            "type": "object",
+            "properties": {CLINICAL_LABEL_NAME: {"type": "boolean"}},
+            "required": [CLINICAL_LABEL_NAME],
+            "additionalProperties": False,
+        }
+    return {
+        "type": "object",
+        "properties": {label_name: {"type": "boolean"} for label_name in LABEL_NAMES},
+        "required": list(LABEL_NAMES),
+        "additionalProperties": False,
+    }
+
+
+def parse_json_object(text: str) -> dict[str, Any]:
     decoder = json.JSONDecoder()
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -627,11 +992,23 @@ def parse_prediction(text: str) -> dict[str, bool]:
             payload, _ = decoder.raw_decode(stripped[index:])
         except json.JSONDecodeError:
             continue
-        if isinstance(payload, dict) and all(
-            type(payload.get(label)) is bool for label in LABEL_NAMES
-        ):
-            return {label_name: bool(payload[label_name]) for label_name in LABEL_NAMES}
+        if isinstance(payload, dict):
+            return payload
+    raise ValueError("No valid JSON object found.")
+
+
+def parse_morphology_prediction(text: str) -> dict[str, bool]:
+    payload = parse_json_object(text)
+    if all(type(payload.get(label)) is bool for label in LABEL_NAMES):
+        return {label_name: bool(payload[label_name]) for label_name in LABEL_NAMES}
     raise ValueError("No valid QRS finding JSON prediction found.")
+
+
+def parse_clinical_prediction(text: str) -> dict[str, bool]:
+    payload = parse_json_object(text)
+    if type(payload.get(CLINICAL_LABEL_NAME)) is bool:
+        return {CLINICAL_LABEL_NAME: bool(payload[CLINICAL_LABEL_NAME])}
+    raise ValueError("No valid clinical_brugada JSON prediction found.")
 
 
 def aggregate_lead_findings(
@@ -703,11 +1080,51 @@ def select_balanced_context_patient_ids(
     return [patient.patient_id for patient in selected]
 
 
+def select_balanced_clinical_context_patient_ids(
+    rows: list[BrugadaImageRow],
+    *,
+    test_patient_id: str,
+    k: int,
+    seed: int,
+) -> list[str]:
+    patients = [
+        patient
+        for patient in patients_from_rows(rows)
+        if patient.patient_id != str(test_patient_id)
+    ]
+    rng = random.Random(seed)
+    by_label = {
+        label: [patient for patient in patients if patient.reference_brugada == label]
+        for label in (0, 1)
+    }
+    for candidates in by_label.values():
+        candidates.sort(key=lambda patient: patient_sort_key(patient.patient_id))
+        rng.shuffle(candidates)
+    n_positive = k // 2
+    n_negative = k - n_positive
+    selected = by_label[1][:n_positive] + by_label[0][:n_negative]
+    selected_ids = {patient.patient_id for patient in selected}
+    if len(selected) < k:
+        remaining = [patient for patient in patients if patient.patient_id not in selected_ids]
+        remaining.sort(key=lambda patient: patient_sort_key(patient.patient_id))
+        rng.shuffle(remaining)
+        selected.extend(remaining[: k - len(selected)])
+    if k >= 2 and by_label[0] and by_label[1]:
+        labels = {patient.reference_brugada for patient in selected}
+        if labels != {0, 1}:
+            raise ValueError(
+                f"Could not select both normal and Brugada real-context examples for k={k}."
+            )
+    selected = selected[:k]
+    return [patient.patient_id for patient in selected]
+
+
 def summarize_predictions(
     predictions: list[dict[str, object]],
     *,
     k: int,
     seed: int,
+    task: str,
     condition: str,
     model: str,
     run_dir: Path,
@@ -726,6 +1143,8 @@ def summarize_predictions(
         "model_family": "vlm",
         "model": model,
         "model_slug": model_slug(model),
+        "task": task,
+        "clinical_lead": first_nonempty(predictions, "clinical_lead"),
         "condition": condition,
         "k": k,
         "seed": seed,
@@ -751,11 +1170,22 @@ def summarize_predictions(
     }
 
 
+def first_nonempty(rows: list[dict[str, object]], key: str) -> object:
+    for row in rows:
+        value = row.get(key)
+        if value not in {None, "", "None"}:
+            return value
+    return ""
+
+
 def write_summary_reports(rows: list[dict[str, object]], report_dir: Path) -> None:
     report_dir.mkdir(parents=True, exist_ok=True)
     write_csv(report_dir / "vlm_summary_by_seed.csv", rows)
     save_json(report_dir / "vlm_summary_by_seed.json", rows)
-    by_model_condition_k = aggregate_by_group(rows, group_keys=("model", "condition", "k"))
+    by_model_condition_k = aggregate_by_group(
+        rows,
+        group_keys=("model", "task", "condition", "k"),
+    )
     write_csv(report_dir / "vlm_summary_by_k.csv", by_model_condition_k)
     write_csv(report_dir / "vlm_summary_by_model_condition_k.csv", by_model_condition_k)
     write_confusion_matrices_by_group(
@@ -821,16 +1251,21 @@ def write_confusion_matrices_by_group(
     *,
     prefix: str,
 ) -> None:
-    grouped: dict[tuple[str, str, int], list[dict[str, object]]] = {}
+    grouped: dict[tuple[str, str, str, int], list[dict[str, object]]] = {}
     for row in rows:
-        key = (str(row["model_slug"]), str(row["condition"]), int(row["k"]))
+        key = (
+            str(row["model_slug"]),
+            str(row.get("task", MORPHOLOGY_TASK)),
+            str(row["condition"]),
+            int(row["k"]),
+        )
         grouped.setdefault(key, []).append(row)
-    for (slug, condition, k), group in sorted(grouped.items()):
+    for (slug, task, condition, k), group in sorted(grouped.items()):
         counts = {
             name: sum(int(row.get(name, 0) or 0) for row in group)
             for name in ("tp", "tn", "fp", "fn")
         }
-        filename = f"{prefix}_{slug}_{condition}_k{k}_confusion_matrix.png"
+        filename = f"{prefix}_{slug}_{task}_{condition}_k{k}_confusion_matrix.png"
         plot_confusion_matrix(output_dir / filename, counts)
 
 
@@ -856,18 +1291,22 @@ def plot_metric_by_group(path: Path, rows: list[dict[str, object]], *, metric: s
         value = row.get(f"{metric}_mean")
         if value in {None, "", "None"}:
             continue
-        key = (str(row.get("model", "")), str(row.get("condition", "")))
+        key = (
+            str(row.get("model", "")),
+            str(row.get("task", MORPHOLOGY_TASK)),
+            str(row.get("condition", "")),
+        )
         grouped.setdefault(key, []).append((int(row["k"]), float(value)))
     if not grouped:
         return
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    for (model, condition), points in sorted(grouped.items()):
+    for (model, task, condition), points in sorted(grouped.items()):
         points = sorted(points)
         ax.plot(
             [point[0] for point in points],
             [point[1] for point in points],
             marker="o",
-            label=f"{model} / {condition}",
+            label=f"{model} / {task} / {condition}",
         )
     ax.set_xlabel("k patients")
     ax.set_ylabel(metric.replace("_", " ").title())
@@ -883,11 +1322,13 @@ def plot_metric_by_group(path: Path, rows: list[dict[str, object]], *, metric: s
 def write_campaign_manifest(path: Path, rows: list[dict[str, object]]) -> None:
     models = sorted({str(row.get("model", "")) for row in rows if row.get("model")})
     conditions = sorted({str(row.get("condition", "")) for row in rows if row.get("condition")})
+    tasks = sorted({str(row.get("task", "")) for row in rows if row.get("task")})
     k_values = sorted({int(row["k"]) for row in rows}) if rows else []
     seeds = sorted({int(row["seed"]) for row in rows}) if rows else []
     payload = {
         "models": models,
         "conditions": conditions,
+        "tasks": tasks,
         "k_values": k_values,
         "seeds": seeds,
         "runs": len(rows),
