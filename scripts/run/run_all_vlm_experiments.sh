@@ -15,8 +15,8 @@ CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
 CLINICAL_LEAD="${CLINICAL_LEAD:-V2}"
 
 RUN_VALIDATE="${RUN_VALIDATE:-1}"
-RUN_COMPARISONS="${RUN_COMPARISONS:-1}"
-RUN_AUDIT="${RUN_AUDIT:-1}"
+RUN_COMPARISONS="${RUN_COMPARISONS:-auto}"
+RUN_AUDIT="${RUN_AUDIT:-auto}"
 COMPARE_VLM_CONDITION="${COMPARE_VLM_CONDITION:-normal}"
 COMPARE_VLM_MODEL="${COMPARE_VLM_MODEL:-}"
 AUDIT_K_VALUES="${AUDIT_K_VALUES:-2,4,8,16,32}"
@@ -38,6 +38,44 @@ run_step() {
   shift
   printf "\n==> %s\n" "$label"
   "$@"
+}
+
+missing_file() {
+  for path in "$@"; do
+    if [ ! -f "$path" ]; then
+      echo "$path"
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_comparison() {
+  label="$1"
+  cnn_summary="$2"
+  vlm_summary="$3"
+  output_dir="$4"
+
+  if [ "$RUN_COMPARISONS" = "0" ]; then
+    return
+  fi
+  missing="$(missing_file "$cnn_summary" "$vlm_summary" || true)"
+  if [ "$missing" != "" ]; then
+    if [ "$RUN_COMPARISONS" = "auto" ]; then
+      printf "\n==> Skip %s\nMissing required summary: %s\n" "$label" "$missing"
+      return
+    fi
+    echo "Missing required summary for $label: $missing"
+    exit 1
+  fi
+
+  run_step "$label" env \
+    CNN_SUMMARY="$cnn_summary" \
+    VLM_SUMMARY="$vlm_summary" \
+    VLM_CONDITION="$COMPARE_VLM_CONDITION" \
+    VLM_MODEL="$COMPARE_VLM_MODEL" \
+    OUTPUT_DIR="$output_dir" \
+    sh "$RUN_DIR/build_loocv_comparison.sh"
 }
 
 run_vlm_campaign() {
@@ -74,6 +112,8 @@ printf "VLM models: %s\n" "$VLM_MODELS"
 printf "VLM k values: %s\n" "$VLM_K_VALUES"
 printf "Seeds: %s\n" "$SEEDS"
 printf "Conditions: %s\n" "$CONDITIONS"
+printf "Comparisons: %s\n" "$RUN_COMPARISONS"
+printf "Audit: %s\n" "$RUN_AUDIT"
 
 run_vlm_campaign \
   "VLM simulator QRS morphology LOOCV" \
@@ -99,37 +139,41 @@ run_vlm_campaign \
   "$ROOT_DIR/outputs/vlm_real_context_loocv" \
   "$ROOT_DIR/reports/loocv/vlm_real_context"
 
-if [ "$RUN_COMPARISONS" = "1" ]; then
-  run_step "Compare CNN vs VLM on simulator QRS" env \
-    CNN_SUMMARY="$ROOT_DIR/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
-    VLM_SUMMARY="$ROOT_DIR/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
-    VLM_CONDITION="$COMPARE_VLM_CONDITION" \
-    VLM_MODEL="$COMPARE_VLM_MODEL" \
-    OUTPUT_DIR="$ROOT_DIR/reports/loocv/comparison_vlm_simulator_qrs" \
-    sh "$RUN_DIR/build_loocv_comparison.sh"
+run_comparison \
+  "Compare CNN vs VLM on simulator QRS" \
+  "$ROOT_DIR/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
+  "$ROOT_DIR/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
+  "$ROOT_DIR/reports/loocv/comparison_vlm_simulator_qrs"
 
-  run_step "Compare CNN vs VLM on HUCA morphology" env \
-    CNN_SUMMARY="$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
-    VLM_SUMMARY="$ROOT_DIR/reports/loocv/vlm/vlm_summary_by_seed.csv" \
-    VLM_CONDITION="$COMPARE_VLM_CONDITION" \
-    VLM_MODEL="$COMPARE_VLM_MODEL" \
-    OUTPUT_DIR="$ROOT_DIR/reports/loocv/comparison" \
-    sh "$RUN_DIR/build_loocv_comparison.sh"
+run_comparison \
+  "Compare CNN vs VLM on HUCA morphology" \
+  "$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+  "$ROOT_DIR/reports/loocv/vlm/vlm_summary_by_seed.csv" \
+  "$ROOT_DIR/reports/loocv/comparison"
 
-  run_step "Compare CNN vs VLM on HUCA clinical" env \
-    CNN_SUMMARY="$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
-    VLM_SUMMARY="$ROOT_DIR/reports/loocv/vlm_real_context/vlm_summary_by_seed.csv" \
-    VLM_CONDITION="$COMPARE_VLM_CONDITION" \
-    VLM_MODEL="$COMPARE_VLM_MODEL" \
-    OUTPUT_DIR="$ROOT_DIR/reports/loocv/comparison_vlm_real_context" \
-    sh "$RUN_DIR/build_loocv_comparison.sh"
-fi
+run_comparison \
+  "Compare CNN vs VLM on HUCA clinical" \
+  "$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+  "$ROOT_DIR/reports/loocv/vlm_real_context/vlm_summary_by_seed.csv" \
+  "$ROOT_DIR/reports/loocv/comparison_vlm_real_context"
 
-if [ "$RUN_AUDIT" = "1" ]; then
+if [ "$RUN_AUDIT" != "0" ]; then
+  missing="$(missing_file \
+    "$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
+    "$ROOT_DIR/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
+    || true)"
+  if [ "$missing" != "" ] && [ "$RUN_AUDIT" = "auto" ]; then
+    printf "\n==> Skip Audit LOOCV results\nMissing required CNN summary: %s\n" "$missing"
+  else
+    if [ "$missing" != "" ]; then
+      echo "Missing required CNN summary for audit: $missing"
+      exit 1
+    fi
   run_step "Audit LOOCV results" env \
     K_VALUES="$AUDIT_K_VALUES" \
     SEEDS="$SEEDS" \
     sh "$RUN_DIR/audit_loocv_results.sh"
+  fi
 fi
 
 printf "\n[OK] Finished VLM experiment campaign.\n"
