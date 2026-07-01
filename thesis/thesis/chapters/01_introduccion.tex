@@ -1,0 +1,137 @@
+\chapter{Introducción}
+\label{chap:introduccion}
+
+El electrocardiograma es una señal temporal, pero una parte sustancial de su circulación clínica ocurre como imagen: papel térmico, PDF, captura de pantalla o trazado incrustado en una historia electrónica. Esta doble naturaleza abre una pregunta práctica con implicaciones metodológicas profundas: si el dato disponible ya es visual y los ejemplos etiquetados son escasos, ¿merece la pena entrenar un modelo de visión específico --- con las limitaciones inherentes de los pocos datos --- o puede aprovecharse un modelo multimodal de visión y lenguaje (VLM) que, sin actualizar sus pesos, reciba los pocos ejemplos directamente en el contexto del prompt?
+
+Este Trabajo de Fin de Grado aborda esa pregunta en un escenario deliberadamente difícil: pocos datos etiquetados, trazados electrocardiográficos renderizados como imagen y sospecha de síndrome de Brugada, una canalopatía hereditaria infrecuente. La orientación no es construir un producto sanitario ni un clasificador diagnóstico autónomo, sino investigar qué familia de modelos --- CNN entrenadas específicamente frente a VLM con aprendizaje en contexto (ICL) --- resulta más útil para apoyar un sistema de triaje clínico que priorice la revisión temprana de trazados sospechosos por parte de especialistas.
+
+La estructura experimental del trabajo sigue una progresión lógica. En primer lugar, se entrena una CNN ResNet18 con presupuestos de datos muy reducidos ($K \in \{2, 4, 8, 16, 32\}$) para establecer una línea base supervisada. Los resultados de esta rama constituyen un precedente empírico: demuestran que los modelos de visión tradicionales, incluso con técnicas de adaptación de dominio, no alcanzan rendimiento robusto cuando los datos etiquetados son escasos. Este resultado negativo justifica y motiva la segunda rama experimental, que constituye la propuesta principal del trabajo: el uso de modelos de visión y lenguaje --- concretamente Gemma~4 y MedGemma --- con aprendizaje en contexto, donde los pocos ejemplos disponibles se proporcionan directamente en el prompt sin actualizar pesos del modelo.
+
+\section{Motivación clínica}
+
+El síndrome de Brugada es un trastorno arrítmico hereditario asociado a disfunción de los canales de sodio cardíacos, que predispone a fibrilación ventricular y muerte súbita cardíaca, particularmente en varones jóvenes durante el reposo o el sueño \cite{zeppenfeld2022,wilde2023scbt}. Su prevalencia estimada varía entre 1:2\,000 y 1:5\,000 según la población, pero la cifra real es probablemente superior dado que muchos portadores permanecen asintomáticos hasta un primer evento arrítmico potencialmente letal.
+
+El sello diagnóstico del síndrome es el patrón electrocardiográfico tipo~1 de Brugada: una elevación del segmento ST de morfología convexa (\emph{coved}) $\geq 2$\,mm en al menos una derivación precordial derecha (V1, V2), seguida de una onda T negativa \cite{wilde2023scbt}. Este patrón se distingue de los tipos 2 y 3 (morfología en silla de montar, \emph{saddleback}), que por sí solos no son diagnósticos. Además, existen fenocopias --- elevaciones del ST de apariencia similar producidas por causas reversibles como fiebre, alteraciones electrolíticas, isquemia o fármacos --- que deben excluirse antes de establecer el diagnóstico \cite{sieira2017}.
+
+La dificultad clínica radica en que el patrón tipo~1 puede no estar presente de forma espontánea en el ECG basal. El trazado puede ser dinámico: aparecer y desaparecer con la fiebre, la ingesta de determinados fármacos o incluso de forma circadiana. Por ello, un ECG basal normal no excluye el síndrome. Esta intermitencia convierte al síndrome de Brugada en un candidato especialmente difícil para cualquier sistema automático de detección basado en una única captura.
+
+\subsection{Circuito clínico de confirmación}
+
+El flujo asistencial ante la sospecha de Brugada sigue una secuencia bien definida de pasos con complejidad creciente:
+
+\begin{enumerate}
+  \item \textbf{ECG estándar de 12 derivaciones.} Se examina el trazado en busca de patrones sugestivos en V1 y V2. Un patrón tipo~1 espontáneo, en ausencia de fenocopias, es por sí solo diagnóstico si se acompaña de criterios clínicos.
+  \item \textbf{Revisión por especialista.} Ante un trazado con elevación del ST sospechosa o un patrón tipo~2/3, el caso se remite a un cardiólogo o electrofisiólogo para valoración detallada.
+  \item \textbf{Reposicionamiento de derivaciones V1/V2 en espacios intercostales superiores.} Se registra un nuevo ECG colocando los electrodos V1 y V2 uno o dos espacios intercostales por encima de la posición estándar (segundo o tercer espacio intercostal). Esta maniobra aumenta la sensibilidad para desenmascarar un patrón tipo~1 oculto en la posición estándar \cite{sieira2017}.
+  \item \textbf{Prueba de provocación farmacológica.} En pacientes seleccionados con sospecha clínica persistente y ECG no diagnóstico, se realiza una prueba con bloqueantes del canal de sodio. Los fármacos utilizados incluyen ajmalina (1\,mg/kg IV en 5 minutos), flecainida (2\,mg/kg IV en 10 minutos o 400\,mg oral), procainamida (10\,mg/kg IV en 10 minutos) o pilsicainida (1\,mg/kg IV) \cite{brugadadrugsdiagnostic}. La prueba se realiza en un entorno monitorizado con disponibilidad de equipo de reanimación cardiopulmonar, dado el riesgo de inducción de arritmias durante la administración del fármaco. La prueba es positiva cuando se desenmascara un patrón tipo~1 inequívoco.
+  \item \textbf{Interpretación en contexto clínico.} El resultado de la prueba farmacológica debe interpretarse integrando la historia clínica, los antecedentes familiares de muerte súbita, la presencia de síncopes inexplicados y la exclusión de fenocopias. Un patrón tipo~1 inducido farmacológicamente, combinado con criterios clínicos, establece el diagnóstico según el consenso vigente \cite{wilde2023scbt}.
+  \item \textbf{Decisión clínica final.} La estratificación del riesgo y las decisiones terapéuticas --- incluyendo la posible indicación de desfibrilador automático implantable (DAI) --- corresponden exclusivamente al equipo clínico.
+\end{enumerate}
+
+\subsection{Posición del sistema propuesto en el circuito}
+
+El sistema desarrollado en este TFG se sitúa exclusivamente en la fase más temprana de este circuito: el cribado inicial automatizado de trazados ECG. Su función es la de \textbf{triaje o priorización}: ante un volumen de trazados, el modelo señala aquellos que presentan patrones visualmente compatibles con sospecha de Brugada y que, por tanto, merecen revisión prioritaria por parte de un especialista.
+
+Es fundamental subrayar lo que el sistema \textbf{no hace}:
+
+\begin{itemize}
+  \item No diagnostica ni descarta el síndrome de Brugada.
+  \item No sustituye la revisión experta del trazado.
+  \item No reemplaza la prueba de provocación farmacológica ni ningún paso del circuito clínico.
+  \item No emite recomendaciones terapéuticas.
+\end{itemize}
+
+Cuando el modelo señala un trazado como sospechoso, la acción esperada es que ese trazado entre en el circuito clínico descrito: revisión experta, posible reposicionamiento de derivaciones, y en pacientes seleccionados con sospecha persistente, prueba farmacológica monitorizada con bloqueantes del canal de sodio. El resultado de esta prueba debe interpretarse dentro del contexto clínico completo, excluyendo fenocopias. La decisión final es siempre del equipo clínico.
+
+Esta orientación de triaje prudente es especialmente relevante para el síndrome de Brugada, donde la prevalencia baja hace que los sistemas de detección automática operen con una probabilidad pretest baja, y donde un falso negativo puede tener consecuencias letales si el paciente no recibe seguimiento adecuado.
+
+\section{Motivación metodológica}
+
+El aprendizaje supervisado profundo ha demostrado capacidad para extraer información diagnóstica de trazados electrocardiográficos a gran escala. Trabajos previos han mostrado que las redes convolucionales pueden clasificar arritmias y detectar patologías a partir de señales de ECG con cohortes de cientos de miles de registros \cite{ribeiro2020,sangha2022}. Sin embargo, estos resultados dependen de un requisito previo exigente: la disponibilidad de conjuntos de datos grandes, diversos y bien etiquetados.
+
+El problema aparece al comienzo de cualquier proyecto biomédico orientado a patologías raras. En el caso del síndrome de Brugada, los datos etiquetados son inherentemente escasos por tres razones convergentes: la baja prevalencia del síndrome, la necesidad de confirmación diagnóstica mediante prueba farmacológica o documentación de patrón tipo~1 espontáneo, y la variabilidad en la presentación electrocardiográfica. Cuando solo se dispone de decenas de ejemplos etiquetados, las estrategias convencionales de entrenamiento supervisado --- incluso con transferencia de aprendizaje, aumento de datos y adaptación de dominio --- enfrentan limitaciones fundamentales: los modelos no ven suficiente variabilidad para generalizar, las curvas de aprendizaje se saturan prematuramente y la regularización no compensa la falta de cobertura del espacio de entrada.
+
+Este TFG aborda esta limitación comparando dos paradigmas radicalmente distintos para explotar pocos ejemplos etiquetados de ECG como imagen:
+
+\begin{enumerate}
+  \item \textbf{CNN con entrenamiento supervisado (línea base).} Una red convolucional ResNet18 se entrena con los $K$ ejemplos disponibles, actualizando sus pesos mediante descenso de gradiente. Se incluyen técnicas de adaptación de dominio (CORAL, MMD, DANN \cite{ganin2016}) para intentar reducir la brecha entre un dominio sintético controlado y el dominio real. Esta rama establece el rendimiento alcanzable con modelos de visión tradicionales en régimen de escasez.
+  \item \textbf{VLM con aprendizaje en contexto (propuesta principal).} Un modelo de visión y lenguaje --- Gemma~4 y MedGemma \cite{gemma4card,medgemma15} --- mantiene sus pesos fijos y recibe los $K$ ejemplos directamente dentro del prompt multimodal. El modelo aprovecha su conocimiento visual y lingüístico preexistente, adquirido durante el preentrenamiento a gran escala, para interpretar los trazados sin ninguna actualización de pesos. Esta rama investiga si el conocimiento multimodal previo de los VLM compensa la escasez de datos específicos del dominio.
+\end{enumerate}
+
+La pregunta metodológica central no es cuál tecnología es más reciente, sino una cuestión práctica con implicaciones directas para proyectos biomédicos con datos escasos: ¿compensa el conocimiento visual previo de un VLM la ausencia de entrenamiento específico? ¿O el entrenamiento supervisado, incluso con pocos datos, sigue siendo preferible?
+
+Los resultados de la rama CNN --- que muestran que el entrenamiento supervisado con pocos datos no alcanza rendimiento robusto en el dominio real, incluso con adaptación de dominio --- constituyen un precedente empírico negativo que justifica directamente la exploración de VLM/ICL como alternativa. Si entrenar un modelo de visión específico no funciona con pocos datos, la pregunta natural es si un modelo que ya posee conocimiento visual y médico general puede compensar esa carencia sin necesidad de actualizar pesos.
+
+\section{Pregunta de investigación}
+
+La pregunta central del trabajo es:
+
+\begin{quote}
+Dado un conjunto reducido de imágenes de ECG etiquetadas y un objetivo de triaje de sospecha de síndrome de Brugada, ¿cuándo resulta preferible entrenar una CNN específica frente a utilizar modelos de visión y lenguaje con aprendizaje en contexto? ¿Compensa el conocimiento multimodal preexistente de los VLM la escasez de datos etiquetados que limita a los modelos supervisados tradicionales?
+\end{quote}
+
+Esta pregunta general se descompone en las siguientes subpreguntas:
+
+\begin{enumerate}
+  \item ¿Puede una CNN aprender señal visual útil en un simulador QRS/ST controlado con presupuestos $K$ muy pequeños?
+  \item ¿Se mantiene ese aprendizaje al pasar a Brugada HUCA, un conjunto real con variabilidad clínica y etiqueta binaria de caso confirmado frente a control?
+  \item ¿La adaptación de dominio reduce de forma suficiente la brecha entre el dominio sintético y el dominio real?
+  \item ¿Los VLM con aprendizaje en contexto (Gemma~4, MedGemma) superan el rendimiento de la CNN entrenada cuando los datos etiquetados son escasos?
+  \item ¿A partir de qué umbral de datos etiquetados, si existe, el entrenamiento supervisado de una CNN iguala o supera al VLM/ICL?
+\end{enumerate}
+
+\section{Hipótesis}
+
+El trabajo parte de cinco hipótesis operativas:
+
+\begin{enumerate}
+  \item El simulador QRS/ST genera diferencias visuales suficientes para que una CNN aprenda por encima del azar en el dominio sintético.
+  \item El rendimiento de la CNN mejora al aumentar $K$ en el dominio sintético, donde las etiquetas proceden de reglas controladas.
+  \item La misma CNN pierde rendimiento significativo en Brugada HUCA por cambio de dominio visual y por cambio de significado de la etiqueta, evidenciando las limitaciones del entrenamiento supervisado con pocos datos.
+  \item La adaptación de dominio mejora parcialmente el resultado real, pero no elimina la limitación fundamental impuesta por la escasez de datos etiquetados.
+  \item Si la CNN no alcanza rendimiento robusto ni con adaptación de dominio, los VLM con aprendizaje en contexto --- que aprovechan conocimiento visual y médico adquirido durante el preentrenamiento multimodal a gran escala --- deben ofrecer un rendimiento superior sin necesidad de actualización de pesos, compensando con conocimiento previo lo que la CNN no puede aprender por falta de datos.
+\end{enumerate}
+
+\section{Objetivos}
+
+El objetivo general es construir una canalización experimental reproducible que compare el rendimiento de CNN entrenadas frente a VLM con aprendizaje en contexto para triaje de sospecha de Brugada a partir de ECG como imagen en régimen de pocos datos.
+
+Los objetivos específicos son:
+
+\begin{enumerate}
+  \item Generar un conjunto sintético QRS/ST con imágenes de V1, V2 y V3 y etiquetas derivadas de reglas morfológicas.
+  \item Construir un conjunto Brugada HUCA procesado, separado por paciente y con exclusiones documentadas.
+  \item Entrenar ResNet18 mediante validación leave-one-out para $K=\{2,4,8,16,32\}$ y tres semillas como línea base supervisada.
+  \item Medir exactitud equilibrada, F1, sensibilidad, especificidad, área ROC, precisión media y matrices de confusión.
+  \item Evaluar cuatro métodos de adaptación de dominio (SSL, CORAL, MMD, DANN) para cuantificar su capacidad de mitigar la brecha entre dominio sintético y real.
+  \item Interpretar los resultados CNN como evidencia empírica de las limitaciones del entrenamiento supervisado con pocos datos.
+  \item Desarrollar la pipeline VLM/ICL con Gemma~4 y MedGemma, incluyendo prompts estructurados, control de alucinaciones, validación de salida, condiciones de ablación y variación del número de ejemplos en contexto.
+  \item Comparar cuantitativamente el rendimiento CNN frente a VLM/ICL para cada régimen de datos y extraer recomendaciones prácticas.
+\end{enumerate}
+
+\section{Contribuciones}
+
+Las contribuciones del trabajo son:
+
+\begin{itemize}
+  \item Un simulador y un conjunto sintético auditado con 100 pacientes y 300 imágenes de trazados QRS/ST.
+  \item Un preprocesado del conjunto real Brugada HUCA con 317 pacientes, 951 imágenes y 46 exclusiones documentadas.
+  \item Resultados CNN completos en dominio sintético y real (Brugada HUCA), incluyendo curvas de aprendizaje, matrices de confusión y mapas Grad-CAM.
+  \item Resultados de adaptación de dominio para cuatro métodos (SSL, CORAL, MMD, DANN).
+  \item Una lectura negativa empíricamente fundamentada: la CNN aprende en el dominio sintético, pero no alcanza rendimiento robusto en el dominio real con pocos datos, ni siquiera con adaptación de dominio. Esta evidencia negativa constituye el precedente que justifica la exploración de VLM/ICL.
+  \item Una pipeline VLM/ICL con Gemma~4 y MedGemma como propuesta principal para el régimen de pocos datos, con prompts controlados, validación de salida, tablas de resultados preparadas y métricas comparables.
+  \item Una comparación sistemática CNN frente a VLM/ICL que permite identificar en qué régimen de datos cada enfoque resulta preferible.
+  \item Una memoria orientada a triaje clínico prudente, con descripción detallada del circuito de confirmación diagnóstica del síndrome de Brugada.
+\end{itemize}
+
+\section{Alcance}
+
+El trabajo no valida un producto sanitario. No estima utilidad clínica prospectiva ni sustituye la revisión por especialista. La etiqueta sintética deriva de reglas internas y la etiqueta real de HUCA representa caso Brugada confirmado frente a control. Estas dos tareas están relacionadas, pero no son equivalentes.
+
+La línea VLM/ICL no es decorativa ni secundaria. Constituye la propuesta principal del trabajo, motivada directamente por la evidencia empírica de que los modelos de visión tradicionales (CNN) no alcanzan rendimiento suficiente con pocos datos. La comparación CNN frente a VLM/ICL es el eje vertebrador de la memoria: los resultados CNN establecen el precedente negativo que los VLM deben superar o matizar, y la comparación conjunta permite extraer conclusiones prácticas sobre qué estrategia adoptar en función del presupuesto de datos disponible.
+
+Los resultados se circunscriben a los conjuntos de datos empleados (sintético QRS/ST y Brugada HUCA) y no son directamente generalizables a otras poblaciones, otros patrones electrocardiográficos o dispositivos de adquisición distintos sin validación adicional.
+
+\section{Estructura de la memoria}
+
+El capítulo~\ref{chap:fundamentos} presenta los fundamentos clínicos del síndrome de Brugada y los fundamentos técnicos de CNN, adaptación de dominio y modelos de visión y lenguaje. El capítulo~\ref{chap:relacionados} revisa trabajos relacionados en clasificación de ECG como imagen y en aprendizaje con pocos datos. El capítulo~\ref{chap:diseno} fija el diseño experimental del estudio comparativo. El capítulo~\ref{chap:simulador} describe el simulador QRS/ST. El capítulo~\ref{chap:modelos} detalla las arquitecturas y configuraciones de la CNN, la adaptación de dominio y la pipeline VLM/ICL con Gemma~4 y MedGemma. Los capítulos~\ref{chap:resultados} y~\ref{chap:datos_reales} presentan los resultados de la rama CNN en el dominio sintético y real. El capítulo~\ref{chap:vlm} desarrolla la evaluación VLM/ICL con sus condiciones, controles y tablas de resultados preparadas. El capítulo~\ref{chap:conclusiones} cierra el trabajo con las conclusiones y líneas futuras.

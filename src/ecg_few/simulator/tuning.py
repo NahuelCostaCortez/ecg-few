@@ -6,16 +6,13 @@ without changing the dataset label semantics.
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
-
 import numpy as np
 
 from .constants import ATOM_ORDER, REFERENCE_DURATION_MS, REPOLARIZATION_PIVOT_MS
 from .model import GaussianAtom
 
-
 # Shared default ranges for every Gaussian atom before family-specific overrides.
-BASE_SCAFFOLD_RANGES: Dict[str, Dict[str, Tuple[float, float]]] = {
+BASE_SCAFFOLD_RANGES: dict[str, dict[str, tuple[float, float]]] = {
     "P": {"a": (0.04, 0.12), "mu": (90, 150), "sigma": (18, 34)},
     "Q": {"a": (0, 0.0), "mu": (245, 280), "sigma": (5, 11)},
     "R": {"a": (0.05, 0.70), "mu": (285, 330), "sigma": (8, 15)},
@@ -30,7 +27,7 @@ BASE_SCAFFOLD_RANGES: Dict[str, Dict[str, Tuple[float, float]]] = {
 
 
 # Family-specific morphology overrides layered on top of the shared scaffold.
-CLASS_PARAM_RANGES: Dict[str, Dict[str, Dict[str, Tuple[float, float]]]] = {
+CLASS_PARAM_RANGES: dict[str, dict[str, dict[str, tuple[float, float]]]] = {
     "NORMAL": {
         #"R": {"a": (0.26, 0.62), "mu": (286, 326), "sigma": (8, 15)},
         "S": {"a": (-0.72, -0.24), "mu": (320, 356), "sigma": (13, 26)},
@@ -81,15 +78,15 @@ CLASS_PARAM_RANGES: Dict[str, Dict[str, Dict[str, Tuple[float, float]]]] = {
 
 
 def _deepcopy_ranges(
-    ranges: Dict[str, Dict[str, Tuple[float, float]]]
-) -> Dict[str, Dict[str, Tuple[float, float]]]:
+    ranges: dict[str, dict[str, tuple[float, float]]]
+) -> dict[str, dict[str, tuple[float, float]]]:
     return {k: dict(v) for k, v in ranges.items()}
 
 
 def _merge_ranges(
-    base: Dict[str, Dict[str, Tuple[float, float]]],
-    override: Dict[str, Dict[str, Tuple[float, float]]],
-) -> Dict[str, Dict[str, Tuple[float, float]]]:
+    base: dict[str, dict[str, tuple[float, float]]],
+    override: dict[str, dict[str, tuple[float, float]]],
+) -> dict[str, dict[str, tuple[float, float]]]:
     out = _deepcopy_ranges(base)
     for atom_name, atom_params in override.items():
         if atom_name not in out:
@@ -98,7 +95,7 @@ def _merge_ranges(
     return out
 
 
-def _resolve_class_key(class_name: str, subtype: Optional[str]) -> str:
+def _resolve_class_key(class_name: str, subtype: str | None) -> str:
     class_name = class_name.upper()
     if class_name != "BRUGADA":
         return class_name
@@ -109,12 +106,12 @@ def _resolve_class_key(class_name: str, subtype: Optional[str]) -> str:
     raise ValueError("BRUGADA subtype must be None or 'coved'.")
 
 
-def _sample_uniform(rng: np.random.Generator, low_high: Tuple[float, float]) -> float:
+def _sample_uniform(rng: np.random.Generator, low_high: tuple[float, float]) -> float:
     low, high = low_high
     return float(rng.uniform(low, high))
 
 
-def _clip_to_range(value: float, low_high: Tuple[float, float]) -> float:
+def _clip_to_range(value: float, low_high: tuple[float, float]) -> float:
     low, high = low_high
     return float(np.clip(value, low, high))
 
@@ -130,8 +127,8 @@ def _scale_repolarization_time(time_ms: float, duration_ms: float) -> float:
 
 
 def _adapt_ranges_for_duration(
-    ranges: Dict[str, Dict[str, Tuple[float, float]]], duration_ms: float
-) -> Dict[str, Dict[str, Tuple[float, float]]]:
+    ranges: dict[str, dict[str, tuple[float, float]]], duration_ms: float
+) -> dict[str, dict[str, tuple[float, float]]]:
     out = _deepcopy_ranges(ranges)
     reference_span = REFERENCE_DURATION_MS - REPOLARIZATION_PIVOT_MS
     duration_span = max(duration_ms - REPOLARIZATION_PIVOT_MS, 1.0)
@@ -156,9 +153,9 @@ def _adapt_ranges_for_duration(
 
 
 def _sample_atoms(
-    ranges: Dict[str, Dict[str, Tuple[float, float]]], rng: np.random.Generator
-) -> Dict[str, GaussianAtom]:
-    atoms: Dict[str, GaussianAtom] = {}
+    ranges: dict[str, dict[str, tuple[float, float]]], rng: np.random.Generator
+) -> dict[str, GaussianAtom]:
+    atoms: dict[str, GaussianAtom] = {}
     for name in ATOM_ORDER:
         atom_ranges = ranges[name]
         atoms[name] = GaussianAtom(
@@ -172,8 +169,8 @@ def _sample_atoms(
 
 def _apply_morphology_rules(
     class_key: str,
-    atoms: Dict[str, GaussianAtom],
-    ranges: Dict[str, Dict[str, Tuple[float, float]]],
+    atoms: dict[str, GaussianAtom],
+    ranges: dict[str, dict[str, tuple[float, float]]],
 ) -> None:
     atoms["Q"].a = _clip_to_range(max(atoms["Q"].a, -0.018), ranges["Q"]["a"])
     atoms["Q"].mu = _clip_to_range(min(atoms["Q"].mu, atoms["R"].mu - 12), ranges["Q"]["mu"])
@@ -194,7 +191,9 @@ def _apply_morphology_rules(
     atoms["T2"].mu = _clip_to_range(max(atoms["T2"].mu, atoms["T1"].mu + 20), ranges["T2"]["mu"])
 
     if class_key == "NORMAL":
-        atoms["R_prime"].a = _clip_to_range(min(abs(atoms["R_prime"].a), 0.05), ranges["R_prime"]["a"])
+        atoms["R_prime"].a = _clip_to_range(
+            min(abs(atoms["R_prime"].a), 0.05), ranges["R_prime"]["a"]
+        )
         atoms["R_prime"].sigma = _clip_to_range(
             min(atoms["R_prime"].sigma, atoms["R"].sigma + 4), ranges["R_prime"]["sigma"]
         )
@@ -237,8 +236,12 @@ def _apply_morphology_rules(
         atoms["J_elev"].a = _clip_to_range(abs(atoms["J_elev"].a), ranges["J_elev"]["a"])
         atoms["ST1"].a = _clip_to_range(max(atoms["ST1"].a, -0.01), ranges["ST1"]["a"])
         atoms["ST2"].a = _clip_to_range(max(atoms["ST2"].a, -0.015), ranges["ST2"]["a"])
-        atoms["T1"].mu = _clip_to_range(max(atoms["T1"].mu, atoms["ST2"].mu + 85), ranges["T1"]["mu"])
-        atoms["T2"].mu = _clip_to_range(max(atoms["T2"].mu, atoms["T1"].mu + 24), ranges["T2"]["mu"])
+        atoms["T1"].mu = _clip_to_range(
+            max(atoms["T1"].mu, atoms["ST2"].mu + 85), ranges["T1"]["mu"]
+        )
+        atoms["T2"].mu = _clip_to_range(
+            max(atoms["T2"].mu, atoms["T1"].mu + 24), ranges["T2"]["mu"]
+        )
         atoms["T1"].a = _clip_to_range(-abs(atoms["T1"].a), ranges["T1"]["a"])
         atoms["T2"].a = _clip_to_range(-abs(atoms["T2"].a), ranges["T2"]["a"])
         atoms["T1"].sigma = _clip_to_range(max(atoms["T1"].sigma, 44.0), ranges["T1"]["sigma"])

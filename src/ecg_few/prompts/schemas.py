@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from ecg_few.simulator.constants import LABEL_NAMES
+from ecg_few.findings import LABEL_NAMES
 
 TASK_MULTILABEL = "multilabel_findings"
-TASK_BINARY = "binary_finding"
 
 DEFAULT_SYSTEM_INSTRUCTIONS = (
     "You are evaluating synthetic single-lead ECG beat images for visual morphology "

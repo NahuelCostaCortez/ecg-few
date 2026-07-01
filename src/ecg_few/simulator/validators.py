@@ -5,8 +5,6 @@ Changing thresholds here changes the meaning of the labels in the dataset.
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
-
 import numpy as np
 
 from .constants import REFERENCE_DURATION_MS, REPOLARIZATION_PIVOT_MS
@@ -65,14 +63,14 @@ def _scale_repolarization_time(time_ms: float, duration_ms: float) -> float:
     return float(REPOLARIZATION_PIVOT_MS + (time_ms - REPOLARIZATION_PIVOT_MS) * scale)
 
 
-def _scaled_window(duration_ms: float, start_ms: float, end_ms: float) -> Tuple[float, float]:
+def _scaled_window(duration_ms: float, start_ms: float, end_ms: float) -> tuple[float, float]:
     return (
         _scale_repolarization_time(start_ms, duration_ms),
         _scale_repolarization_time(end_ms, duration_ms),
     )
 
 
-def _validate_rbbb(x: np.ndarray, t_ms: np.ndarray) -> Tuple[bool, Dict[str, float]]:
+def _validate_rbbb(x: np.ndarray, t_ms: np.ndarray) -> tuple[bool, dict[str, float]]:
     """
     RBBB when:
     - two positive QRS peaks in 240-470 ms, separated by at least 28 ms
@@ -128,7 +126,7 @@ def _validate_rbbb(x: np.ndarray, t_ms: np.ndarray) -> Tuple[bool, Dict[str, flo
     }
 
 
-def _validate_st_elevation(x: np.ndarray, t_ms: np.ndarray) -> Tuple[bool, Dict[str, float]]:
+def _validate_st_elevation(x: np.ndarray, t_ms: np.ndarray) -> tuple[bool, dict[str, float]]:
     """
     ST elevation when:
     - qrs_max > 0.28
@@ -154,7 +152,7 @@ def _validate_st_elevation(x: np.ndarray, t_ms: np.ndarray) -> Tuple[bool, Dict[
 
 def _validate_t_wave_inversion(
     x: np.ndarray, t_ms: np.ndarray, dt_ms: float
-) -> Tuple[bool, Dict[str, float]]:
+) -> tuple[bool, dict[str, float]]:
     """
     T wave inversion when:
     - qrs_max > 0.22
@@ -197,7 +195,7 @@ def _validate_t_wave_inversion(
 
 def _validate_normal(
     x: np.ndarray, t_ms: np.ndarray, dt_ms: float
-) -> Tuple[bool, Dict[str, float]]:
+) -> tuple[bool, dict[str, float]]:
     """
     Normal beat when:
     - qrs_max > 0.22
@@ -237,7 +235,7 @@ def _validate_normal(
     }
 
 
-def _validate_brugada(x: np.ndarray, t_ms: np.ndarray) -> Tuple[bool, Dict[str, float]]:
+def _validate_brugada(x: np.ndarray, t_ms: np.ndarray) -> tuple[bool, dict[str, float]]:
     """
     Brugada syndrome when:
     - qrs_max > 0.18
@@ -280,7 +278,7 @@ def _validate_brugada(x: np.ndarray, t_ms: np.ndarray) -> Tuple[bool, Dict[str, 
     }
 
 
-def extract_feature_labels(waveform: np.ndarray, fs: int) -> Dict[str, int]:
+def extract_feature_labels(waveform: np.ndarray, fs: int) -> dict[str, int]:
     t_ms = np.arange(waveform.shape[0], dtype=float) / fs * 1000.0
     dt_ms = 1000.0 / fs
     return {
@@ -292,7 +290,7 @@ def extract_feature_labels(waveform: np.ndarray, fs: int) -> Dict[str, int]:
 
 def _validate_beat(
     class_key: str, x: np.ndarray, t_ms: np.ndarray, fs: int
-) -> Tuple[bool, Dict[str, float]]:
+) -> tuple[bool, dict[str, float]]:
     dt_ms = 1000.0 / fs
     if class_key == "NORMAL":
         return _validate_normal(x, t_ms, dt_ms)

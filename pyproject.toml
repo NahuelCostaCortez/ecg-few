@@ -1,7 +1,7 @@
 [project]
 name = "ecg-vlm"
 version = "0.1.0"
-description = "Synthetic ECG beat image experiments for VLM morphology pattern detection."
+description = "ECG QRS/ST morphology experiments with derived Brugada evaluation."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -16,9 +16,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cnn = [
+    "torch>=2.3",
+    "torchvision>=0.18",
+]
 dev = [
     "pytest>=8.3",
     "ruff>=0.6",
+]
+real-data = [
+    "wfdb>=4.1",
 ]
 
 [build-system]
@@ -34,3 +41,4 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = [".", "src"]

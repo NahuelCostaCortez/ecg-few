@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
@@ -50,8 +48,8 @@ def plot_beat(patient_beat, fs, ax=None, save_path=None, dpi=112):
 def demo_plot_all(
     fs: int = 500,
     seed: int = 2026,
-    save_path: Optional[str] = "synthetic_ecg_examples.png",
-) -> Dict[str, Dict[str, object]]:
+    save_path: str | None = "synthetic_ecg_examples.png",
+) -> dict[str, dict[str, object]]:
     """Generate and plot one example beat per source family."""
     class_plan = [
         ("NORMAL", None),
@@ -63,7 +61,7 @@ def demo_plot_all(
 
     fig, axes = plt.subplots(2, 3, figsize=(15, 9))
     axes = axes.ravel()
-    outputs: Dict[str, Dict[str, object]] = {}
+    outputs: dict[str, dict[str, object]] = {}
 
     for idx, (class_name, subtype) in enumerate(class_plan):
         beat, meta = generate_beat(class_name=class_name, seed=seed + idx, subtype=subtype, fs=fs)

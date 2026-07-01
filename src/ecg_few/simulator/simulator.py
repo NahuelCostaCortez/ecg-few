@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
-
 import numpy as np
 
 from .constants import ATOM_ORDER, SOURCE_FAMILIES
@@ -20,7 +18,7 @@ from .tuning import (
 from .validators import _validate_beat, extract_feature_labels
 
 
-def _sum_gaussians(atoms: List[GaussianAtom], t_ms: np.ndarray) -> np.ndarray:
+def _sum_gaussians(atoms: list[GaussianAtom], t_ms: np.ndarray) -> np.ndarray:
     x = np.zeros_like(t_ms, dtype=float)
     for atom in atoms:
         x += atom.evaluate(t_ms)
@@ -29,12 +27,12 @@ def _sum_gaussians(atoms: List[GaussianAtom], t_ms: np.ndarray) -> np.ndarray:
 
 def generate_beat(
     class_name: str,
-    seed: Optional[int] = None,
-    subtype: Optional[str] = None,
+    seed: int | None = None,
+    subtype: str | None = None,
     fs: int = 500,
     duration_ms: float = 800.0,
     max_attempts: int = 400,
-) -> Tuple[np.ndarray, Dict[str, object]]:
+) -> tuple[np.ndarray, dict[str, object]]:
     """Generate one synthetic ECG beat and metadata."""
     class_key = _resolve_class_key(class_name, subtype)
     if class_key not in CLASS_PARAM_RANGES:
@@ -47,7 +45,7 @@ def generate_beat(
     n_samples = int(np.round((duration_ms / 1000.0) * fs))
     t_ms = np.arange(n_samples, dtype=float) / fs * 1000.0
 
-    last_metrics: Dict[str, float] = {}
+    last_metrics: dict[str, float] = {}
     for attempt in range(1, max_attempts + 1):
         sampled_atoms = _sample_atoms(ranges, rng)
         _apply_morphology_rules(class_key, sampled_atoms, ranges)

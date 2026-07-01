@@ -1,0 +1,67 @@
+\chapter{Resultados en el conjunto sintético}
+\label{chap:resultados}
+
+El primer bloque de resultados establece si una CNN puede aprender la tarea en un entorno controlado. Este paso es necesario antes de evaluar el modelo sobre datos reales y, sobre todo, antes de comparar con VLM/ICL. Si la CNN no logra aprender siquiera en un dominio sintético limpio, la comparación con VLM carecería de una línea base interpretable. El conjunto sintético contiene 100 pacientes simulados y 300 imágenes, con tres derivaciones por paciente. La etiqueta positiva corresponde a la presencia simultánea de los hallazgos operativos que definen el patrón Brugada derivado en el simulador. Hay 20 pacientes positivos y 80 normales o incompletos.
+
+\section{Curva por presupuesto}
+
+La tabla \ref{tab:resultados_sinteticos_finales} muestra la media y la desviación estándar sobre tres semillas. La tendencia es clara: con \(K=2\) y \(K=4\) el modelo ya supera el azar en exactitud equilibrada, pero aún produce muchos falsos positivos. A partir de \(K=16\) aparece una mejora sustancial y con \(K=32\) se obtiene el mejor punto de la campaña.
+
+\begin{table}[H]
+  \centering
+  \caption{Resultados CNN ResNet18 sobre el conjunto sintético QRS/ST.}
+  \label{tab:resultados_sinteticos_finales}
+  \small
+  \begin{tabular}{rrrrrr}
+    \toprule
+    \(K\) & BA & F1 & Sens. & Esp. & ROC AUC \\
+    \midrule
+    2  & \(0,625 \pm 0,022\) & 0,401 & 0,650 & 0,600 & 0,520 \\
+    4  & \(0,631 \pm 0,042\) & 0,407 & 0,617 & 0,646 & 0,566 \\
+    8  & \(0,685 \pm 0,023\) & 0,468 & 0,683 & 0,688 & 0,629 \\
+    16 & \(0,773 \pm 0,013\) & 0,569 & 0,800 & 0,746 & 0,755 \\
+    32 & \(0,848 \pm 0,030\) & 0,673 & 0,883 & 0,812 & 0,857 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.82\textwidth]{results/cnn_simulator_qrs_balanced_accuracy_by_k.png}
+  \caption{Exactitud equilibrada de la CNN sobre el conjunto sintético según el presupuesto \(K\).}
+  \label{fig:cnn_simulator_ba}
+\end{figure}
+
+El incremento entre \(K=8\) y \(K=16\) es el cambio más importante de la curva. El modelo pasa de una exactitud equilibrada media de 0,685 a 0,773, lo que indica que ocho ejemplos todavía no cubren suficientemente la variabilidad de combinaciones morfológicas. Con \(K=32\), la sensibilidad alcanza 0,883 y la especificidad 0,812, una combinación razonable para una tarea controlada de alerta morfológica.
+
+Este resultado demuestra que la formulación visual es viable y que la CNN puede extraer información de las imágenes. Sin embargo, como se verá en el capítulo siguiente, este aprendizaje no se traslada al dominio real.
+
+\section{Matriz de confusión}
+
+La matriz agregada de \(K=32\) resume el mejor punto sintético. En las tres semillas se acumulan 53 verdaderos positivos, 195 verdaderos negativos, 45 falsos positivos y 7 falsos negativos. El error dominante sigue siendo marcar como positivos algunos pacientes incompletos, aunque el número de falsos negativos es bajo.
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.58\textwidth]{results/cnn_simulator_qrs_k32_confusion_matrix.png}
+  \caption{Matriz de confusión agregada del conjunto sintético para \(K=32\).}
+  \label{fig:cnn_simulator_confusion}
+\end{figure}
+
+En un contexto de triaje, esta distribución de errores sería preferible a la situación inversa: el modelo tiende a avisar de más antes que a omitir positivos. Sin embargo, el conjunto sintético no representa pacientes reales y sus etiquetas proceden de reglas internas; por tanto, este resultado solo demuestra aprendizaje de la tarea simulada.
+
+\section{Inspección cualitativa}
+
+El panel Grad CAM de la figura \ref{fig:cnn_simulator_gradcam_resultados} muestra que el modelo atiende a regiones del complejo QRS, el punto J y la repolarización. La inspección es coherente con la definición de la etiqueta, pero no sustituye a una validación clínica. Grad CAM ayuda a detectar fallos obvios de atención; no certifica que la red razone como un especialista.
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.92\textwidth]{results/cnn_simulator_qrs_gradcam_example.png}
+  \caption{Ejemplo Grad CAM del modelo sintético.}
+  \label{fig:cnn_simulator_gradcam_resultados}
+\end{figure}
+
+\section{Conclusión del dominio sintético}
+
+El dominio sintético confirma tres hechos. Primero, el renderizado contiene información visual suficiente para entrenar una CNN con pocos ejemplos. Segundo, el presupuesto importa: por debajo de \(K=16\) el comportamiento es útil pero irregular; con \(K=32\) el modelo mejora simultáneamente sensibilidad, especificidad, F1 y área ROC. Tercero, este buen rendimiento no puede trasladarse de forma directa a clínica porque las imágenes sintéticas son más limpias y las etiquetas están definidas por el propio generador.
+
+Este resultado no cierra la comparación con VLM/ICL. Establece que la CNN \emph{puede} aprender cuando las condiciones están controladas. La pregunta siguiente es si ese aprendizaje se mantiene en datos reales o si la CNN, incluso con adaptación de dominio, falla al enfrentarse a la variabilidad clínica. Si falla, la comparación con VLM/ICL queda no solo justificada, sino motivada empíricamente.

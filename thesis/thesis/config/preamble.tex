@@ -1,0 +1,253 @@
+\usepackage[
+  a4paper,
+  top=3cm,
+  bottom=2.5cm,
+  left=3cm,
+  right=2.5cm,
+  headheight=58pt,
+  headsep=0.5cm,
+  footskip=1cm
+]{geometry}
+
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{newtxtext,newtxmath}
+\else
+  \usepackage{fontspec}
+  \setmainfont{Times New Roman}
+  \setsansfont{Arial}
+  \setmonofont{Consolas}
+\fi
+
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{csquotes}
+\usepackage{zref-totpages}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
+
+\makeatletter
+\setlength{\@fptop}{0pt}
+\renewcommand*\l@section{\@dottedtocline{1}{1.5em}{3.2em}}
+\makeatother
+
+\definecolor{Ink}{HTML}{111111}
+\definecolor{TextGray}{HTML}{3F3F3F}
+\definecolor{MidGray}{HTML}{777777}
+\definecolor{LightGray}{HTML}{D9D9D9}
+\definecolor{PaperGray}{HTML}{F7F7F7}
+
+\hypersetup{
+  pdftitle={\ThesisTitle},
+  pdfauthor={\AuthorName},
+  pdfsubject={\DocumentType},
+  pdfkeywords={electrocardiograma, redes convolucionales, modelos de visión y lenguaje, aprendizaje en contexto, datos sintéticos}
+}
+
+\graphicspath{{assets/}{figures/}}
+\onehalfspacing
+\setlength{\parindent}{1.05cm}
+\setlength{\parskip}{0.35em}
+\setlength{\tabcolsep}{6.5pt}
+\renewcommand{\arraystretch}{1.14}
+\raggedbottom
+\emergencystretch=2.5em
+
+\titleformat{\chapter}[display]
+  {\normalfont\color{Ink}}
+  {\fontsize{12}{14}\selectfont\bfseries\MakeUppercase{\chaptername}\ \thechapter}
+  {0.75em}
+  {\bfseries\fontsize{28}{32}\selectfont\raggedright}
+  [\vspace{0.65em}\color{Ink}\titlerule]
+
+\titlespacing*{\chapter}{0pt}{-0.25cm}{1.45cm}
+
+\titleformat{\section}
+  {\normalfont\bfseries\fontsize{14}{17}\selectfont\color{Ink}}
+  {\thesection}
+  {0.75em}
+  {}
+
+\titleformat{\subsection}
+  {\normalfont\bfseries\fontsize{12}{15}\selectfont\color{Ink}}
+  {\thesubsection}
+  {0.75em}
+  {}
+
+\titleformat{\subsubsection}
+  {\normalfont\bfseries\fontsize{12}{15}\selectfont\color{Ink}}
+  {\thesubsubsection}
+  {0.7em}
+  {}
+
+\titlespacing*{\section}{0pt}{1.15em}{0.45em}
+\titlespacing*{\subsection}{0pt}{0.95em}{0.35em}
+\titlespacing*{\subsubsection}{0pt}{0.75em}{0.25em}
+
+\newcommand{\documentheader}{%
+  \begin{tabularx}{\headwidth}{@{}lXr@{}}
+    \raisebox{-0.22\height}{\safeheaderlogo} &
+    \begin{tabular}[c]{@{}l@{}}
+      \footnotesize\UniversityName\\[-0.15em]
+      \scriptsize\SchoolName
+    \end{tabular} &
+    \begin{tabular}[c]{@{}r@{}}
+      \footnotesize\DocumentType\\[-0.15em]
+      \scriptsize Hoja \number\numexpr\value{abspage}+1\relax\ de \ztotpages
+    \end{tabular}
+  \end{tabularx}
+}
+
+\newcommand{\documentfooter}{%
+  \begin{tabularx}{\headwidth}{@{}Xr@{}}
+    \footnotesize\AuthorName &
+    \footnotesize\ThesisRunningTitle
+  \end{tabularx}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{\color{TextGray}\documentheader}
+\fancyfoot[C]{\color{TextGray}\documentfooter}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.35pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{Ink}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{LightGray}\leaders\hrule height \footrulewidth\hfill}}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyhead[C]{\color{TextGray}\documentheader}
+  \fancyfoot[C]{\color{TextGray}\documentfooter}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \renewcommand{\footrulewidth}{0.35pt}
+  \renewcommand{\headrule}{\hbox to\headwidth{\color{Ink}\leaders\hrule height \headrulewidth\hfill}}
+  \renewcommand{\footrule}{\hbox to\headwidth{\color{LightGray}\leaders\hrule height \footrulewidth\hfill}}
+}
+
+\setlist[itemize]{
+  leftmargin=0.9cm,
+  label=\raisebox{0.18ex}{\scriptsize$\bullet$},
+  itemsep=0.35em,
+  topsep=0.5em
+}
+\setlist[enumerate]{
+  leftmargin=1.0cm,
+  itemsep=0.35em,
+  topsep=0.5em
+}
+
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  textfont={color=TextGray},
+  justification=centering,
+  singlelinecheck=false,
+  margin=0.65cm,
+  skip=7pt,
+  labelsep=period
+}
+\captionsetup[table]{position=above}
+\captionsetup[figure]{position=below}
+
+\addto\captionsspanish{
+  \renewcommand{\tablename}{Tabla}
+  \renewcommand{\listtablename}{Índice de tablas}
+}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize\color{Ink},
+  keywordstyle=\bfseries\color{Ink},
+  commentstyle=\itshape\color{TextGray},
+  stringstyle=\color{TextGray},
+  numbers=left,
+  numberstyle=\tiny\color{MidGray},
+  frame=single,
+  rulecolor=\color{LightGray},
+  breaklines=true,
+  showstringspaces=false,
+  columns=fullflexible,
+  backgroundcolor=\color{PaperGray},
+  xleftmargin=0.3cm,
+  framexleftmargin=0.2cm
+}
+
+\newcommand{\missingimagebox}[1]{
+  \fcolorbox{MidGray}{PaperGray}{
+    \parbox[c][4cm][c]{0.9\linewidth}{
+      \centering
+      \small\textbf{Imagen pendiente de incorporación}\\[0.55em]
+      \footnotesize\texttt{\detokenize{#1}}
+    }
+  }
+}
+
+\newcommand{\safeincludegraphics}[2][]{
+  \IfFileExists{assets/#2}{
+    \includegraphics[#1]{#2}
+  }{
+    \IfFileExists{#2}{
+      \includegraphics[#1]{#2}
+    }{
+      \missingimagebox{#2}
+    }
+  }
+}
+
+\newcommand{\safeheaderlogo}{
+  \IfFileExists{assets/logo_uniovi.png}{
+    \includegraphics[height=0.43cm]{logo_uniovi.png}
+  }{
+    \footnotesize\bfseries UniOvi
+  }
+}
+
+\newcommand{\safetitlelogo}{
+  \IfFileExists{assets/logo_uniovi_portada.png}{
+    \includegraphics[width=5.0cm]{logo_uniovi_portada.png}
+  }{
+  \IfFileExists{assets/logo_uniovi.png}{
+    \includegraphics[width=5.0cm]{logo_uniovi.png}
+  }{
+    \fcolorbox{MidGray}{PaperGray}{
+      \parbox[c][2.8cm][c]{5.0cm}{
+        \centering
+        \small\textbf{Universidad de Oviedo}\\[0.4em]
+        \footnotesize Logotipo pendiente de incorporación
+      }
+    }
+  }
+  }
+}
+
+\newcommand{\placeholderfigure}[3][0.82\textwidth]{
+  \begin{figure}[H]
+    \centering
+    \fcolorbox{MidGray}{PaperGray}{
+      \parbox[c][5cm][c]{#1}{
+        \centering
+        \small\textbf{Figura pendiente de incorporación}\\[0.7em]
+        \normalfont #3
+      }
+    }
+    \caption{#2}
+  \end{figure}
+}
