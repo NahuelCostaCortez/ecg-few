@@ -1,5 +1,5 @@
 % !TEX program = xelatex
-\documentclass[12pt,a4paper,oneside]{report}
+\documentclass[10pt,a4paper,oneside]{report}
 
 \input{config/metadata}
 \input{config/preamble}
@@ -14,13 +14,14 @@
 \setcounter{page}{1}
 \input{frontmatter/resumen}
 \input{frontmatter/abstract}
-\input{frontmatter/palabras_clave}
 
 \tableofcontents
 \clearpage
-\listoffigures
+\vspace*{1.2cm}
+{\let\clearpage\relax\listoffigures}
 \clearpage
-\listoftables
+\vspace*{1.2cm}
+{\let\clearpage\relax\listoftables}
 
 \cleardoublepage
 \pagenumbering{arabic}

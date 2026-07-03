@@ -1,13 +1,13 @@
 \chapter{Evaluación VLM/ICL}
 \label{chap:vlm}
 
-Este capítulo desarrolla el segundo brazo del estudio: modelos de visión y lenguaje con aprendizaje en contexto. Su papel dentro del TFG tiene el mismo peso metodológico que la rama CNN. La diferencia es que aquí los valores numéricos de resultados se dejan como celdas reservadas para ejecución, mientras que el diseño experimental, las condiciones, los controles, el contrato de salida y las tablas de comparación quedan definidos por completo.
+Este capítulo define la línea VLM/ICL del estudio: modelos de visión y lenguaje con aprendizaje en contexto. Las tablas no incorporan cifras para no anticipar resultados VLM; el capítulo fija el diseño experimental, las condiciones, los controles, el formato de salida y la lectura comparativa.
 
 \newcommand{\vlmpending}{--}
 
-\section{Objetivo del brazo VLM}
+\section{Objetivo de la línea VLM/ICL}
 
-La rama CNN ha establecido la línea base supervisada: con \(K \leq 32\), ResNet18 aprende en el simulador, pero no alcanza rendimiento robusto sobre Brugada HUCA. El brazo VLM/ICL evalúa la hipótesis complementaria: si los ejemplos etiquetados son demasiado escasos para actualizar pesos de forma fiable, quizá puedan ser más útiles como demostraciones dentro del contexto de un modelo multimodal preentrenado.
+La línea CNN ha establecido la base supervisada: con \(K \leq 32\), ResNet18 aprende en el simulador, pero no alcanza un rendimiento fiable sobre los datos cedidos por el HUCA. El protocolo VLM/ICL evalúa la hipótesis complementaria: si los ejemplos etiquetados son demasiado escasos para actualizar pesos de forma fiable, quizá puedan ser más útiles como demostraciones dentro del contexto de un modelo multimodal preentrenado.
 
 La comparación se formula con la misma entrada visual, los mismos pacientes, los mismos presupuestos \(K\), la misma separación leave-one-out y las mismas métricas por paciente. La diferencia experimental es una sola: la CNN usa los ejemplos para entrenar; el VLM los usa para condicionar la inferencia.
 
@@ -17,7 +17,7 @@ El protocolo contempla dos modelos abiertos:
 
 \begin{itemize}
   \item \textbf{Gemma 4}. Modelo multimodal generalista con entrada de texto e imagen \cite{gemma4card}. Actúa como referencia abierta no especializada. Su papel es medir cuánto puede aportar un VLM general con contexto visual y textual amplio.
-  \item \textbf{MedGemma 1.5}. Modelo multimodal médico basado en la familia Gemma y adaptado con modalidades clínicas \cite{medgemma15}. Actúa como referencia médica. Su papel es medir si el preentrenamiento biomédico general aporta ventaja en ECG, aun cuando el ECG no figure como modalidad principal de su tarjeta.
+  \item \textbf{MedGemma 1.5}. Modelo multimodal médico basado en la familia Gemma y adaptado con modalidades clínicas \cite{medgemma15}. Actúa como referencia médica. Su papel es medir si el preentrenamiento biomédico general aporta ventaja en ECG, aun cuando la documentación del modelo no identifique el ECG como modalidad principal.
 \end{itemize}
 
 Ambos modelos se sirven localmente mediante vLLM siempre que el hardware lo permita. Esta decisión evita depender de APIs externas y permite registrar versión de pesos, plantilla de conversación, resolución visual, temperatura y parámetros de generación.
@@ -28,9 +28,11 @@ Los presupuestos son \(K=\{0,2,4,8,16,32\}\). El caso \(K=0\) mide comportamient
 
 Para que la comparación con la CNN sea directa, las demostraciones se seleccionan a nivel de paciente y nunca incluyen el paciente reservado para test. Cuando un paciente aporta varias derivaciones, la demostración conserva la misma lógica de agregación que el resto del estudio: V1, V2 y V3 son evidencia visual del mismo paciente, no muestras independientes para filtrar entre entrenamiento y prueba.
 
-\section{Contrato de salida}
+El esquema general de esta construcción se resume en la figura~\ref{fig:icl_context_window}. En este capítulo se concreta cómo se seleccionan las demostraciones, qué campos debe producir el modelo y cómo se agregan las respuestas por paciente.
 
-La salida esperada depende de la tarea VLM. En la tarea morfológica, el JSON estricto contiene los mismos hallazgos que utiliza la CNN. Para cada imagen V1, V2 o V3, la respuesta mínima es:
+\section{Formato de salida}
+
+El formato depende de la tarea VLM. En la tarea morfológica, el JSON estricto contiene los mismos hallazgos que utiliza la CNN. Para cada imagen V1, V2 o V3, la respuesta mínima es:
 
 \begin{lstlisting}
 {
@@ -40,7 +42,7 @@ La salida esperada depende de la tarea VLM. En la tarea morfológica, el JSON es
 }
 \end{lstlisting}
 
-La etiqueta clínica de paciente se deriva después mediante la misma regla AND usada en el resto del TFG: solo se marca sospecha Brugada si los tres hallazgos están presentes tras agregar las derivaciones. Esta tarea permite estudiar transferencia desde demostraciones morfológicas sintéticas hacia HUCA.
+La etiqueta clínica de paciente se deriva después mediante la misma regla AND usada en el resto del TFG: solo se marca sospecha Brugada si los tres hallazgos están presentes tras agregar las derivaciones. Esta tarea permite estudiar transferencia desde demostraciones morfológicas sintéticas hacia la cohorte del HUCA.
 
 La segunda tarea es clínica directa. En ella el VLM recibe una única derivación fija del paciente, por defecto V2, y responde:
 
@@ -50,9 +52,9 @@ La segunda tarea es clínica directa. En ella el VLM recibe una única derivaci�
 }
 \end{lstlisting}
 
-Esta rama usa \(K\) pacientes reales HUCA como demostraciones en contexto y predice otro paciente HUCA real. Para \(K \geq 2\), la selección de contexto fuerza ejemplos normales y Brugada siempre que el pliegue lo permita. La derivación se fija globalmente mediante \texttt{CLINICAL\_LEAD}, de modo que ambos modelos ven exactamente las mismas imágenes. Así se mide si el VLM aprovecha pocos ejemplos clínicos reales sin actualizar pesos, una pregunta complementaria a la transferencia morfológica desde simulador.
+La tarea clínica directa usa \(K\) pacientes reales de la cohorte cedida por el HUCA como demostraciones en contexto y predice otro paciente de esa misma cohorte. Para \(K \geq 2\), la selección de contexto fuerza ejemplos normales y Brugada siempre que el pliegue lo permita. La derivación se fija de antemano, por defecto V2, de modo que ambos modelos ven exactamente las mismas imágenes. Con ello se mide si el VLM aprovecha pocos ejemplos clínicos reales sin actualizar pesos, una pregunta complementaria a la transferencia morfológica desde simulador.
 
-El análisis principal no interpreta texto libre. Una respuesta no parseable, con claves ausentes, tipos incorrectos o valores fuera del esquema, se registra como fallo de formato. Esta tasa de fallos se reporta junto con las métricas clínicas porque forma parte del comportamiento real de un VLM.
+El análisis principal no interpreta texto libre. Una respuesta que no pueda analizarse como JSON, con claves ausentes, tipos incorrectos o valores fuera del esquema, se registra como fallo de formato. Esta tasa de fallos se reporta junto con las métricas clínicas porque forma parte del comportamiento real de un VLM.
 
 \section{Condiciones experimentales}
 
@@ -78,19 +80,19 @@ La tabla \ref{tab:vlm_conditions} fija las condiciones de la campaña. Las tres 
 
 \section{Agregación por paciente}
 
-En la tarea morfológica, cada predicción se obtiene por imagen y se agrega a nivel de paciente para conservar la misma unidad de evaluación que en la CNN. Si el modelo produce una respuesta válida para V1, V2 y V3, se calcula una decisión de paciente por voto mayoritario o por media de probabilidades si se activa la confianza numérica. En la tarea clínica directa, la consulta contiene una sola imagen del paciente; la salida \texttt{clinical\_brugada} se evalúa directamente contra la referencia HUCA. Si alguna respuesta produce JSON inválido, se conserva el fallo en la auditoría. El análisis principal contabiliza los fallos como errores; un análisis secundario puede informar métricas sobre respuestas válidas, pero nunca sustituye al análisis principal.
+En la tarea morfológica, cada predicción se obtiene por imagen y se agrega a nivel de paciente para conservar la misma unidad de evaluación que en la CNN. Si el modelo produce una respuesta válida para V1, V2 y V3, se calcula una decisión de paciente por voto mayoritario o por media de probabilidades si se activa la confianza numérica. En la tarea clínica directa, la consulta contiene una sola imagen del paciente; la salida \texttt{clinical\_brugada} se evalúa directamente contra la referencia clínica de la cohorte. Si alguna respuesta produce JSON inválido, se conserva el fallo en la auditoría. El análisis principal contabiliza los fallos como errores; un análisis secundario puede informar métricas sobre respuestas válidas, pero nunca sustituye al análisis principal.
 
-\section{Scripts y artefactos de ejecución}
+\section{Trazabilidad de la evaluación}
 
-La campaña VLM/ICL queda implementada en dos wrappers reproducibles. El validador comprueba particiones, prompts, imágenes, modelos configurados y volumen previsto de inferencias sin cargar pesos ni llamar a red. El lanzador ejecuta la campaña completa y acepta dos tareas: morfología y clínica directa. La salida morfológica y la salida clínica real-context se guardan en árboles separados, con manifiesto de campaña, métricas por ejecución, métricas por modelo-tarea-condición-\(K\), matrices de confusión y gráficas de exactitud equilibrada y F1. Cuando existan inferencias auditadas, el comparador reconstruye la evaluación CNN frente a VLM.
+La evaluación VLM/ICL conserva la misma separación por paciente que la línea CNN. Para cada condición se registran el modelo, la tarea, el presupuesto \(K\), la semilla, las imágenes de consulta, las demostraciones incluidas, la respuesta estructurada y la validez del formato. Esta información permite reconstruir métricas por paciente, matrices de confusión y comparaciones por presupuesto sin mezclar dominios ni pacientes.
 
-\section{Tablas de resultados preparadas}
+\section{Tablas de resultados VLM/ICL}
 
-Las tablas siguientes forman parte del documento aunque las celdas numéricas VLM estén reservadas. Esto evita que la rama VLM aparezca como una nota futura: el experimento está especificado, sus salidas están definidas y solo falta rellenar los valores tras ejecutar las inferencias. En estas tablas, \(\vlmpending\) indica valor por ejecutar.
+Las tablas siguientes mantienen las celdas numéricas sin valor para no adelantar resultados VLM. En esta sección, \(\vlmpending\) identifica una celda sin cifra reportada.
 
 \begin{table}[H]
   \centering
-  \caption{Resultados VLM/ICL previstos para Gemma 4 sobre Brugada HUCA.}
+  \caption{Tabla de resultados VLM/ICL para Gemma 4 sobre los datos cedidos por el HUCA.}
   \label{tab:vlm_gemma4_results}
   \small
   \begin{tabular}{rrrrrrr}
@@ -109,7 +111,7 @@ Las tablas siguientes forman parte del documento aunque las celdas numéricas VL
 
 \begin{table}[H]
   \centering
-  \caption{Resultados VLM/ICL previstos para MedGemma 1.5 sobre Brugada HUCA.}
+  \caption{Tabla de resultados VLM/ICL para MedGemma 1.5 sobre los datos cedidos por el HUCA.}
   \label{tab:vlm_medgemma_results}
   \small
   \begin{tabular}{rrrrrrr}
@@ -128,7 +130,7 @@ Las tablas siguientes forman parte del documento aunque las celdas numéricas VL
 
 \begin{table}[H]
   \centering
-  \caption{Controles VLM/ICL previstos para verificar uso multimodal real.}
+  \caption{Controles VLM/ICL para verificar uso multimodal real.}
   \label{tab:vlm_controls_results}
   \small
   \begin{tabularx}{\textwidth}{p{3.1cm}p{2.2cm}XXXX}
@@ -147,40 +149,40 @@ Las tablas siguientes forman parte del documento aunque las celdas numéricas VL
   \end{tabularx}
 \end{table}
 
-\section{Comparación final prevista}
+\section{Matriz de comparación}
 
-La comparación final se leerá como una curva de decisión. La CNN ya aporta los valores de referencia. Las celdas VLM se rellenarán tras ejecutar las inferencias con la misma auditoría.
+La comparación se lee como una curva de decisión. La CNN aporta los valores de referencia y la columna VLM conserva el mismo espacio de lectura, sin introducir cifras no verificadas.
 
 \begin{table}[H]
   \centering
   \caption{Matriz de decisión CNN frente a VLM/ICL.}
   \label{tab:cnn_vlm_decision_matrix}
-  \small
-  \begin{tabularx}{\textwidth}{p{1.2cm}p{3.0cm}p{3.0cm}p{3.0cm}X}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}lcccX@{}}
     \toprule
-    \(K\) & CNN HUCA base BA & Mejor CNN+DA BA & Mejor VLM BA & Lectura esperada \\
+    \(K\) & CNN base & CNN comp. & VLM & Lectura \\
     \midrule
-    2  & 0,509 & -- & \vlmpending & Régimen extremo. \\
-    4  & 0,509 & -- & \vlmpending & CNN inestable. \\
-    8  & 0,490 & -- & \vlmpending & Transición inicial. \\
-    16 & 0,516 & 0,524 (CORAL) & \vlmpending & Ref. CORAL. \\
-    32 & 0,499 & 0,549 (MMD) & \vlmpending & Ref. MMD. \\
+    2  & 0,509 & -- & \vlmpending & Zona favorable a ICL. \\
+    4  & 0,509 & -- & \vlmpending & Zona favorable a ICL. \\
+    8  & 0,490 & -- & \vlmpending & Zona de transición. \\
+    16 & 0,516 & 0,524 (CORAL) & \vlmpending & Comparación abierta. \\
+    32 & 0,499 & 0,549 (MMD) & \vlmpending & Comparación abierta. \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-\section{Figuras de resultados reservadas}
+\section{Figuras de comparación VLM/ICL}
 
 \begin{figure}[H]
   \centering
   \fcolorbox{MidGray}{PaperGray}{
     \parbox[c][4.2cm][c]{0.88\textwidth}{
       \centering
-      \textbf{Panel reservado para curva CNN vs VLM/ICL}\\[0.7em]
-      \small Exactitud equilibrada por \(K\), con CNN base, mejor adaptación de dominio, Gemma 4 y MedGemma 1.5.
+      \textbf{Comparación CNN vs VLM/ICL}\\[0.7em]
+      \small Exactitud equilibrada por \(K\), con CNN base, mejor comprobación complementaria, Gemma 4 y MedGemma 1.5.
     }
   }
-  \caption{Figura prevista para la comparación final de exactitud equilibrada entre CNN y VLM/ICL.}
+  \caption{Espacio de comparación de exactitud equilibrada entre CNN y VLM/ICL.}
   \label{fig:vlm_cnn_comparison_reserved}
 \end{figure}
 
@@ -189,16 +191,16 @@ La comparación final se leerá como una curva de decisión. La CNN ya aporta lo
   \fcolorbox{MidGray}{PaperGray}{
     \parbox[c][4.2cm][c]{0.88\textwidth}{
       \centering
-      \textbf{Panel reservado para matrices de confusión VLM}\\[0.7em]
+      \textbf{Matrices de confusión VLM}\\[0.7em]
       \small Matrices por modelo y \(K\), incluyendo conteo de respuestas JSON inválidas.
     }
   }
-  \caption{Figura prevista para matrices de confusión de Gemma 4 y MedGemma 1.5.}
+  \caption{Espacio para matrices de confusión de Gemma 4 y MedGemma 1.5.}
   \label{fig:vlm_confusion_reserved}
 \end{figure}
 
 \section{Criterio de lectura}
 
-Si un VLM supera de forma consistente a la CNN en \(K\) bajo, la conclusión será que el conocimiento multimodal previo aporta valor en la zona donde entrenar pesos no compensa. Si la CNN alcanza o supera al VLM cuando \(K\) aumenta, aparecerá un punto de cruce práctico: por debajo conviene ICL; por encima conviene entrenamiento supervisado. Si ninguno de los dos enfoques supera un rendimiento aceptable, el resultado también será informativo: indicará que la tarea requiere más datos, mejores anotaciones morfológicas o modelos específicamente preentrenados en ECG.
+La hipótesis principal es que ICL será más competitivo en \(K\) bajo, donde entrenar pesos con pocos pacientes resulta frágil. Si el VLM supera a la CNN en esa zona, el resultado apoyará el uso de demostraciones en contexto para tareas raras con pocas etiquetas. Si la CNN alcanza o supera al VLM cuando \(K\) aumenta, aparecerá un punto de cruce práctico: por debajo conviene ICL; por encima conviene entrenamiento supervisado. Si ninguno de los dos enfoques supera un rendimiento aceptable, el resultado también será informativo, porque indicará que la tarea requiere más datos, mejores anotaciones morfológicas o modelos específicamente preentrenados en ECG.
 
 En todos los casos, la lectura clínica se mantiene constante. La salida del modelo solo prioriza revisión experta dentro del circuito de Brugada; no confirma ni descarta el síndrome.

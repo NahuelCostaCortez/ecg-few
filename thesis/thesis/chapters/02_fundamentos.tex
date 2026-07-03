@@ -19,7 +19,7 @@ Las letras Q, R y S no designan posiciones anatómicas fijas. La onda Q es la pr
 
 El segmento ST se evalúa con respecto a una referencia isoeléctrica. En un registro real, esa referencia puede aproximarse mediante el segmento TP o el segmento PR según el contexto. La elevación o depresión no se interpreta de forma independiente. Importan la derivación, la magnitud, la morfología, la distribución espacial y el cuadro clínico. Las recomendaciones de la AHA, el ACCF y la HRS separan de forma explícita la descripción del segmento ST, la onda T y el intervalo QT porque cada elemento aporta información diferente \cite{rautaharju2009st}.
 
-La onda T también depende de la derivación. Una deflexión negativa puede ser fisiológica en algunas posiciones y patológica en otras. Su significado cambia según la edad, el sexo, la secuencia de activación ventricular, los cambios del segmento ST y la presencia de otras alteraciones. El proyecto no intenta resolver esta interpretación completa. La etiqueta de inversión de T indica únicamente que la región tardía del latido sintético presenta una deflexión negativa que satisface las reglas operativas del conjunto.
+La onda T también depende de la derivación. Una deflexión negativa puede ser fisiológica en algunas posiciones y patológica en otras. Su significado cambia según la edad, el sexo, la secuencia de activación ventricular, los cambios del segmento ST y la presencia de otras alteraciones. El proyecto no intenta resolver esta interpretación completa. La etiqueta de inversión de T indica únicamente que la región tardía del latido sintético presenta una deflexión negativa que satisface las reglas del conjunto.
 
 \section{Hallazgos morfológicos utilizados en el proyecto}
 
@@ -80,10 +80,10 @@ Este circuito subraya por qué el sistema desarrollado en este TFG se plantea ex
   \hfill
   \begin{subfigure}[t]{0.34\textwidth}
     \centering
-    \safeincludegraphics[height=5.0cm]{sources/brugada_patterns_orphanet.png}
-    \caption{Patrones tipo 1, 2 y 3 usados como referencia visual.}
+    \safeincludegraphics[width=\linewidth]{sources/brugada_patterns_orphanet.png}
+    \caption{Patrones tipo 1--3.}
   \end{subfigure}
-  \caption{Ejemplos clínicos de morfología Brugada. Izquierda: CardioNetworks/ECGpedia, CC BY-SA 3.0 \cite{ecgpediaType1Image}. Derecha: figura de Napolitano y Priori, reutilizada bajo CC BY 2.0 \cite{napolitano2006}.}
+  \caption{Ejemplos clínicos de morfología Brugada. Izquierda: ECGpedia, CC BY-SA 3.0 \cite{ecgpediaType1Image}. Derecha: Napolitano y Priori, CC BY 2.0 \cite{napolitano2006}.}
   \label{fig:brugada_clinical_examples}
 \end{figure}
 
@@ -100,12 +100,12 @@ La familia generadora BRUGADA introduce una elevación inicial del segmento ST, 
 
 \begin{table}[H]
   \centering
-  \caption{Relación entre el concepto clínico y la aproximación operativa del proyecto}
+  \caption{Relación entre el concepto clínico y la traducción experimental utilizada en el proyecto}
   \label{tab:clinical_operational}
   \small
   \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.19\textwidth} >{\raggedright\arraybackslash}p{0.34\textwidth} X}
     \toprule
-    Hallazgo & Interpretación clínica resumida & Aproximación utilizada en el conjunto sintético \\
+    Hallazgo & Interpretación clínica resumida & Criterio utilizado en el conjunto sintético \\
     \midrule
     RBBB & Trastorno de conducción que requiere duración y morfología compatibles en varias derivaciones & Dos máximos positivos en la región ventricular, una depresión intermedia y actividad terminal tardía y ancha \\
     Elevación ST & Desplazamiento del punto J y del segmento ST cuya relevancia depende de derivación y contexto & Media positiva en ventanas posteriores al QRS junto con actividad ventricular suficiente \\
@@ -125,7 +125,7 @@ La imagen posee una ventaja práctica cuando la señal original no está disponi
 
 La alternativa consiste en digitalizar primero la imagen. El trabajo de Wu y colaboradores desarrolló una herramienta automática para segmentar trazados impresos y reconstruir las señales \cite{wu2022digitization}. La digitalización permite reutilizar modelos temporales, pero introduce errores cuando las derivaciones se solapan o la calidad del documento es baja. El análisis directo de imagen y la digitalización no son soluciones excluyentes. Responden a compromisos distintos.
 
-Esta doble naturaleza del ECG, señal temporal e imagen, es precisamente lo que hace relevante la comparación entre CNN y VLM. Una CNN entrenada con pocos ejemplos necesita extraer toda la información visual de los píxeles disponibles. Un modelo de visión y lenguaje puede complementar la información visual con conocimiento previo adquirido durante su preentrenamiento sobre colecciones masivas de imágenes y texto médico. La pregunta es si ese conocimiento previo compensa la escasez de datos etiquetados.
+Esta doble naturaleza del ECG, señal temporal e imagen, es precisamente lo que hace relevante la comparación entre CNN y VLM. Una CNN entrenada con pocos ejemplos necesita extraer toda la información visual de los píxeles disponibles. Un modelo de visión y lenguaje puede complementar la imagen con conocimiento adquirido durante su preentrenamiento sobre colecciones masivas de imágenes y texto médico. La pregunta es si ese punto de partida mejora el uso de pocos ejemplos etiquetados.
 
 \begin{table}[H]
   \centering
@@ -228,11 +228,11 @@ Un modelo de visión y lenguaje (VLM) combina una representación visual con un 
 
 Flamingo mostró que un modelo multimodal entrenado con secuencias intercaladas de imagen y texto podía adaptarse a tareas mediante ejemplos incluidos en el contexto \cite{alayrac2022}. Este paradigma evita actualizar los pesos para cada tarea. Las demostraciones especifican la relación entre entrada y salida durante la inferencia, eliminando la necesidad de un conjunto de entrenamiento propio.
 
-Esta propiedad es especialmente relevante para el problema de este TFG. Cuando solo se dispone de pocos ejemplos etiquetados de un fenómeno raro como el patrón de Brugada, el entrenamiento supervisado de una CNN puede resultar insuficiente, como demuestran los resultados experimentales. Un VLM, en cambio, puede aprovechar su conocimiento visual previo, que incluye trazados, diagramas médicos, texto clínico y relaciones entre morfología y diagnóstico, para interpretar nuevas imágenes sin necesidad de ajustar sus parámetros. La hipótesis central del TFG es que este conocimiento previo puede compensar la escasez de datos etiquetados.
+Esta propiedad es especialmente relevante para el problema de este TFG. Cuando solo se dispone de pocos ejemplos etiquetados de un fenómeno raro como el patrón de Brugada, el entrenamiento supervisado de una CNN puede resultar insuficiente, como muestran los resultados experimentales. Un VLM, en cambio, parte de representaciones visuales y textuales adquiridas durante su preentrenamiento, que pueden incluir trazados, diagramas médicos, texto clínico y relaciones entre morfología y diagnóstico. La hipótesis central del TFG es que ese punto de partida puede ser útil cuando el conjunto etiquetado es pequeño.
 
 Gemma 4 admite texto e imagen y permite ajustar el número de tokens visuales dedicados a cada imagen \cite{gemma4card}. Un presupuesto visual mayor conserva más detalle, aunque incrementa el coste. Esta decisión es relevante para ECG porque los cambios morfológicos pueden ocupar una región pequeña del lienzo. La posibilidad de ejecución local facilita experimentos reproducibles y reduce la necesidad de enviar imágenes a un servicio externo.
 
-MedGemma 1.5 es un modelo multimodal médico basado en Gemma 3. Su entrenamiento incluye radiología, histopatología, dermatología, fondo de ojo, documentos y registros clínicos \cite{medgemma15}. La documentación oficial no presenta el ECG como modalidad principal de entrenamiento. También indica que el modelo debe adaptarse y validarse antes de cualquier uso específico. La comparación entre Gemma 4 (modelo generalista de última generación) y MedGemma (modelo con adaptación médica sobre una base anterior) permitirá evaluar si el preentrenamiento médico específico aporta ventaja adicional en un dominio no cubierto explícitamente.
+MedGemma 1.5 es un modelo multimodal médico basado en Gemma 3. Su entrenamiento incluye radiología, histopatología, dermatología, fondo de ojo, documentos y registros clínicos \cite{medgemma15}. La documentación oficial no sitúa el ECG entre sus modalidades principales de entrenamiento. También indica que el modelo debe adaptarse y validarse antes de cualquier uso específico. La comparación entre Gemma 4 (modelo generalista de última generación) y MedGemma (modelo con adaptación médica sobre una base anterior) permitirá evaluar si el preentrenamiento médico específico aporta ventaja adicional en un dominio no cubierto explícitamente.
 
 \section{Aprendizaje multimodal en contexto}
 
@@ -258,7 +258,14 @@ x^\ast,
 
 sin modificar los parámetros \(\theta\). Esta diferencia con el entrenamiento supervisado es fundamental. Los mismos \(K\) ejemplos etiquetados que una CNN utilizaría para actualizar millones de pesos, un VLM los recibe como contexto dentro del prompt. Los pesos del modelo permanecen fijos y el aprendizaje se produce de forma implícita durante la generación.
 
-Esta formulación convierte al número de ejemplos \(K\) en la variable de comparación natural entre ambos enfoques. Con un mismo presupuesto de \(K\) ejemplos etiquetados, la CNN debe aprender a distinguir patrones visuales; el VLM solo necesita que esos ejemplos le muestren qué significa cada clase. La pregunta experimental es directa: ¿a partir de qué valor de \(K\) compensa entrenar un modelo específico y en qué rango resulta más razonable aprovechar el conocimiento previo del VLM?
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.96\textwidth]{results/vlm_icl_context_window.drawio.png}
+  \caption{Esquema de aprendizaje en contexto multimodal: los ejemplos etiquetados se incorporan al prompt como demostraciones y la imagen de consulta se predice sin actualizar los pesos del VLM.}
+  \label{fig:icl_context_window}
+\end{figure}
+
+Esta formulación convierte al número de ejemplos \(K\) en la variable de comparación natural entre ambos enfoques. Con un mismo presupuesto de \(K\) ejemplos etiquetados, la CNN debe aprender a distinguir patrones visuales; el VLM recibe esos ejemplos como guía de la tarea. La pregunta experimental es directa: ¿a partir de qué valor de \(K\) merece la pena entrenar un modelo específico y en qué rango resulta más razonable usar ICL?
 
 El número de ejemplos no determina por sí solo la calidad del contexto. Importan la selección, la diversidad, el orden y la coherencia entre la imagen y la etiqueta. Qin y colaboradores identificaron la recuperación multimodal, el orden interno de cada demostración y la posición de la instrucción como factores relevantes \cite{zhang2024mmicl}.
 
@@ -274,15 +281,11 @@ Un mapa visual no demuestra causalidad clínica. La resolución suele ser inferi
 
 Las explicaciones generadas por un modelo de visión y lenguaje plantean un problema diferente. El texto puede describir correctamente la morfología aunque esa descripción no haya causado la predicción. La plausibilidad lingüística y la fidelidad del razonamiento son propiedades distintas. La evaluación principal utilizará respuestas estructuradas. Las justificaciones se analizarán como un artefacto cualitativo separado.
 
-\section{Cambio de dominio y adaptación}
+\section{Cambio de dominio}
 
 El dominio sintético y el dominio real difieren en fisiología, adquisición y presentación. El simulador genera un único latido alineado, con una cuadrícula uniforme y sin variabilidad entre pacientes. Un ECG real contiene ruido, deriva de línea base, diferencias de frecuencia cardíaca, trazos superpuestos, anotaciones y múltiples derivaciones.
 
-Una red puede obtener un rendimiento elevado en sintético y fallar en real si aprende características exclusivas del renderizado. Este fenómeno es un cambio de dominio. La adaptación intenta aprender representaciones útiles para la tarea y poco informativas sobre el origen de la muestra.
-
-El entrenamiento adversarial de dominio introduce un clasificador que intenta distinguir muestras fuente y objetivo. El extractor recibe una señal de gradiente invertida para reducir esa capacidad de discriminación \cite{ganin2016}. Gliner y colaboradores aplicaron este principio a imágenes de ECG capturadas con teléfono y mostraron que datos objetivo sin etiqueta podían mejorar la transferencia \cite{gliner2023}.
-
-La adaptación no sustituye la evaluación externa. Alinear distribuciones puede ocultar diferencias relevantes si las prevalencias o las relaciones entre etiquetas cambian. El protocolo deberá comparar el rendimiento antes y después, conservar un conjunto real independiente y analizar cada etiqueta. Los resultados de este TFG muestran que incluso con técnicas de adaptación de dominio, la CNN no supera de forma robusta el dominio real con pocos datos, lo que refuerza la necesidad de explorar enfoques que no dependan exclusivamente del entrenamiento supervisado.
+Una red puede obtener un rendimiento elevado en sintético y fallar en real si aprende características exclusivas del renderizado. Este fenómeno es relevante en este TFG porque la pregunta principal no es solo si una CNN aprende en un escenario controlado, sino si esa señal visual conserva valor cuando se enfrenta a ECG clínicos reales. La comprobación complementaria de este salto se presenta al final de la evaluación sobre datos reales.
 
 \section{Implicaciones para el diseño experimental}
 

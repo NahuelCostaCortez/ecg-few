@@ -1,7 +1,7 @@
-\chapter{Evaluación con Brugada HUCA}
+\chapter{Evaluación sobre datos reales}
 \label{chap:datos_reales}
 
-El segundo bloque de resultados utiliza Brugada HUCA, un conjunto de ECG clínicos reales asociado al síndrome de Brugada \cite{morislara2026brugada}. La finalidad de este capítulo es medir cuánto se degrada la CNN al abandonar el simulador y evaluar si la adaptación de dominio recupera parte de esa pérdida. Los resultados de este capítulo son decisivos para la motivación del TFG: si una CNN entrenada y adaptada con pocos ejemplos no supera el azar en el dominio real, queda demostrada empíricamente la insuficiencia del enfoque supervisado clásico y, con ello, la necesidad de explorar si el conocimiento multimodal de los VLM puede compensar la escasez de datos.
+El segundo bloque de resultados utiliza ECG clínicos reales cedidos por el Hospital Universitario Central de Asturias (HUCA) dentro del recurso Brugada HUCA \cite{morislara2026brugada}. La anotación procede de la recogida paciente a paciente y de la revisión manual especializada. La finalidad es medir cómo se comporta la CNN cuando abandona el simulador y se evalúa sobre trazados clínicos reales. Este paso es necesario porque un buen resultado sintético no garantiza utilidad en un dominio con ruido de adquisición, variabilidad clínica y una etiqueta definida a nivel de paciente.
 
 \section{Cohorte final}
 
@@ -9,7 +9,7 @@ El procesado parte de 363 pacientes. Se excluyen 46 casos con patrón basal lim�
 
 \begin{table}[H]
   \centering
-  \caption{Cohorte Brugada HUCA utilizada en la evaluación CNN.}
+  \caption{Cohorte cedida por el HUCA utilizada en la evaluación CNN.}
   \label{tab:huca_cohorte_final}
   \begin{tabular}{lrr}
     \toprule
@@ -24,7 +24,7 @@ El procesado parte de 363 pacientes. Se excluyen 46 casos con patrón basal lim�
   \end{tabular}
 \end{table}
 
-La etiqueta real disponible no es equivalente a las tres etiquetas morfológicas del simulador. HUCA no contiene anotaciones independientes de RBBB, elevación ST e inversión T para cada imagen. Por ello, el experimento real se formula como caso Brugada confirmado frente a control y sus conclusiones se limitan a triaje de esa variable clínica. Es importante recordar que en la práctica asistencial, un resultado positivo del modelo no equivale a un diagnóstico: señala que el trazado debería ser revisado por un especialista y, si procede, iniciar el circuito diagnóstico que puede incluir prueba farmacológica con bloqueantes del canal de sodio \cite{wilde2023scbt}.
+La etiqueta real disponible no es equivalente a las tres etiquetas morfológicas del simulador. Los datos cedidos por el HUCA no contienen anotaciones independientes de RBBB, elevación ST e inversión T para cada imagen. Por ello, el experimento real se formula como caso Brugada confirmado frente a control y sus conclusiones se limitan a triaje de esa variable clínica. Es importante recordar que en la práctica asistencial, un resultado positivo del modelo no equivale a un diagnóstico: señala que el trazado debería ser revisado por un especialista y, si procede, iniciar el circuito diagnóstico que puede incluir prueba farmacológica con bloqueantes del canal de sodio \cite{wilde2023scbt}.
 
 \section{Preprocesamiento}
 
@@ -33,7 +33,7 @@ La preparación selecciona las derivaciones precordiales derechas, detecta un la
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.96\textwidth]{results/fig_huca_preprocesado.pdf}
-  \caption{Canalización de preprocesamiento de Brugada HUCA para V1, V2 y V3.}
+  \caption{Preprocesamiento de los ECG cedidos por el HUCA para V1, V2 y V3.}
   \label{fig:huca_preprocesado}
 \end{figure}
 
@@ -41,11 +41,11 @@ La separación por paciente es obligatoria. Si V1, V2 y V3 de un mismo paciente 
 
 \section{Resultados CNN base}
 
-La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada sobre HUCA. A diferencia del dominio sintético, aumentar \(K\) no produce una mejora monotónica. El mejor punto de exactitud equilibrada aparece con \(K=16\), pero solo alcanza 0,516. Con \(K=32\) la exactitud equilibrada baja a 0,499. Estos valores son esencialmente indistinguibles del azar.
+La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada sobre la cohorte cedida por el HUCA. A diferencia del dominio sintético, aumentar \(K\) no produce una mejora monotónica. El mejor punto de exactitud equilibrada aparece con \(K=16\), pero solo alcanza 0,516. Con \(K=32\) la exactitud equilibrada baja a 0,499. Estos valores son esencialmente indistinguibles del azar.
 
 \begin{table}[H]
   \centering
-  \caption{Resultados CNN ResNet18 sobre Brugada HUCA.}
+  \caption{Resultados CNN ResNet18 sobre los datos cedidos por el HUCA.}
   \label{tab:huca_baseline_final}
   \small
   \begin{tabular}{rrrrrr}
@@ -64,7 +64,7 @@ La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada s
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.80\textwidth]{results/cnn_huca_balanced_accuracy_by_k.png}
-  \caption{Exactitud equilibrada de la CNN base sobre Brugada HUCA.}
+  \caption{Exactitud equilibrada de la CNN base sobre los datos cedidos por el HUCA.}
   \label{fig:cnn_huca_ba}
 \end{figure}
 
@@ -73,88 +73,45 @@ La sensibilidad es moderada, pero la especificidad es baja. En el mejor punto \(
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.58\textwidth]{results/cnn_huca_k16_confusion_matrix.png}
-  \caption{Matriz de confusión agregada de Brugada HUCA para \(K=16\).}
+  \caption{Matriz de confusión agregada de la cohorte cedida por el HUCA para \(K=16\).}
   \label{fig:cnn_huca_confusion}
 \end{figure}
 
-Este resultado es el hallazgo más importante de la rama CNN: con tan pocos datos, el entrenamiento supervisado de una ResNet18, incluso con pesos preentrenados de ImageNet, no consigue extraer señal útil de ECGs clínicos reales de Brugada. La red aprende en el simulador porque las imágenes son limpias y las etiquetas derivan de reglas controladas. En el dominio real, la variabilidad clínica, el ruido de adquisición y la complejidad del fenotipo superan la capacidad del modelo.
+Este resultado es el hallazgo más importante de la línea CNN: con tan pocos datos, el entrenamiento supervisado de una ResNet18, incluso con pesos preentrenados de ImageNet, no consigue extraer señal útil de ECG clínicos reales de Brugada. La red aprende en el simulador porque las imágenes son limpias y las etiquetas derivan de reglas controladas. En el dominio real, la variabilidad clínica, el ruido de adquisición y la complejidad del fenotipo superan la capacidad del modelo.
 
 \section{Brecha sintético-real}
 
-La comparación directa muestra una brecha de dominio marcada. En el simulador la exactitud equilibrada aumenta hasta 0,848 con \(K=32\). En HUCA, el modelo se mantiene alrededor de 0,50. Esto indica que la señal visual aprendida en condiciones controladas no se transfiere de forma directa a la variabilidad clínica.
+La comparación directa muestra una brecha de dominio marcada. En el simulador la exactitud equilibrada aumenta hasta 0,848 con \(K=32\). En los datos cedidos por el HUCA, el modelo se mantiene alrededor de 0,50. Esto indica que la señal visual aprendida en condiciones controladas no se transfiere de forma directa a la variabilidad clínica.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.86\textwidth]{results/cnn_balanced_accuracy_sim_vs_real.png}
-  \caption{Comparación de exactitud equilibrada entre el conjunto sintético y Brugada HUCA.}
+  \caption{Comparación de exactitud equilibrada entre el conjunto sintético y la cohorte cedida por el HUCA.}
   \label{fig:sim_vs_real_ba}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.86\textwidth]{results/cnn_f1_sim_vs_real.png}
-  \caption{Comparación de F1 entre el conjunto sintético y Brugada HUCA.}
+  \caption{Comparación de F1 entre el conjunto sintético y la cohorte cedida por el HUCA.}
   \label{fig:sim_vs_real_f1}
 \end{figure}
 
-La brecha tiene varias causas plausibles: ruido y variabilidad de adquisición, diferencias de escala, presencia de múltiples fenotipos, etiqueta clínica no reducible a una sola ventana de ECG y ausencia de anotaciones morfológicas finas en HUCA. El resultado no invalida el simulador; delimita su alcance y confirma que el problema de pocos datos no se resuelve con un simulador más limpio.
-
-\section{Adaptación de dominio}
-
-La rama de adaptación de dominio entrena con imágenes sintéticas etiquetadas y utiliza HUCA como dominio destino no etiquetado. Se ejecutan cuatro variantes: SSL, CORAL, MMD y DANN. La tabla \ref{tab:domain_adaptation_final} compara cada método con la línea base en \(K=16\) y \(K=32\).
-
-\begin{table}[H]
-  \centering
-  \caption{Comparación de adaptación de dominio sobre Brugada HUCA.}
-  \label{tab:domain_adaptation_final}
-  \small
-  \begin{tabular}{llrrrr}
-    \toprule
-    Método & \(K\) & BA & F1 & Sens. & Esp. \\
-    \midrule
-    Base & 16 & \(0,516 \pm 0,023\) & 0,480 & 0,658 & 0,375 \\
-    SSL & 16 & \(0,477 \pm 0,027\) & 0,458 & 0,658 & 0,297 \\
-    CORAL & 16 & \(0,524 \pm 0,008\) & 0,481 & 0,641 & 0,408 \\
-    MMD & 16 & \(0,516 \pm 0,019\) & 0,474 & 0,635 & 0,396 \\
-    DANN & 16 & \(0,515 \pm 0,019\) & 0,470 & 0,621 & 0,410 \\
-    Base & 32 & \(0,499 \pm 0,012\) & 0,466 & 0,644 & 0,355 \\
-    SSL & 32 & \(0,503 \pm 0,014\) & 0,476 & 0,672 & 0,333 \\
-    CORAL & 32 & \(0,528 \pm 0,013\) & 0,480 & 0,632 & 0,423 \\
-    MMD & 32 & \(\mathbf{0,549 \pm 0,029}\) & \(\mathbf{0,498}\) & 0,649 & \(\mathbf{0,448}\) \\
-    DANN & 32 & \(0,509 \pm 0,028\) & 0,472 & 0,644 & 0,375 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.86\textwidth]{results/cnn_domain_adaptation_balanced_accuracy_by_k.png}
-  \caption{Exactitud equilibrada de las variantes de adaptación de dominio.}
-  \label{fig:domain_adaptation_ba}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.86\textwidth]{results/cnn_domain_adaptation_f1_by_k.png}
-  \caption{F1 de las variantes de adaptación de dominio.}
-  \label{fig:domain_adaptation_f1}
-\end{figure}
-
-La mejor configuración es MMD con \(K=32\), con BA 0,549 y especificidad 0,448. La mejora frente a la línea base de \(K=32\) es de 0,049 puntos de exactitud equilibrada. Es una señal positiva para la adaptación, pero todavía insuficiente para considerar el sistema clínicamente robusto. Incluso con la mejor técnica de adaptación, la CNN no supera el umbral que permitiría un uso práctico como herramienta de triaje.
+La brecha tiene varias causas plausibles: ruido y variabilidad de adquisición, diferencias de escala, presencia de múltiples fenotipos, etiqueta clínica no reducible a una sola ventana de ECG y ausencia de anotaciones morfológicas finas en la cohorte real. El resultado no invalida el simulador; delimita su alcance y confirma que el problema de pocos datos no se resuelve con un simulador más limpio.
 
 \section{Inspección cualitativa}
 
-El Grad CAM real confirma que las activaciones pueden localizarse sobre regiones del trazado, pero también muestra la dificultad de interpretar modelos entrenados con pocos ejemplos sobre datos clínicos heterogéneos. La atención visual no compensa la falta de especificidad ni resuelve la diferencia entre etiqueta clínica y morfología observable.
+El Grad CAM real confirma que las activaciones pueden localizarse sobre regiones del trazado, pero también muestra la dificultad de interpretar modelos entrenados con pocos ejemplos sobre datos clínicos heterogéneos. La atención visual no corrige por sí sola la falta de especificidad ni resuelve la diferencia entre etiqueta clínica y morfología observable.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.92\textwidth]{results/cnn_huca_gradcam_example.png}
-  \caption{Ejemplo Grad CAM del modelo CNN sobre Brugada HUCA.}
+  \caption{Ejemplo Grad CAM del modelo CNN sobre los datos cedidos por el HUCA.}
   \label{fig:cnn_huca_gradcam}
 \end{figure}
 
-\section{Conclusión en datos reales: evidencia que motiva la comparación con VLM}
+\section{Lectura de la evaluación real}
 
-La conclusión de HUCA es clara y constituye la evidencia empírica central de la rama CNN. La red convolucional, incluso con pesos preentrenados y técnicas de adaptación de dominio, no logra un rendimiento robusto en datos reales de Brugada con tan pocos ejemplos etiquetados. La exactitud equilibrada se mantiene cerca del azar y la especificidad es demasiado baja para cualquier uso práctico más allá de investigación exploratoria.
+La evaluación sobre los datos cedidos por el HUCA delimita el alcance de la línea CNN. La red convolucional, incluso con pesos preentrenados, no logra un rendimiento fiable en datos reales de Brugada con tan pocos ejemplos etiquetados. La exactitud equilibrada se mantiene cerca del azar y la especificidad es demasiado baja para cualquier uso práctico más allá de investigación exploratoria.
 
-Este resultado no es un punto final. Es el punto de partida para la comparación con VLM/ICL. La CNN demuestra qué no funciona: entrenar un modelo visual específico con \(K\leq32\) ejemplos en un dominio clínicamente complejo como el síndrome de Brugada. La siguiente fase debe determinar si un modelo de visión y lenguaje, que aporta conocimiento visual y médico previo adquirido durante un preentrenamiento masivo, puede ofrecer una mejor relación entre rendimiento, coste y cantidad de datos etiquetados cuando recibe esos mismos \(K\) ejemplos como demostraciones en contexto en lugar de como conjunto de entrenamiento.
+Este resultado marca la referencia que debe superar o matizar la línea VLM/ICL. La siguiente fase debe determinar si un modelo de visión y lenguaje, con conocimiento visual y médico adquirido durante el preentrenamiento, ofrece una mejor relación entre rendimiento, coste y cantidad de datos etiquetados cuando recibe esos mismos \(K\) ejemplos como demostraciones en contexto en lugar de como conjunto de entrenamiento.

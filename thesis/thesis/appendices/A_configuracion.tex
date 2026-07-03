@@ -1,7 +1,7 @@
 \chapter{Configuración experimental}
 \label{app:configuracion}
 
-Este apéndice resume la configuración necesaria para reproducir los experimentos cerrados. Los valores proceden de los scripts y artefactos generados en el repositorio, no de un plan prospectivo.
+Este apéndice recoge los parámetros principales de la configuración experimental utilizada en la memoria. Se incluyen los valores necesarios para interpretar los resultados y comparar las líneas CNN y VLM/ICL.
 
 \section{Entorno de software}
 
@@ -33,7 +33,7 @@ El proyecto declara Python 3.12 o posterior y utiliza \texttt{uv} como gestor de
   \end{tabularx}
 \end{table}
 
-La memoria se compila con XeLaTeX a través del helper local de compilación. Los experimentos CNN se ejecutan con backend Matplotlib \texttt{Agg} para generar informes sin interfaz gráfica.
+La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo no interactivo, con el mismo estilo tipográfico usado en el documento.
 
 \section{Conjunto sintético QRS/ST}
 
@@ -65,7 +65,7 @@ La memoria se compila con XeLaTeX a través del helper local de compilación. Lo
 
 La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están presentes simultáneamente. La agregación de paciente promedia las probabilidades de las derivaciones y después aplica el umbral seleccionado.
 
-\section{Brugada HUCA}
+\section{Datos cedidos por el HUCA}
 
 \begin{table}[H]
   \centering
@@ -76,7 +76,7 @@ La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están
     \toprule
     Propiedad & Valor \\
     \midrule
-    Fuente & Brugada HUCA 1.0.0 \\
+    Fuente & Hospital Universitario Central de Asturias (HUCA), recurso Brugada HUCA 1.0.0 \\
     Pacientes brutos & 363 \\
     Pacientes excluidos & 46 por patrón basal limítrofe \\
     Pacientes incluidos & 317 \\
@@ -92,7 +92,7 @@ La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están
   \end{tabularx}
 \end{table}
 
-HUCA no contiene anotaciones independientes para las tres etiquetas morfológicas del simulador. La tarea real utiliza la etiqueta clínica \texttt{clinical\_brugada}.
+Los datos cedidos por el HUCA no contienen anotaciones independientes para las tres etiquetas morfológicas del simulador. La tarea real utiliza la etiqueta clínica \texttt{clinical\_brugada}, recogida a nivel de paciente mediante revisión especializada.
 
 \section{Configuración CNN}
 
@@ -116,7 +116,7 @@ HUCA no contiene anotaciones independientes para las tres etiquetas morfológica
     Épocas máximas & 20 \\
     Estrategia de umbral & \texttt{val\_derived\_balanced\_accuracy} \\
     Métrica principal & Exactitud equilibrada por paciente \\
-    Grad CAM & 12 paneles en sintético y 6 en HUCA por ejecución agregada \\
+    Grad CAM & 12 paneles en sintético y 6 en datos reales por ejecución agregada \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -125,7 +125,7 @@ HUCA no contiene anotaciones independientes para las tres etiquetas morfológica
 
 \begin{table}[H]
   \centering
-  \caption{Configuración de la rama de adaptación de dominio.}
+  \caption{Configuración de la línea de adaptación de dominio.}
   \label{tab:config_domain_appendix}
   \small
   \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
@@ -147,16 +147,26 @@ HUCA no contiene anotaciones independientes para las tres etiquetas morfológica
 
 \section{Configuración VLM/ICL}
 
-La línea VLM/ICL forma parte del diseño comparativo al mismo nivel que la CNN. La configuración queda congelada para que las inferencias usen la misma base experimental, las mismas particiones por paciente y los mismos presupuestos \(K\):
+La línea VLM/ICL usa los mismos pacientes reservados, presupuestos \(K\) y métricas por paciente que la línea CNN. Los modelos comparados son Gemma~4 y MedGemma~1.5, ejecutados con temperatura 0 y salida estructurada.
 
-\begin{itemize}
-  \item modelos abiertos: \texttt{google/gemma-4-E4B-it} y \texttt{google/medgemma-4b-it}, configurables mediante \texttt{VLM\_MODELS};
-  \item servidor local compatible con API de vLLM/OpenAI, configurado con \texttt{VLM\_API\_BASE};
-  \item temperatura 0;
-  \item salida JSON validada con las claves \texttt{RBBB}, \texttt{ST\_ELEVATION} y \texttt{T\_WAVE\_INVERSION};
-  \item presupuestos \(K=\{0,2,4,8,16,32\}\);
-  \item condiciones \texttt{zero\_shot}, \texttt{normal}, \texttt{balanced}, \texttt{permuted} y \texttt{no\_support\_images};
-  \item salidas en \texttt{outputs/vlm\_loocv/} y \texttt{reports/loocv/vlm/}.
-\end{itemize}
+\begin{table}[H]
+  \centering
+  \caption{Configuración resumida de la línea VLM/ICL.}
+  \label{tab:config_vlm_appendix}
+  \small
+  \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
+    \toprule
+    Elemento & Valor \\
+    \midrule
+    Modelos & Gemma~4 y MedGemma~1.5 \\
+    Entrada & Imagen ECG y demostraciones imagen-etiqueta \\
+    Presupuestos & \(K=\{0,2,4,8,16,32\}\) \\
+    Condiciones & Sin ejemplos, ICL normal, ICL balanceado, etiquetas permutadas y sin imagen de apoyo \\
+    Salida morfológica & \texttt{RBBB}, \texttt{ST\_ELEVATION} y \texttt{T\_WAVE\_INVERSION} \\
+    Salida clínica & \texttt{clinical\_brugada} \\
+    Métrica principal & Exactitud equilibrada por paciente \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-El capítulo~\ref{chap:vlm} ya incluye las tablas de salida, las condiciones experimentales y los criterios de comparación. Las celdas numéricas se rellenarán únicamente cuando existan predicciones por muestra, matrices de confusión y auditoría equivalente a la de CNN.
+El capítulo~\ref{chap:vlm} desarrolla las condiciones, controles y criterios de lectura de esta línea.

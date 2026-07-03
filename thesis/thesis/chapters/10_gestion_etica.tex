@@ -23,7 +23,7 @@ La tabla \ref{tab:horas_tfg} distribuye la dedicación entre revisión, diseño,
     Infraestructura VLM y diseño de mensajes & 35 \\
     Implementación de redes convolucionales & 35 \\
     Ejecución de experimentos sintéticos & 42 \\
-    Datos reales y adaptación de dominio & 28 \\
+    Datos reales y comprobación complementaria & 28 \\
     Análisis estadístico y visualización & 20 \\
     Redacción de la memoria & 34 \\
     Control de calidad y preparación de la defensa & 10 \\
@@ -49,7 +49,7 @@ El proyecto se estructura entre octubre de 2025 y junio de 2026. Las fases se so
     Diciembre de 2025 y enero de 2026 & Desarrollo del simulador, validadores y formatos de imagen \\
     Febrero y marzo de 2026 & Canalización VLM, mensajes, esquemas JSON y controles de aprendizaje en contexto \\
     Abril de 2026 & Diseño e integración de las redes convolucionales y pruebas de reproducibilidad \\
-    Mayo de 2026 & Experimentos sintéticos, preparación de datos reales y adaptación de dominio \\
+    Mayo de 2026 & Experimentos sintéticos, preparación de datos reales y comprobación complementaria \\
     Junio de 2026 & Análisis, cierre de la memoria, revisión integral y defensa \\
     \bottomrule
   \end{tabularx}
@@ -62,7 +62,7 @@ El proyecto se estructura entre octubre de 2025 y junio de 2026. Las fases se so
   \label{fig:project_timeline}
 \end{figure}
 
-Los hitos de control son la validación visual del simulador, la reproducción de una ejecución VLM, la integración de la CNN, el cierre de los pliegues de datos reales, la congelación de resultados y la generación de la versión final de la memoria. Cada hito debe producir un artefacto revisable.
+Los hitos de control son la validación visual del simulador, la reproducción de una ejecución VLM, la integración de la CNN, el cierre de los pliegues de datos reales, la congelación de resultados y la generación de la versión final de la memoria. Cada hito debe dejar evidencia revisable.
 
 \section{Gestión de riesgos}
 
@@ -84,12 +84,12 @@ La tabla \ref{tab:riesgos} recoge los riesgos principales, su efecto y la respue
     Diferencia excesiva entre dominios & Alta & Medir transferencia directa y añadir armonización, ajuste fino y adaptación como experimentos separados \\
     Etiquetas reales no equivalentes & Alta & Separar diagnóstico y morfología y exigir anotación específica para la segunda tarea \\
     Cambios de versión del modelo & Media & Registrar identificador exacto, fecha, revisión y parámetros de servicio \\
-    Resultados incompletos al cerrar la memoria & Alta & Mantener marcadores explícitos y no rellenar tablas con estimaciones no ejecutadas \\
+    Cierre parcial de resultados & Alta & Mantener tablas sin cifras cuando no exista una predicción verificable y no sustituir resultados por estimaciones \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-Los riesgos se revisan al terminar cada bloque. Una desviación no se corrige ocultando el alcance pendiente, sino reduciendo de forma explícita los experimentos secundarios y protegiendo las comparaciones principales.
+Los riesgos se revisan al terminar cada bloque. Una desviación no se corrige ocultando el alcance real, sino reduciendo de forma explícita los experimentos secundarios y protegiendo las comparaciones principales.
 
 \section{Recursos y estimación de coste}
 
@@ -123,7 +123,7 @@ El repositorio Git actúa como fuente de verdad del código, los mensajes y la m
 
 Los resultados agregados no sustituyen a las predicciones. Conservar ambos niveles permite detectar errores de análisis y recalcular métricas sin repetir inferencias costosas. Los archivos generados deben ser inmutables o incorporar un identificador de ejecución que evite sobrescrituras accidentales.
 
-Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque las inferencias VLM/ICL requieren trazabilidad específica de pesos, servidor, plantilla de conversación y contrato de salida. Antes de rellenar sus celdas numéricas será necesario registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
+Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque las inferencias VLM/ICL requieren trazabilidad específica de pesos, servidor, plantilla de conversación y esquema de salida. Antes de rellenar sus celdas numéricas será necesario registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
 
 \section{Principios éticos}
 

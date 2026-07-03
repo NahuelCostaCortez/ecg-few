@@ -69,9 +69,9 @@ La elección de gaussianas se inspira en modelos sintéticos previos que represe
 
 \begin{figure}[H]
   \centering
-  \safeincludegraphics[width=0.94\textwidth]{results/fig_gaussian_atoms.pdf}
-  \caption{Construcción de un beat mediante átomos gaussianos y suma resultante.}
-  \label{fig:gaussian_atoms}
+  \safeincludegraphics[width=\textwidth]{results/gaussian_generator.drawio.png}
+  \caption{Generador gaussiano de un beat sintético. Los parámetros de cada átomo fijan su amplitud, posición y anchura antes de sumar las regiones P, QRS, ST y T.}
+  \label{fig:gaussian_generator}
 \end{figure}
 
 \section{Muestreo temporal}
@@ -115,7 +115,7 @@ La generación comienza con un andamiaje compartido. Cada átomo dispone de inte
 
 Los rangos no deben interpretarse como límites clínicos. Son parámetros de un generador visual. Por ejemplo, el átomo \texttt{R\_prime} tiene amplitud casi nula en la familia normal y puede alcanzar valores mayores en RBBB. Los átomos \texttt{J\_elev}, \texttt{ST1} y \texttt{ST2} permanecen cerca de cero en una señal normal y se desplazan hacia amplitudes positivas en la familia de elevación del ST.
 
-Separar rangos y validadores responde a dos responsabilidades distintas. Los rangos hacen probable una morfología. Los validadores determinan si la señal terminada satisface la definición operativa. Si ambos elementos se mezclaran, cualquier cambio visual podría alterar de manera silenciosa el significado de las etiquetas.
+Separar rangos y validadores responde a dos responsabilidades distintas. Los rangos hacen probable una morfología. Los validadores determinan si la señal terminada satisface la definición de cada etiqueta. Si ambos elementos se mezclaran, cualquier cambio visual podría alterar de manera silenciosa el significado de las etiquetas.
 
 \section{Familias generadoras}
 
@@ -154,7 +154,7 @@ El nombre de la familia no se incorpora al vector objetivo. Una señal aceptada 
 \toprule
 \textbf{Familia} & \textbf{Modificación dominante} & \textbf{Interpretación experimental} \\
 \midrule
-\texttt{NORMAL} & ST próximo a cero, T positiva y R prima mínima & Referencia sin hallazgos operativos \\
+\texttt{NORMAL} & ST próximo a cero, T positiva y R prima mínima & Referencia sin hallazgos del conjunto \\
 \texttt{RBBB} & Segundo máximo positivo tardío y ancho & Componente terminal del QRS \\
 \texttt{ST} elevado & Punto J y ST positivos & Componente de elevación posterior al QRS \\
 Inversión de T & Repolarización tardía negativa & Componente de inversión de T \\
@@ -194,7 +194,7 @@ Sea \(q_c\) la probabilidad de aceptación de una propuesta de la familia \(c\).
 \frac{1}{q_c}.
 \end{equation}
 
-Una familia que requiere muchos intentos puede seguir generando imágenes correctas, pero revela que gran parte de su espacio paramétrico no satisface la definición operativa. Las tasas de aceptación deben registrarse cuando se cierre la versión final del simulador.
+Una familia que requiere muchos intentos puede seguir generando imágenes correctas, pero revela que gran parte de su espacio paramétrico no satisface la definición de la etiqueta. Las tasas de aceptación deben registrarse cuando se cierre la versión final del simulador.
 
 \section{Validadores y semántica de las etiquetas}
 
@@ -202,7 +202,7 @@ Los validadores operan sobre ventanas temporales de la señal terminada. Las ven
 
 \begin{table}[H]
 \centering
-\caption{Criterios operativos de los validadores sintéticos}
+\caption{Criterios de los validadores sintéticos}
 \label{tab:validadores}
 \scriptsize
 \begin{tabularx}{\textwidth}{p{2.25cm} X}
@@ -237,7 +237,7 @@ No se aplicarán reflejos horizontales. Invertir el eje temporal cambiaría el o
 
 \begin{figure}[H]
   \centering
-  \safeincludegraphics[width=0.92\textwidth]{results/fig_synthetic_examples.pdf}
+  \safeincludegraphics[width=\textwidth]{results/fig_synthetic_examples.pdf}
   \caption{Ejemplos sintéticos por familia generadora utilizados para validar visualmente el simulador.}
   \label{fig:synthetic_examples}
 \end{figure}
@@ -265,13 +265,13 @@ Además se genera un esquema de etiquetas y un resumen con frecuencias por parti
 \centering
 \caption{Configuración final del conjunto sintético QRS/ST}
 \label{tab:config_dataset}
-\small
-\begin{tabularx}{\textwidth}{p{3.15cm} p{1.45cm} p{5.15cm} X}
+\footnotesize
+\begin{tabularx}{\textwidth}{p{2.9cm} p{1.25cm} p{4.4cm} X}
 \toprule
 \textbf{Elemento} & \textbf{Total} & \textbf{Organización} & \textbf{Finalidad} \\
 \midrule
 Pacientes simulados & 100 & 20 por familia fuente & Construir una cohorte equilibrada por mecanismo generador \\
-Imágenes & 300 & Copia del beat central en V1, V2 y V3 & Evaluar el mismo contrato visual que en HUCA \\
+Imágenes & 300 & Beat central en V1, V2 y V3 & Mismo formato visual que los datos reales \\
 Pliegues LOOCV & 100 & Un paciente reservado por pliegue & Medir rendimiento agregado por paciente \\
 Presupuestos \(K\) & 5 & 2, 4, 8, 16 y 32 ejemplos & Estudiar aprendizaje supervisado con pocos datos \\
 \bottomrule
@@ -282,7 +282,7 @@ Presupuestos \(K\) & 5 & 2, 4, 8, 16 y 32 ejemplos & Estudiar aprendizaje superv
 
 La configuración final se ejecutó para generar 100 pacientes sintéticos, 300 imágenes, pliegues LOOCV y resúmenes de etiquetas. El conjunto contiene 20 pacientes con los tres hallazgos presentes y 80 pacientes normales o incompletos. Las combinaciones observadas incluyen NORMAL, RBBB, RBBB+ST, RBBB+ST+TWI, RBBB+TWI y TWI.
 
-Esta comprobación no se limita a una prueba de humo: es el conjunto utilizado en la campaña CNN sintética. Su función es demostrar que la ruta de generación, aceptación, partición y escritura es operativa y que el conjunto final conserva variabilidad suficiente para estudiar la curva por \(K\).
+Esta comprobación no se limita a una prueba de humo: es el conjunto utilizado en la campaña CNN sintética. Su objetivo es verificar que la ruta de generación, aceptación, partición y escritura funciona correctamente y que el conjunto final conserva variabilidad suficiente para estudiar la curva por \(K\).
 
 La inspección visual mostró que las familias pueden compartir etiquetas. Una muestra de elevación del ST puede satisfacer además el validador RBBB. Una muestra generada como inversión de T puede presentar una segunda deflexión positiva terminal. Este comportamiento confirma que el problema no es una clasificación encubierta de cinco carpetas.
 

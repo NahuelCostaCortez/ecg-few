@@ -1,7 +1,7 @@
 \chapter{Resultados en el conjunto sintético}
 \label{chap:resultados}
 
-El primer bloque de resultados establece si una CNN puede aprender la tarea en un entorno controlado. Este paso es necesario antes de evaluar el modelo sobre datos reales y, sobre todo, antes de comparar con VLM/ICL. Si la CNN no logra aprender siquiera en un dominio sintético limpio, la comparación con VLM carecería de una línea base interpretable. El conjunto sintético contiene 100 pacientes simulados y 300 imágenes, con tres derivaciones por paciente. La etiqueta positiva corresponde a la presencia simultánea de los hallazgos operativos que definen el patrón Brugada derivado en el simulador. Hay 20 pacientes positivos y 80 normales o incompletos.
+El primer bloque de resultados establece si una CNN puede aprender la tarea en un entorno controlado. Este paso es necesario antes de evaluar el modelo sobre datos reales y antes de comparar con VLM/ICL. Si la CNN no logra aprender siquiera en un dominio sintético limpio, la comparación con VLM carecería de una línea base interpretable. El conjunto sintético contiene 100 pacientes simulados y 300 imágenes, con tres derivaciones por paciente. La etiqueta positiva corresponde a la presencia simultánea de RBBB, elevación ST e inversión de T en el simulador. Hay 20 pacientes positivos y 80 normales o incompletos.
 
 \section{Curva por presupuesto}
 
@@ -64,4 +64,4 @@ El panel Grad CAM de la figura \ref{fig:cnn_simulator_gradcam_resultados} muestr
 
 El dominio sintético confirma tres hechos. Primero, el renderizado contiene información visual suficiente para entrenar una CNN con pocos ejemplos. Segundo, el presupuesto importa: por debajo de \(K=16\) el comportamiento es útil pero irregular; con \(K=32\) el modelo mejora simultáneamente sensibilidad, especificidad, F1 y área ROC. Tercero, este buen rendimiento no puede trasladarse de forma directa a clínica porque las imágenes sintéticas son más limpias y las etiquetas están definidas por el propio generador.
 
-Este resultado no cierra la comparación con VLM/ICL. Establece que la CNN \emph{puede} aprender cuando las condiciones están controladas. La pregunta siguiente es si ese aprendizaje se mantiene en datos reales o si la CNN, incluso con adaptación de dominio, falla al enfrentarse a la variabilidad clínica. Si falla, la comparación con VLM/ICL queda no solo justificada, sino motivada empíricamente.
+Este resultado no cierra la comparación con VLM/ICL. Establece que la CNN \emph{puede} aprender cuando las condiciones están controladas. La pregunta siguiente es si ese aprendizaje se mantiene en datos reales o si la CNN falla al enfrentarse a la variabilidad clínica. Si falla, la comparación con VLM/ICL se apoya en los propios datos.

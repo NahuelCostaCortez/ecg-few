@@ -1,7 +1,7 @@
 \chapter{Discusión}
 \label{chap:discusion}
 
-El resultado central de la rama CNN no es un sistema que funcione ni un sistema que falle sin más. El resultado central es una evidencia negativa cuantificada: los modelos de visión tradicionales, incluso con adaptación de dominio, no resuelven la detección de Brugada cuando solo se dispone de unos pocos ejemplos etiquetados. En el simulador la exactitud equilibrada alcanza 0,848 con \(K=32\); en Brugada HUCA la línea base oscila en torno a 0,50 y la mejor adaptación de dominio, MMD con \(K=32\), solo llega a 0,549. Esta evidencia negativa no invalida el proyecto. Al contrario, constituye la piedra angular de la comparación: establece por qué debe investigarse si el conocimiento multimodal preentrenado de los VLM puede compensar la escasez de datos que la CNN no supera.
+Los resultados de la línea CNN dejan una lectura clara: los modelos de visión tradicionales no resuelven la detección de Brugada cuando solo se dispone de unos pocos ejemplos etiquetados. En el simulador la exactitud equilibrada alcanza 0,848 con \(K=32\); en la cohorte del HUCA la línea base oscila en torno a 0,50. Este contraste no invalida el proyecto; al contrario, da sentido a la comparación con VLM, porque muestra el límite de entrenar una CNN con tan pocas muestras.
 
 \section{Qué demuestra el simulador}
 
@@ -9,25 +9,23 @@ El simulador demuestra que la formulación como imagen es viable para una CNN. L
 
 Sin embargo, el simulador no demuestra capacidad diagnóstica. Sus etiquetas se generan con reglas internas, las imágenes son limpias y las familias morfológicas están más separadas que en la práctica clínica. El valor del simulador es estrictamente experimental: permite validar código, métricas, agregación por paciente y sensibilidad al número de ejemplos antes de confrontar datos reales.
 
-\section{Qué demuestra HUCA}
+\section{Qué muestran los datos del HUCA}
 
-HUCA introduce la dificultad que faltaba en el simulador. La etiqueta es clínica, los registros son heterogéneos y una ventana individual de V1, V2 o V3 no contiene por sí sola todo el proceso diagnóstico. El rendimiento obtenido indica que la CNN capta parte de la señal positiva, pero con una especificidad demasiado baja: en el mejor caso de la línea base (\(K=16\)), la especificidad es de 0,375 y la exactitud equilibrada de 0,516.
+La cohorte del HUCA introduce la dificultad que faltaba en el simulador. La etiqueta es clínica, los registros son heterogéneos y una ventana individual de V1, V2 o V3 no contiene por sí sola todo el proceso diagnóstico. El rendimiento obtenido indica que la CNN capta parte de la señal positiva, pero con una especificidad demasiado baja: en el mejor caso de la línea base (\(K=16\)), la especificidad es de 0,375 y la exactitud equilibrada de 0,516.
 
-Lo que HUCA demuestra de forma inequívoca es que entrenar un modelo visual específico con pocos ejemplos no es suficiente para esta tarea clínica. Este es un resultado necesario antes de proponer alternativas: sin haber cuantificado primero la insuficiencia de la vía convencional, cualquier apelación a modelos más grandes carecería de justificación empírica.
+Estos datos muestran que entrenar un modelo visual específico con pocos ejemplos no es suficiente para esta tarea clínica. Es un resultado necesario antes de proponer alternativas: sin cuantificar primero la insuficiencia de la vía convencional, el uso de modelos más grandes quedaría poco justificado.
 
-\section{Por qué no basta la adaptación de dominio}
+\section{Qué explica la brecha sintético-real}
 
-La brecha sintético-real tiene dos componentes. El primero es visual: el ECG real contiene ruido, variabilidad de escala, diferencias de adquisición y trazados menos regulares. El segundo es semántico: la etiqueta sintética deriva de una composición de hallazgos morfológicos, mientras que HUCA aporta una etiqueta clínica binaria que integra historia, seguimiento y confirmación especializada. Aunque ambas tareas están relacionadas con Brugada, no son idénticas.
+La brecha sintético-real tiene dos componentes. El primero es visual: el ECG real contiene ruido, variabilidad de escala, diferencias de adquisición y trazados menos regulares. El segundo es semántico: la etiqueta sintética deriva de una composición de hallazgos morfológicos, mientras que la cohorte del HUCA aporta una etiqueta clínica binaria que integra historia, seguimiento y confirmación especializada. Aunque ambas tareas están relacionadas con Brugada, no son idénticas.
 
-La adaptación de dominio mejora parcialmente este escenario. CORAL y MMD aumentan la especificidad en \(K=32\), y MMD obtiene el mejor resultado global con una exactitud equilibrada de 0,549 \cite{ganin2016}. Aun así, la mejora es modesta: 0,049 puntos sobre la línea base. Esto indica que alinear representaciones visuales entre dominios no compensa cuando la etiqueta cambia de naturaleza, cuando faltan anotaciones morfológicas finas en el dominio real y, sobre todo, cuando el número de ejemplos etiquetados es tan reducido.
-
-Este resultado es importante para la argumentación del proyecto en su conjunto. Si la dificultad residiera únicamente en diferencias de estilo visual, una buena adaptación debería cerrar la brecha de forma sustancial. El hecho de que no lo haga apunta a un problema más profundo: la CNN parte de cero en cuanto a conocimiento clínico y debe aprender simultáneamente qué es Brugada, cómo se refleja visualmente y cómo distinguirlo de otras morfologías, todo ello con unos pocos ejemplos. Esta carga es excesiva para un modelo que no dispone de conocimiento previo relevante.
+Este punto sostiene la argumentación del proyecto. Si la dificultad residiera únicamente en diferencias de estilo visual, bastaría con hacer el simulador más parecido a la cohorte real. Los resultados apuntan a un problema más profundo: la CNN parte de cero en conocimiento clínico y debe aprender simultáneamente qué es Brugada, cómo se refleja visualmente y cómo distinguirlo de otras morfologías, todo ello con unos pocos ejemplos. Esa carga es excesiva para un modelo sin conocimiento previo relevante.
 
 \section{Pocos datos y decisión de modelo}
 
-El estudio confirma que \(K\) importa, pero no de la misma forma en todos los dominios. En el simulador, más ejemplos casi siempre ayudan. En HUCA, aumentar de \(K=16\) a \(K=32\) no mejora la línea base e incluso la degrada ligeramente. Esto puede deberse a la variabilidad de la selección de ejemplos, al pequeño tamaño efectivo, a que los ejemplos añadidos no cubren subfenotipos relevantes o a que la arquitectura aprende atajos visuales no generalizables.
+El estudio confirma que \(K\) importa, pero no de la misma forma en todos los dominios. En el simulador, más ejemplos casi siempre ayudan. En la cohorte del HUCA, aumentar de \(K=16\) a \(K=32\) no mejora la línea base e incluso la degrada ligeramente. Esto puede deberse a la variabilidad de la selección de ejemplos, al pequeño tamaño efectivo, a que los ejemplos añadidos no cubren subfenotipos relevantes o a que la arquitectura aprende atajos visuales no generalizables.
 
-La pregunta útil no es si una CNN es ``buena'' o ``mala''. La pregunta útil es en qué región del espacio de datos conviene entrenarla. Con cohortes grandes, diversas y bien etiquetadas, una CNN o un transformer visual especializado pueden ser la solución natural. Pero existe un umbral por debajo del cual el coste de ajustar pesos desde cero supera el beneficio que esos pocos ejemplos pueden aportar. Los resultados sugieren que, para Brugada HUCA, ese umbral no se cruza con \(K \leq 32\).
+La pregunta útil no es si una CNN es ``buena'' o ``mala'', sino en qué zona del espacio de datos conviene entrenarla. Con cohortes grandes, diversas y bien etiquetadas, una CNN o un transformer visual especializado pueden ser la solución natural. Por debajo de cierto umbral, en cambio, el coste de ajustar pesos desde cero supera el beneficio que esos pocos ejemplos pueden aportar. Los resultados sugieren que, en esta cohorte, ese umbral no se cruza con \(K \leq 32\).
 
 La implicación es directa: si un modelo que aprende exclusivamente de los datos disponibles no logra superar el azar, tiene sentido preguntarse si un modelo que ya posee conocimiento visual y médico previo puede aprovechar esos mismos pocos ejemplos de una forma cualitativamente distinta.
 
@@ -39,29 +37,29 @@ En futuras versiones será necesario combinar Grad CAM con análisis por subgrup
 
 \section{Relación con VLM e ICL}
 
-Esta sección es la más importante de la discusión porque conecta la evidencia negativa de la CNN con la hipótesis central del proyecto.
+Esta sección conecta el resultado negativo de la CNN con la hipótesis central del proyecto.
 
 \subsection{Por qué la CNN no basta y qué cambia con un VLM}
 
-La CNN entrenada sobre HUCA parte de pesos de ImageNet: filtros visuales genéricos aprendidos sobre objetos cotidianos. No posee ningún conocimiento previo sobre electrocardiografía, sobre la morfología del patrón de Brugada, sobre la fisiología del canal de sodio ni sobre criterios diagnósticos. Todo lo que la red sabe de Brugada debe aprenderlo de los \(K\) ejemplos etiquetados disponibles. Con \(K \leq 32\), esa carga resulta imposible de cubrir.
+La CNN entrenada con la cohorte del HUCA parte de pesos de ImageNet: filtros visuales genéricos aprendidos sobre objetos cotidianos. No posee ningún conocimiento previo sobre electrocardiografía, sobre la morfología del patrón de Brugada, sobre la fisiología del canal de sodio ni sobre criterios diagnósticos. Todo lo que la red sabe de Brugada debe aprenderlo de los \(K\) ejemplos etiquetados disponibles. Con \(K \leq 32\), esa carga resulta imposible de cubrir.
 
 Un modelo de lenguaje visual como Gemma 4 \cite{gemma4card} o un modelo médico multimodal como MedGemma 1.5 \cite{medgemma15} aportan dos formas de conocimiento previo que la CNN no tiene. La primera es conocimiento visual amplio: estos modelos han procesado millones de imágenes durante su preentrenamiento, incluidas representaciones gráficas, diagramas y, en el caso de MedGemma, imágenes médicas de múltiples modalidades. La segunda es conocimiento textual y conceptual: los VLM han sido entrenados con textos médicos, artículos, guías clínicas y descripciones de patologías. Aunque ninguno de ellos presenta el ECG como modalidad principal de entrenamiento, la base de conocimiento que aportan es incomparablemente mayor que la de una ResNet18 con pesos de ImageNet.
 
-Esta diferencia no es meramente cuantitativa. Es una diferencia de naturaleza. La CNN debe construir su comprensión de Brugada exclusivamente a partir de los ejemplos de entrenamiento. El VLM puede potencialmente reconocer que una imagen contiene un trazado de ECG, identificar derivaciones precordiales, detectar elevación del segmento ST y asociarla con conceptos clínicos que ya forman parte de su representación interna. La pregunta experimental es si ese conocimiento previo se traduce efectivamente en mejor rendimiento con pocos ejemplos, no si es teóricamente superior.
+La diferencia no es solo de escala. La CNN debe construir su comprensión de Brugada exclusivamente a partir de los ejemplos de entrenamiento. El VLM puede reconocer que una imagen contiene un trazado de ECG, identificar derivaciones precordiales, detectar elevación del segmento ST y asociarla con conceptos clínicos que ya forman parte de su representación interna. La pregunta experimental es si ese conocimiento previo se traduce en mejor rendimiento con pocos ejemplos, no si es teóricamente superior.
 
 \subsection{ICL frente a entrenamiento: dos paradigmas distintos}
 
-El aprendizaje en contexto (ICL) utiliza \(K\) ejemplos como demostraciones incluidas en el prompt, sin actualizar en ningún momento los pesos del modelo. Esto es fundamentalmente diferente del entrenamiento supervisado de la CNN, donde los \(K\) ejemplos se utilizan para ajustar millones de parámetros mediante retropropagación.
+El aprendizaje en contexto (ICL) utiliza \(K\) ejemplos como demostraciones incluidas en el prompt, sin actualizar en ningún momento los pesos del modelo. Esto difiere del entrenamiento supervisado de la CNN, donde los \(K\) ejemplos se utilizan para ajustar millones de parámetros mediante retropropagación.
 
 La diferencia tiene consecuencias directas en el régimen de pocos datos. Cuando se entrenan pesos, cada ejemplo debe contribuir a una actualización de gradiente que modifique el modelo de forma productiva. Con \(K\) muy pequeño, el riesgo de sobreajuste es alto, la cobertura de la variabilidad clínica es baja y los gradientes pueden ser ruidosos. ICL evita este problema: los ejemplos no actualizan pesos, sino que condicionan la distribución de probabilidad de la siguiente respuesta. El modelo utiliza las demostraciones como contexto para una tarea que resuelve aplicando su conocimiento previo, no como material para aprender de cero.
 
-Esto no implica que ICL sea necesariamente superior. Un VLM puede ignorar detalles finos del ECG, depender más del texto del prompt que de la imagen, producir respuestas inválidas o ser incapaz de distinguir morfologías sutiles. Por eso la pipeline incluye controles de respuestas permutadas y demostraciones sin imagen, precisamente para detectar si el modelo usa realmente la información visual de las demostraciones o si responde por inercia textual \cite{chen2024,zhang2024mmicl}.
+Esto no implica que ICL sea necesariamente superior. Un VLM puede ignorar detalles finos del ECG, depender más del texto del prompt que de la imagen, producir respuestas inválidas o ser incapaz de distinguir morfologías sutiles. Por eso el flujo experimental incluye controles de respuestas permutadas y demostraciones sin imagen, precisamente para detectar si el modelo usa realmente la información visual de las demostraciones o si responde por inercia textual \cite{chen2024,zhang2024mmicl}.
 
 \subsection{La pregunta correcta y el papel de la línea base CNN}
 
 La pregunta del proyecto no es si los VLM son ``mejores'' que las CNN en general. Los VLM no compiten con sistemas supervisados entrenados sobre millones de ECG etiquetados. La pregunta es mucho más específica: en el régimen de datos extremadamente escasos (\(K \leq 32\) ejemplos etiquetados), ¿puede el conocimiento previo de un VLM compensar la imposibilidad de entrenar un modelo visual específico?
 
-Para que esta pregunta tenga sentido científico, es imprescindible haber demostrado primero que la vía convencional falla. Eso es exactamente lo que establece la rama CNN. Sin esta evidencia negativa, la propuesta de usar VLM/ICL sería una elección arbitraria de tecnología. Con ella, se convierte en una hipótesis motivada por datos: sabemos que entrenar no funciona, luego probamos si explotar conocimiento previo sin entrenar puede funcionar.
+Para que esta pregunta tenga sentido científico, es necesario comprobar primero dónde falla la vía convencional. Eso es lo que aporta la línea CNN. Sin ese resultado, la propuesta de usar VLM/ICL sería una elección arbitraria de tecnología. Con él, se convierte en una hipótesis motivada por datos: si entrenar no basta, tiene sentido probar si el conocimiento previo sin ajuste de pesos ayuda.
 
 La comparación prevista es justa y controlada: misma imagen, mismos presupuestos \(K\), separación por paciente y mismas métricas. La única diferencia es cómo se utilizan los ejemplos: como material de entrenamiento o como demostraciones en contexto.
 
@@ -71,13 +69,13 @@ Los resultados CNN sugieren que existe un umbral de viabilidad del entrenamiento
 
 Por debajo de ese umbral, ICL podría ser la estrategia más eficiente porque no necesita ajustar pesos y aprovecha conocimiento previo. Por encima de ese umbral, un modelo supervisado podría superar a ICL porque puede especializarse en los patrones específicos del dominio. La frontera exacta depende de la tarea, la complejidad morfológica, la calidad de las etiquetas y la capacidad del VLM para procesar imágenes de ECG.
 
-Determinar esa frontera con datos es una de las contribuciones que la fase VLM/ICL puede aportar. Si los resultados VLM/ICL muestran un rendimiento que decrece al aumentar \(K\) mientras la CNN mejora, existirá un punto de cruce que defina cuándo renta cada estrategia. Si el VLM domina en todos los valores de \(K\) probados, significará que el umbral de viabilidad del entrenamiento es superior a 32 ejemplos para esta tarea. Ambos resultados serían informativos.
+Determinar esa frontera con datos es una de las contribuciones que la fase VLM/ICL puede aportar. Si los resultados VLM/ICL muestran un rendimiento que decrece al aumentar \(K\) mientras la CNN mejora, existirá un punto de cruce que indique cuándo compensa cada estrategia. Si el VLM obtiene mejores resultados en todos los valores de \(K\) probados, significará que el umbral de viabilidad del entrenamiento es superior a 32 ejemplos para esta tarea. Ambos resultados serían informativos.
 
 \subsection{Gemma 4 y MedGemma: hipótesis diferenciadas}
 
-Gemma 4 es un modelo generalista multimodal con resolución visual variable \cite{gemma4card}. Su presupuesto de tokens visuales permite estudiar si asignar más resolución a una imagen de ECG mejora la detección de cambios morfológicos sutiles. MedGemma 1.5 es un modelo con adaptación médica que incluye radiología, histopatología, dermatología y registros clínicos \cite{medgemma15}. Su tarjeta no presenta el ECG como modalidad principal, lo que plantea una pregunta interesante: ¿es más útil un modelo generalista reciente con mejor arquitectura, o un modelo médico con conocimiento de dominio pero potencialmente menos potente en el procesamiento visual de ECG?
+Gemma 4 es un modelo generalista multimodal con resolución visual variable \cite{gemma4card}. Su presupuesto de tokens visuales permite estudiar si asignar más resolución a una imagen de ECG mejora la detección de cambios morfológicos sutiles. MedGemma 1.5 es un modelo con adaptación médica que incluye radiología, histopatología, dermatología y registros clínicos \cite{medgemma15}. La documentación del modelo no sitúa el ECG entre sus modalidades principales, lo que plantea una pregunta interesante: ¿es más útil un modelo generalista reciente con mejor arquitectura, o un modelo médico con conocimiento de dominio pero potencialmente menos potente en el procesamiento visual de ECG?
 
-La respuesta no puede anticiparse. Lo que sí puede anticiparse es que ambos modelos parten de una posición radicalmente diferente a la de la CNN: no necesitan aprender qué es un ECG, qué es Brugada, qué significa una elevación del segmento ST ni cómo se lee una derivación precordial. Esos conceptos ya forman parte, en mayor o menor medida, de su representación interna.
+La respuesta no puede anticiparse. Lo que sí puede anticiparse es que ambos modelos parten de una posición distinta a la de la CNN: no necesitan aprender qué es un ECG, qué es Brugada, qué significa una elevación del segmento ST ni cómo se lee una derivación precordial. Esos conceptos ya forman parte, en mayor o menor medida, de su representación interna.
 
 \section{Implicaciones para triaje clínico}
 
@@ -99,14 +97,14 @@ Las principales limitaciones son:
   \item El preprocesamiento reduce cada ECG a ventanas de V1, V2 y V3 alrededor de un latido central.
   \item Los presupuestos de entrenamiento son deliberadamente pequeños y pueden dejar subgrupos sin representación.
   \item No se ha realizado calibración clínica ni estimación formal de utilidad neta.
-  \item El protocolo VLM/ICL queda especificado en el capítulo~\ref{chap:vlm} con modelos, presupuestos, prompts, controles y tablas de salida. Las únicas piezas sin valores son las celdas numéricas que dependen de inferencias VLM auditadas.
-  \item La evidencia negativa de la CNN se limita a ResNet18 con pesos de ImageNet. Otras arquitecturas o esquemas de preentrenamiento visual podrían obtener resultados diferentes, aunque la expectativa con \(K \leq 32\) es baja.
+  \item El protocolo VLM/ICL se especifica en el capítulo~\ref{chap:vlm} con modelos, presupuestos, prompts, controles y tablas de salida. Las únicas piezas sin valores son las celdas numéricas que dependen de inferencias VLM verificadas.
+  \item El resultado negativo de la CNN se limita a ResNet18 con pesos de ImageNet. Otras arquitecturas o esquemas de preentrenamiento visual podrían obtener resultados diferentes, aunque la expectativa con \(K \leq 32\) es baja.
 \end{itemize}
 
 \section{Lectura final}
 
-La rama CNN produce un resultado negativo documentado y reproducible. El modelo no resuelve la detección de Brugada en datos clínicos con pocos ejemplos. La adaptación de dominio atenúa la brecha sintético-real, pero no la cierra. Este resultado no es un fracaso del proyecto; es el primer paso del argumento científico.
+La línea CNN produce un resultado negativo documentado y reproducible. El modelo no resuelve la detección de Brugada en datos clínicos con pocos ejemplos. Este resultado no es un fracaso del proyecto; es el primer paso del argumento científico.
 
-La estructura del razonamiento es la siguiente: si un modelo que debe aprender todo desde cero no funciona con pocos datos, ¿puede funcionar un modelo que ya sabe algo? La CNN establece el ``no funciona''. La rama VLM/ICL ya queda planteada con el mismo diseño experimental para comprobar si el conocimiento previo convierte ese ``no funciona'' en un rendimiento útil. Independientemente del resultado, la comparación será informativa: si el VLM tampoco funciona, el problema residirá en la tarea misma con ese nivel de datos; si el VLM mejora, quedará cuantificado el valor del conocimiento previo en escenarios de extrema escasez.
+El razonamiento puede formularse así: si un modelo que debe aprender todo desde cero no alcanza un rendimiento útil con pocos datos, ¿puede hacerlo un modelo que ya incorpora conocimiento visual y médico previo? La línea VLM/ICL usa el mismo diseño experimental para comprobarlo. Independientemente del resultado, la comparación será informativa: si el VLM tampoco funciona, el problema residirá en la tarea misma con ese nivel de datos; si el VLM mejora, se cuantificará el valor del conocimiento previo en escenarios de escasez extrema.
 
-La siguiente decisión experimental ya está planteada: ejecutar Gemma 4 y MedGemma con los mismos presupuestos, los mismos datos y las mismas métricas, y determinar, con datos, a partir de cuántos ejemplos renta entrenar un modelo visual específico y cuándo es preferible usar aprendizaje en contexto para triaje preliminar.
+El siguiente paso experimental es ejecutar Gemma 4 y MedGemma con los mismos presupuestos, los mismos datos y las mismas métricas, y determinar, con datos, a partir de cuántos ejemplos compensa entrenar un modelo visual específico y cuándo es preferible usar aprendizaje en contexto para triaje preliminar.

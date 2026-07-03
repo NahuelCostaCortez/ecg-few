@@ -23,11 +23,11 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
   \end{tabular}
 \end{table}
 
-\section{CNN en Brugada HUCA}
+\section{CNN en la cohorte cedida por el HUCA}
 
 \begin{table}[H]
   \centering
-  \caption{Resultados completos de la CNN base sobre Brugada HUCA.}
+  \caption{Resultados completos de la CNN base sobre los datos cedidos por el HUCA.}
   \label{tab:app_huca_completo}
   \small
   \begin{tabular}{rrrrrrrr}
@@ -51,7 +51,7 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
   \label{tab:app_comparacion_dominios}
   \begin{tabular}{rrr}
     \toprule
-    \(K\) & Sintético BA & HUCA BA \\
+    \(K\) & Sintético BA & BA datos reales \\
     \midrule
     2  & 0,625 & 0,509 \\
     4  & 0,631 & 0,509 \\
@@ -66,7 +66,7 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
 
 \begin{table}[H]
   \centering
-  \caption{Resultados completos de adaptación de dominio sobre Brugada HUCA.}
+  \caption{Resultados completos de adaptación de dominio sobre los datos cedidos por el HUCA.}
   \label{tab:app_domain_completo}
   \small
   \begin{tabular}{llrrrrrr}
@@ -87,19 +87,8 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
   \end{tabular}
 \end{table}
 
-\section{Artefactos}
+\section{Trazabilidad de resultados}
 
-Los artefactos principales quedan en:
+Las tablas anteriores proceden de ejecuciones agregadas por paciente. Para cada bloque se conservan las predicciones por imagen, la agregación por paciente, las matrices de confusión y las métricas resumidas por \(K\) y semilla.
 
-\begin{itemize}
-  \item \texttt{reports/loocv/cnn\_simulator\_qrs/}
-  \item \texttt{reports/loocv/cnn/}
-  \item \texttt{reports/loocv/cnn\_comparison/}
-  \item \texttt{reports/loocv/cnn\_domain\_adaptation/}
-  \item \texttt{reports/loocv/audit/}
-  \item \texttt{outputs/cnn\_simulator\_qrs\_loocv/}
-  \item \texttt{outputs/cnn\_loocv/}
-  \item \texttt{outputs/cnn\_domain\_adaptation/}
-\end{itemize}
-
-La auditoría final marca como completos los conjuntos, los informes CNN, la comparación sintético-real y la adaptación de dominio. La línea VLM/ICL se documenta en el capítulo~\ref{chap:vlm}: sus tablas de salida están preparadas, pero las cifras no se mezclan con este apéndice hasta que existan inferencias auditadas por muestra. Su función dentro del TFG es comparar si el mismo presupuesto \(K\) usado como contexto puede superar la línea base CNN cerrada aquí.
+La auditoría final verifica los conjuntos, los informes CNN, la comparación sintético-real y la adaptación de dominio. La línea VLM/ICL se documenta en el capítulo~\ref{chap:vlm}; sus tablas mantienen la misma estructura de lectura, sin mezclar cifras no verificadas con los resultados cerrados de la CNN.
