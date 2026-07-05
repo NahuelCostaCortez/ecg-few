@@ -1,9 +1,9 @@
 \usepackage[
   a4paper,
-  top=3.05cm,
-  bottom=3.45cm,
-  left=4.35cm,
-  right=4.35cm,
+  top=3cm,
+  bottom=2.5cm,
+  left=3cm,
+  right=2.5cm,
   headheight=12pt,
   headsep=0.45cm,
   footskip=0.7cm
@@ -13,8 +13,15 @@
 \ifPDFTeX
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
+  \usepackage{mathptmx}
+\else
+  \usepackage{fontspec}
+  \IfFontExistsTF{Times New Roman}{
+    \setmainfont{Times New Roman}
+  }{
+    \setmainfont{TeX Gyre Termes}
+  }
 \fi
-\usepackage{lmodern}
 
 \usepackage[spanish,es-nodecimaldot]{babel}
 \usepackage{microtype}
@@ -35,6 +42,7 @@
 \usepackage{titlesec}
 \usepackage{listings}
 \usepackage{url}
+\usepackage{xurl}
 \usepackage{csquotes}
 \usepackage{zref-totpages}
 \usepackage[hidelinks]{hyperref}
@@ -52,6 +60,7 @@
 \definecolor{PaperGray}{HTML}{F7F7F7}
 
 \hypersetup{
+  breaklinks=true,
   pdftitle={\ThesisTitle},
   pdfauthor={\AuthorName},
   pdfsubject={\DocumentType},
@@ -59,7 +68,7 @@
 }
 
 \graphicspath{{assets/}{figures/}}
-\singlespacing
+\onehalfspacing
 \setlength{\parindent}{1.45em}
 \setlength{\parskip}{0pt}
 \setlength{\tabcolsep}{4.8pt}
@@ -68,39 +77,39 @@
 \emergencystretch=2.5em
 
 \titleformat{\chapter}
-  {\normalfont\bfseries\fontsize{14}{17}\selectfont\color{Ink}}
+  {\normalfont\bfseries\fontsize{28}{34}\selectfont\color{Ink}}
   {\thechapter}
   {1em}
   {}
 
 \titleformat{name=\chapter,numberless}
-  {\normalfont\bfseries\fontsize{14}{17}\selectfont\color{Ink}}
+  {\normalfont\bfseries\fontsize{28}{34}\selectfont\color{Ink}}
   {}
   {0pt}
   {}
 
-\titlespacing*{\chapter}{0pt}{0.2em}{1.15em}
+\titlespacing*{\chapter}{0pt}{0pt}{1.0\baselineskip}
 
 \titleformat{\section}
-  {\normalfont\bfseries\normalsize\color{Ink}}
-  {\thesection}
+  {\normalfont\bfseries\fontsize{14}{17}\selectfont\color{Ink}}
+  {\thesection.-}
   {0.75em}
-  {}
+  {\MakeUppercase}
 
 \titleformat{\subsection}
   {\normalfont\bfseries\normalsize\color{Ink}}
-  {\thesubsection}
+  {\thesubsection.-}
   {0.75em}
   {}
 
 \titleformat{\subsubsection}
   {\normalfont\bfseries\normalsize\color{Ink}}
-  {\thesubsubsection}
+  {\thesubsubsection.-}
   {0.7em}
   {}
 
-\titlespacing*{\section}{0pt}{1.25em}{0.55em}
-\titlespacing*{\subsection}{0pt}{1.0em}{0.4em}
+\titlespacing*{\section}{0pt}{2.0\baselineskip}{1.0\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.0\baselineskip}{0.5\baselineskip}
 \titlespacing*{\subsubsection}{0pt}{0.85em}{0.3em}
 
 \newcommand{\documentheader}{%
@@ -126,15 +135,15 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\footnotesize\thepage}
-\fancyhead[R]{\footnotesize\itshape\nouppercase{\ThesisRunningTitle}}
+\fancyhead[R]{\footnotesize Hoja \number\numexpr\value{abspage}+1\relax\ de \ztotpages}
+\fancyfoot[C]{\footnotesize\AuthorName}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 
 \fancypagestyle{plain}{
   \fancyhf{}
-  \fancyhead[L]{\footnotesize\thepage}
-  \fancyhead[R]{\footnotesize\itshape\nouppercase{\ThesisRunningTitle}}
+  \fancyhead[R]{\footnotesize Hoja \number\numexpr\value{abspage}+1\relax\ de \ztotpages}
+  \fancyfoot[C]{\footnotesize\AuthorName}
   \renewcommand{\headrulewidth}{0pt}
   \renewcommand{\footrulewidth}{0pt}
 }
@@ -151,21 +160,22 @@
   topsep=0.5em
 }
 
+\DeclareCaptionLabelSeparator{epigijon}{.- }
 \captionsetup{
-  font=small,
+  font=normalsize,
   labelfont=bf,
   textfont={color=TextGray},
   justification=raggedright,
   singlelinecheck=false,
   margin=0pt,
   skip=6pt,
-  labelsep=period
+  labelsep=epigijon
 }
-\captionsetup[table]{position=above}
+\captionsetup[table]{position=below}
 \captionsetup[figure]{position=below}
 
 \addto\captionsspanish{
-  \renewcommand{\figurename}{Fig.}
+  \renewcommand{\figurename}{Figura}
   \renewcommand{\tablename}{Tabla}
   \renewcommand{\listtablename}{Índice de tablas}
 }
@@ -191,7 +201,7 @@
   \fcolorbox{MidGray}{PaperGray}{
     \parbox[c][4cm][c]{0.9\linewidth}{
       \centering
-      \small\textbf{Imagen pendiente de incorporación}\\[0.55em]
+      \small\textbf{Imagen no disponible}\\[0.55em]
       \footnotesize\texttt{\detokenize{#1}}
     }
   }
@@ -228,7 +238,7 @@
       \parbox[c][2.8cm][c]{5.0cm}{
         \centering
         \small\textbf{Universidad de Oviedo}\\[0.4em]
-        \footnotesize Logotipo pendiente de incorporación
+        \footnotesize Logotipo no disponible
       }
     }
   }
@@ -241,7 +251,7 @@
     \fcolorbox{MidGray}{PaperGray}{
       \parbox[c][5cm][c]{#1}{
         \centering
-        \small\textbf{Figura pendiente de incorporación}\\[0.7em]
+        \small\textbf{Figura no disponible}\\[0.7em]
         \normalfont #3
       }
     }

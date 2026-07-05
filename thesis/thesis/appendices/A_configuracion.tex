@@ -9,8 +9,6 @@ El proyecto declara Python 3.12 o posterior y utiliza \texttt{uv} como gestor de
 
 \begin{table}[H]
   \centering
-  \caption{Dependencias principales declaradas por el proyecto.}
-  \label{tab:dependencias_python_final}
   \small
   \begin{tabularx}{0.92\textwidth}{Xl}
     \toprule
@@ -31,16 +29,16 @@ El proyecto declara Python 3.12 o posterior y utiliza \texttt{uv} como gestor de
     Ruff, extra \texttt{dev} & 0.6 \\
     \bottomrule
   \end{tabularx}
+  \caption{Dependencias principales declaradas por el proyecto.}
+  \label{tab:dependencias_python_final}
 \end{table}
 
-La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo no interactivo, con el mismo estilo tipográfico usado en el documento.
+La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo no interactivo, con el mismo estilo tipográfico usado en el documento. Las ejecuciones con PyTorch aplican las recomendaciones de reproducibilidad disponibles en su documentación oficial \cite{pytorchrepro}.
 
 \section{Conjunto sintético QRS/ST}
 
 \begin{table}[H]
   \centering
-  \caption{Configuración del conjunto sintético final.}
-  \label{tab:config_sintetico_final}
   \small
   \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
     \toprule
@@ -61,6 +59,8 @@ La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo 
     Semillas & 42, 123 y 2026 \\
     \bottomrule
   \end{tabularx}
+  \caption{Configuración del conjunto sintético final.}
+  \label{tab:config_sintetico_final}
 \end{table}
 
 La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están presentes simultáneamente. La agregación de paciente promedia las probabilidades de las derivaciones y después aplica el umbral seleccionado.
@@ -69,8 +69,6 @@ La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están
 
 \begin{table}[H]
   \centering
-  \caption{Configuración del conjunto real procesado.}
-  \label{tab:config_huca_final}
   \small
   \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
     \toprule
@@ -90,6 +88,8 @@ La etiqueta positiva se obtiene cuando RBBB, elevación ST e inversión T están
     Separación & Leave-one-out por paciente \\
     \bottomrule
   \end{tabularx}
+  \caption{Configuración del conjunto real procesado.}
+  \label{tab:config_huca_final}
 \end{table}
 
 Los datos cedidos por el HUCA no contienen anotaciones independientes para las tres etiquetas morfológicas del simulador. La tarea real utiliza la etiqueta clínica \texttt{clinical\_brugada}, recogida a nivel de paciente mediante revisión especializada.
@@ -98,8 +98,6 @@ Los datos cedidos por el HUCA no contienen anotaciones independientes para las t
 
 \begin{table}[H]
   \centering
-  \caption{Hiperparámetros de la CNN final.}
-  \label{tab:config_cnn_appendix}
   \small
   \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
     \toprule
@@ -119,14 +117,14 @@ Los datos cedidos por el HUCA no contienen anotaciones independientes para las t
     Grad CAM & 12 paneles en sintético y 6 en datos reales por ejecución agregada \\
     \bottomrule
   \end{tabularx}
+  \caption{Hiperparámetros de la CNN final.}
+  \label{tab:config_cnn_appendix}
 \end{table}
 
 \section{Configuración de adaptación de dominio}
 
 \begin{table}[H]
   \centering
-  \caption{Configuración de la línea de adaptación de dominio.}
-  \label{tab:config_domain_appendix}
   \small
   \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
     \toprule
@@ -134,7 +132,7 @@ Los datos cedidos por el HUCA no contienen anotaciones independientes para las t
     \midrule
     Origen etiquetado & \texttt{data/simulator\_qrs} \\
     Destino no etiquetado & \texttt{data/brugada\_huca} \\
-    Métodos & SSL, CORAL, MMD y DANN \\
+    Métodos & SSL, CORAL, MMD y DANN \cite{ganin2016} \\
     Presupuestos & \(K=16\) y \(K=32\) \\
     Semillas & 42, 123 y 2026 \\
     Peso de adaptación & 0,1 \\
@@ -143,6 +141,8 @@ Los datos cedidos por el HUCA no contienen anotaciones independientes para las t
     Política de destino & Transductiva compartida, sin etiquetas destino en la pérdida supervisada \\
     \bottomrule
   \end{tabularx}
+  \caption{Configuración de la línea de adaptación de dominio.}
+  \label{tab:config_domain_appendix}
 \end{table}
 
 \section{Configuración VLM/ICL}
@@ -151,8 +151,6 @@ La línea VLM/ICL usa los mismos pacientes reservados, presupuestos \(K\) y mét
 
 \begin{table}[H]
   \centering
-  \caption{Configuración resumida de la línea VLM/ICL.}
-  \label{tab:config_vlm_appendix}
   \small
   \begin{tabularx}{0.94\textwidth}{p{4.4cm}X}
     \toprule
@@ -167,6 +165,8 @@ La línea VLM/ICL usa los mismos pacientes reservados, presupuestos \(K\) y mét
     Métrica principal & Exactitud equilibrada por paciente \\
     \bottomrule
   \end{tabularx}
+  \caption{Configuración resumida de la línea VLM/ICL.}
+  \label{tab:config_vlm_appendix}
 \end{table}
 
 El capítulo~\ref{chap:vlm} desarrolla las condiciones, controles y criterios de lectura de esta línea.

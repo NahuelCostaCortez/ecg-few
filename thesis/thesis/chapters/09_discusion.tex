@@ -33,7 +33,7 @@ La implicación es directa: si un modelo que aprende exclusivamente de los datos
 
 Grad CAM aporta una comprobación cualitativa útil: los mapas no se concentran de forma absurda en márgenes o ruido de fondo \cite{selvaraju2017}. En varios ejemplos aparecen activaciones sobre zonas plausibles del complejo QRS y la repolarización. Pero la interpretabilidad visual no salva el rendimiento. Un mapa razonable puede acompañar a una clasificación incorrecta, y un mapa localizado no equivale a una justificación clínica.
 
-En futuras versiones será necesario combinar Grad CAM con análisis por subgrupos, calibración, revisión de errores por especialista y anotaciones morfológicas independientes. Sin esas capas, la explicación se debe presentar como diagnóstico técnico del modelo, no como validación médica.
+Para que Grad CAM tenga valor más allá de la inspección técnica, debe combinarse con análisis por subgrupos, calibración, revisión de errores por especialista y anotaciones morfológicas independientes. Sin esas capas, la explicación se debe presentar como diagnóstico técnico del modelo, no como validación médica.
 
 \section{Relación con VLM e ICL}
 
@@ -85,7 +85,7 @@ Un sistema de triaje basado en el modelo operaría de la siguiente forma. El alg
 
 En los casos seleccionados en los que la sospecha clínica persiste, el siguiente paso es la prueba farmacológica con bloqueantes del canal de sodio, como ajmalina o flecainida, administrada en un entorno monitorizado. Esta prueba intenta desenmascarar un patrón tipo 1 que el ECG basal no mostraba. La indicación depende de la valoración integral del paciente: síntomas, antecedentes familiares de muerte súbita, hallazgos electrocardiográficos previos y cuadro clínico \cite{wilde2023scbt}. La prueba no se utiliza como cribado indiscriminado, y su especificidad no es perfecta.
 
-En este circuito, el modelo de aprendizaje automático ocupa un papel exclusivamente auxiliar: puede acelerar la identificación de candidatos para revisión, pero nunca sustituye al especialista ni decide sobre la indicación de la prueba farmacológica. Un falso positivo del modelo genera una revisión experta adicional; un falso negativo puede retrasar la entrada del paciente en el circuito. Con los rendimientos actuales de la CNN, el balance favorece un uso exclusivamente de investigación. La fase VLM/ICL medirá si ese balance puede mejorar lo suficiente para justificar un estudio piloto de triaje asistido.
+En este circuito, el modelo de aprendizaje automático ocupa un papel exclusivamente auxiliar: puede acelerar la identificación de candidatos para revisión, pero nunca sustituye al especialista ni decide sobre la indicación de la prueba farmacológica. Un falso positivo del modelo genera una revisión experta adicional; un falso negativo puede retrasar la entrada del paciente en el circuito. Con los rendimientos actuales de la CNN, el balance favorece un uso exclusivamente de investigación. El protocolo VLM/ICL está diseñado para medir si ese balance puede mejorar lo suficiente para justificar un estudio piloto de triaje asistido.
 
 \section{Limitaciones}
 
@@ -97,7 +97,7 @@ Las principales limitaciones son:
   \item El preprocesamiento reduce cada ECG a ventanas de V1, V2 y V3 alrededor de un latido central.
   \item Los presupuestos de entrenamiento son deliberadamente pequeños y pueden dejar subgrupos sin representación.
   \item No se ha realizado calibración clínica ni estimación formal de utilidad neta.
-  \item El protocolo VLM/ICL se especifica en el capítulo~\ref{chap:vlm} con modelos, presupuestos, prompts, controles y tablas de salida. Las únicas piezas sin valores son las celdas numéricas que dependen de inferencias VLM verificadas.
+  \item El protocolo VLM/ICL se especifica en el capítulo~\ref{chap:vlm} con modelos, presupuestos, prompts, controles y criterios de reporte; no se extraen conclusiones cuantitativas de esa línea sin inferencias verificadas.
   \item El resultado negativo de la CNN se limita a ResNet18 con pesos de ImageNet. Otras arquitecturas o esquemas de preentrenamiento visual podrían obtener resultados diferentes, aunque la expectativa con \(K \leq 32\) es baja.
 \end{itemize}
 

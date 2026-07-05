@@ -1,9 +1,7 @@
 \chapter{Evaluación VLM/ICL}
 \label{chap:vlm}
 
-Este capítulo define la línea VLM/ICL del estudio: modelos de visión y lenguaje con aprendizaje en contexto. Las tablas no incorporan cifras para no anticipar resultados VLM; el capítulo fija el diseño experimental, las condiciones, los controles, el formato de salida y la lectura comparativa.
-
-\newcommand{\vlmpending}{--}
+Este capítulo define la línea VLM/ICL del estudio: modelos de visión y lenguaje con aprendizaje en contexto. El capítulo fija el diseño experimental, las condiciones, los controles, el formato de salida y la lectura comparativa.
 
 \section{Objetivo de la línea VLM/ICL}
 
@@ -62,8 +60,6 @@ La tabla \ref{tab:vlm_conditions} fija las condiciones de la campaña. Las tres 
 
 \begin{table}[H]
   \centering
-  \caption{Condiciones experimentales VLM/ICL.}
-  \label{tab:vlm_conditions}
   \small
   \begin{tabularx}{\textwidth}{p{3.2cm}p{2.2cm}X}
     \toprule
@@ -76,6 +72,8 @@ La tabla \ref{tab:vlm_conditions} fija las condiciones de la campaña. Las tres 
     Sin imagen de apoyo & 8, 16, 32 & Mantener etiquetas de demostración, pero retirar las imágenes de apoyo. \\
     \bottomrule
   \end{tabularx}
+  \caption{Condiciones experimentales VLM/ICL.}
+  \label{tab:vlm_conditions}
 \end{table}
 
 \section{Agregación por paciente}
@@ -86,118 +84,51 @@ En la tarea morfológica, cada predicción se obtiene por imagen y se agrega a n
 
 La evaluación VLM/ICL conserva la misma separación por paciente que la línea CNN. Para cada condición se registran el modelo, la tarea, el presupuesto \(K\), la semilla, las imágenes de consulta, las demostraciones incluidas, la respuesta estructurada y la validez del formato. Esta información permite reconstruir métricas por paciente, matrices de confusión y comparaciones por presupuesto sin mezclar dominios ni pacientes.
 
-\section{Tablas de resultados VLM/ICL}
+\section{Variables de reporte}
 
-Las tablas siguientes mantienen las celdas numéricas sin valor para no adelantar resultados VLM. En esta sección, \(\vlmpending\) identifica una celda sin cifra reportada.
-
-\begin{table}[H]
-  \centering
-  \caption{Tabla de resultados VLM/ICL para Gemma 4 sobre los datos cedidos por el HUCA.}
-  \label{tab:vlm_gemma4_results}
-  \small
-  \begin{tabular}{rrrrrrr}
-    \toprule
-    \(K\) & BA & F1 & Sens. & Esp. & JSON inválido & Latencia media \\
-    \midrule
-    0  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    2  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    4  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    8  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    16 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    32 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+El reporte VLM/ICL conserva las métricas de la línea CNN y añade campos específicos de los modelos generativos. La tabla~\ref{tab:vlm_reporting_fields} resume qué debe quedar asociado a cada combinación de modelo, condición, presupuesto \(K\) y semilla.
 
 \begin{table}[H]
   \centering
-  \caption{Tabla de resultados VLM/ICL para MedGemma 1.5 sobre los datos cedidos por el HUCA.}
-  \label{tab:vlm_medgemma_results}
   \small
-  \begin{tabular}{rrrrrrr}
+  \begin{tabularx}{\textwidth}{p{3.6cm}p{3.2cm}X}
     \toprule
-    \(K\) & BA & F1 & Sens. & Esp. & JSON inválido & Latencia media \\
+    Campo & Unidad & Función \\
     \midrule
-    0  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    2  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    4  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    8  & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    16 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    32 & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending & \vlmpending \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{table}[H]
-  \centering
-  \caption{Controles VLM/ICL para verificar uso multimodal real.}
-  \label{tab:vlm_controls_results}
-  \small
-  \begin{tabularx}{\textwidth}{p{3.1cm}p{2.2cm}XXXX}
-    \toprule
-    Modelo & Condición & \(K\) & BA & Caída frente a normal & Lectura \\
-    \midrule
-    Gemma 4 & Etiquetas permutadas & 16 & \vlmpending & \vlmpending & \vlmpending \\
-    Gemma 4 & Sin imagen de apoyo & 16 & \vlmpending & \vlmpending & \vlmpending \\
-    MedGemma 1.5 & Etiquetas permutadas & 16 & \vlmpending & \vlmpending & \vlmpending \\
-    MedGemma 1.5 & Sin imagen de apoyo & 16 & \vlmpending & \vlmpending & \vlmpending \\
-    Gemma 4 & Etiquetas permutadas & 32 & \vlmpending & \vlmpending & \vlmpending \\
-    Gemma 4 & Sin imagen de apoyo & 32 & \vlmpending & \vlmpending & \vlmpending \\
-    MedGemma 1.5 & Etiquetas permutadas & 32 & \vlmpending & \vlmpending & \vlmpending \\
-    MedGemma 1.5 & Sin imagen de apoyo & 32 & \vlmpending & \vlmpending & \vlmpending \\
+    Exactitud equilibrada & Paciente & Métrica principal, comparable con la línea CNN. \\
+    F1, sensibilidad y especificidad & Paciente & Lectura clínica complementaria del equilibrio entre falsos positivos y falsos negativos. \\
+    JSON inválido & Respuesta & Medida de cumplimiento del formato solicitado. \\
+    Latencia media & Consulta & Estimación de coste operativo por predicción. \\
+    Condición de control & Campaña & Identificación de zero-shot, ICL normal, ICL balanceado, etiquetas permutadas o demostraciones sin imagen. \\
+    Evidencia de contexto & Pliegue & Pacientes y derivaciones incluidos como demostraciones para reconstruir la inferencia. \\
     \bottomrule
   \end{tabularx}
+  \caption{Campos de reporte para una campaña VLM/ICL.}
+  \label{tab:vlm_reporting_fields}
 \end{table}
 
-\section{Matriz de comparación}
+\section{Matriz metodológica}
 
-La comparación se lee como una curva de decisión. La CNN aporta los valores de referencia y la columna VLM conserva el mismo espacio de lectura, sin introducir cifras no verificadas.
+La comparación entre CNN y VLM/ICL se define como una curva por presupuesto \(K\), con la misma unidad de análisis y la misma métrica principal. La tabla~\ref{tab:cnn_vlm_method_matrix} resume las diferencias que deben mantenerse explícitas al leer los resultados.
 
 \begin{table}[H]
   \centering
-  \caption{Matriz de decisión CNN frente a VLM/ICL.}
-  \label{tab:cnn_vlm_decision_matrix}
-  \footnotesize
-  \begin{tabularx}{\textwidth}{@{}lcccX@{}}
+  \small
+  \begin{tabularx}{\textwidth}{p{3.3cm}XX}
     \toprule
-    \(K\) & CNN base & CNN comp. & VLM & Lectura \\
+    Elemento & CNN & VLM/ICL \\
     \midrule
-    2  & 0,509 & -- & \vlmpending & Zona favorable a ICL. \\
-    4  & 0,509 & -- & \vlmpending & Zona favorable a ICL. \\
-    8  & 0,490 & -- & \vlmpending & Zona de transición. \\
-    16 & 0,516 & 0,524 (CORAL) & \vlmpending & Comparación abierta. \\
-    32 & 0,499 & 0,549 (MMD) & \vlmpending & Comparación abierta. \\
+    Uso de \(K\) & Entrenamiento supervisado de la cabeza y la red. & Demostraciones en contexto dentro del prompt. \\
+    Parámetros del modelo & Se actualizan durante el entrenamiento. & Permanecen fijos durante la inferencia. \\
+    Unidad de test & Paciente reservado en leave-one-out. & Paciente reservado en leave-one-out. \\
+    Entrada visual & Imágenes V1, V2 y V3 agregadas por paciente. & Misma imagen objetivo y, según tarea, demostraciones visuales. \\
+    Métrica principal & Exactitud equilibrada por paciente. & Exactitud equilibrada por paciente. \\
+    Controles & Semillas y selección de pacientes. & Semillas, etiquetas permutadas y demostraciones sin imagen. \\
     \bottomrule
   \end{tabularx}
+  \caption{Matriz metodológica para comparar CNN y VLM/ICL.}
+  \label{tab:cnn_vlm_method_matrix}
 \end{table}
-
-\section{Figuras de comparación VLM/ICL}
-
-\begin{figure}[H]
-  \centering
-  \fcolorbox{MidGray}{PaperGray}{
-    \parbox[c][4.2cm][c]{0.88\textwidth}{
-      \centering
-      \textbf{Comparación CNN vs VLM/ICL}\\[0.7em]
-      \small Exactitud equilibrada por \(K\), con CNN base, mejor comprobación complementaria, Gemma 4 y MedGemma 1.5.
-    }
-  }
-  \caption{Espacio de comparación de exactitud equilibrada entre CNN y VLM/ICL.}
-  \label{fig:vlm_cnn_comparison_reserved}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \fcolorbox{MidGray}{PaperGray}{
-    \parbox[c][4.2cm][c]{0.88\textwidth}{
-      \centering
-      \textbf{Matrices de confusión VLM}\\[0.7em]
-      \small Matrices por modelo y \(K\), incluyendo conteo de respuestas JSON inválidas.
-    }
-  }
-  \caption{Espacio para matrices de confusión de Gemma 4 y MedGemma 1.5.}
-  \label{fig:vlm_confusion_reserved}
-\end{figure}
 
 \section{Criterio de lectura}
 

@@ -46,8 +46,6 @@ La elección de gaussianas se inspira en modelos sintéticos previos que represe
 
 \begin{table}[H]
 \centering
-\caption{Átomos utilizados para construir un beat}
-\label{tab:atomos}
 \small
 \begin{tabularx}{\textwidth}{p{2.2cm} p{3.8cm} X}
 \toprule
@@ -65,6 +63,8 @@ La elección de gaussianas se inspira en modelos sintéticos previos que represe
 \texttt{T2} & Cola de la onda T & Suaviza y prolonga la repolarización \\
 \bottomrule
 \end{tabularx}
+\caption{Átomos utilizados para construir un beat}
+\label{tab:atomos}
 \end{table}
 
 \begin{figure}[H]
@@ -147,8 +147,6 @@ El nombre de la familia no se incorpora al vector objetivo. Una señal aceptada 
 
 \begin{table}[H]
 \centering
-\caption{Relación entre familias generadoras y rasgos favorecidos}
-\label{tab:familias}
 \small
 \begin{tabularx}{\textwidth}{p{3.1cm} p{4.4cm} X}
 \toprule
@@ -161,6 +159,8 @@ Inversión de T & Repolarización tardía negativa & Componente de inversión de
 \texttt{BRUGADA} & J elevado, ST descendente y T negativa & Familia compuesta reservable para transferencia \\
 \bottomrule
 \end{tabularx}
+\caption{Relación entre familias generadoras y rasgos favorecidos}
+\label{tab:familias}
 \end{table}
 
 \section{Reglas de coherencia morfológica}
@@ -202,8 +202,6 @@ Los validadores operan sobre ventanas temporales de la señal terminada. Las ven
 
 \begin{table}[H]
 \centering
-\caption{Criterios de los validadores sintéticos}
-\label{tab:validadores}
 \scriptsize
 \begin{tabularx}{\textwidth}{p{2.25cm} X}
 \toprule
@@ -221,6 +219,8 @@ Brugada &
 Máximo del QRS superior a 0,18 mV, mínimo inferior a \(-0,16\) mV, media de J superior a 0,09 mV, media de ST superior a 0,08 mV, ST temprano al menos 0,03 mV por encima del ST tardío y mínimo de T inferior a \(-0,08\) mV \\
 \bottomrule
 \end{tabularx}
+\caption{Criterios de los validadores sintéticos}
+\label{tab:validadores}
 \end{table}
 
 Los umbrales se diseñaron para separar morfologías del simulador. No deben trasladarse a un ECG real ni compararse de forma directa con criterios clínicos. Un ECG real requiere calibración, derivaciones identificadas, velocidad de papel conocida y valoración del contexto. Los estándares clínicos revisados en el capítulo~\ref{chap:fundamentos} se utilizan para orientar la forma general, no para validar pacientes.
@@ -263,8 +263,6 @@ Además se genera un esquema de etiquetas y un resumen con frecuencias por parti
 
 \begin{table}[H]
 \centering
-\caption{Configuración final del conjunto sintético QRS/ST}
-\label{tab:config_dataset}
 \footnotesize
 \begin{tabularx}{\textwidth}{p{2.9cm} p{1.25cm} p{4.4cm} X}
 \toprule
@@ -276,6 +274,8 @@ Pliegues LOOCV & 100 & Un paciente reservado por pliegue & Medir rendimiento agr
 Presupuestos \(K\) & 5 & 2, 4, 8, 16 y 32 ejemplos & Estudiar aprendizaje supervisado con pocos datos \\
 \bottomrule
 \end{tabularx}
+\caption{Configuración final del conjunto sintético QRS/ST}
+\label{tab:config_dataset}
 \end{table}
 
 \section{Comprobación de integración}

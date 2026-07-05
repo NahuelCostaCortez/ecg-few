@@ -10,6 +10,6 @@ Evaluation combines a QRS/ST simulator, which generates V1, V2 and V3 images wit
 
 The supervised baseline is a ResNet18 model. On the simulator, it reaches balanced accuracy 0.848 at \(K=32\), with sensitivity 0.883 and specificity 0.812. On the cohort provided by the HUCA, performance remains close to chance: the best baseline balanced accuracy is 0.516 at \(K=16\). Specificity remains too low for reliable triage.
 
-These results define the limits of training a CNN with very few real examples and motivate comparison with vision-language models through in-context learning. The VLM/ICL protocol is specified for Gemma 4 and MedGemma using the same images, patient splits and \(K\) budgets; numerical tables remain blank until VLM predictions are available and verifiable.
+These results define the limits of training a CNN with very few real examples and motivate comparison with vision-language models through in-context learning. The VLM/ICL protocol is specified for Gemma 4 and MedGemma using the same images, patient splits and \(K\) budgets, as a reproducible extension of the evaluation framework.
 
 \textbf{Keywords:} ECG image analysis, Brugada syndrome, limited labeled data, convolutional neural networks, vision-language models, in-context learning, clinical triage.

@@ -1,77 +1,12 @@
 \chapter{Gestión, ética, privacidad y marco normativo}
 \label{chap:gestion_etica}
 
-\section{Planificación del proyecto}
-
-\subsection{Alcance y carga de trabajo}
-
-El Trabajo de Fin de Grado tiene una carga de 12 créditos ECTS. El Real Decreto 1125/2003 establece una dedicación de entre 25 y 30 horas por crédito \cite{rd1125}. La planificación adopta el límite inferior de 25 horas y fija una referencia de 300 horas. Esta cifra no representa un registro automático del tiempo ya consumido, sino el presupuesto de esfuerzo utilizado para organizar el proyecto.
-
-La tabla \ref{tab:horas_tfg} distribuye la dedicación entre revisión, diseño, implementación, evaluación y documentación. La generación sintética y la infraestructura de experimentación reciben una fracción elevada porque condicionan tanto a las redes convolucionales como a los modelos de visión y lenguaje.
-
-\begin{table}[H]
-  \centering
-  \caption{Distribución prevista de la dedicación del proyecto.}
-  \label{tab:horas_tfg}
-  \begin{tabularx}{0.88\textwidth}{Xr}
-    \toprule
-    Actividad & Horas \\
-    \midrule
-    Revisión bibliográfica y clínica & 28 \\
-    Requisitos y protocolo experimental & 20 \\
-    Simulador y construcción de datos & 48 \\
-    Infraestructura VLM y diseño de mensajes & 35 \\
-    Implementación de redes convolucionales & 35 \\
-    Ejecución de experimentos sintéticos & 42 \\
-    Datos reales y comprobación complementaria & 28 \\
-    Análisis estadístico y visualización & 20 \\
-    Redacción de la memoria & 34 \\
-    Control de calidad y preparación de la defensa & 10 \\
-    \midrule
-    \textbf{Total} & \textbf{300} \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
-
-\subsection{Fases y calendario}
-
-El proyecto se estructura entre octubre de 2025 y junio de 2026. Las fases se solapan de forma controlada. La revisión bibliográfica continúa durante el desarrollo, mientras que la redacción se inicia antes de cerrar los resultados para documentar decisiones que de otro modo podrían perderse.
-
-\begin{table}[H]
-  \centering
-  \caption{Calendario general del Trabajo de Fin de Grado.}
-  \label{tab:calendario_tfg}
-  \begin{tabularx}{\textwidth}{p{3.3cm}X}
-    \toprule
-    Periodo & Actividades principales \\
-    \midrule
-    Octubre y noviembre de 2025 & Definición del problema, revisión clínica, análisis de trabajos relacionados y diseño inicial \\
-    Diciembre de 2025 y enero de 2026 & Desarrollo del simulador, validadores y formatos de imagen \\
-    Febrero y marzo de 2026 & Canalización VLM, mensajes, esquemas JSON y controles de aprendizaje en contexto \\
-    Abril de 2026 & Diseño e integración de las redes convolucionales y pruebas de reproducibilidad \\
-    Mayo de 2026 & Experimentos sintéticos, preparación de datos reales y comprobación complementaria \\
-    Junio de 2026 & Análisis, cierre de la memoria, revisión integral y defensa \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.92\textwidth]{results/fig_project_timeline.pdf}
-  \caption{Plan temporal del proyecto y cierre de los experimentos principales.}
-  \label{fig:project_timeline}
-\end{figure}
-
-Los hitos de control son la validación visual del simulador, la reproducción de una ejecución VLM, la integración de la CNN, el cierre de los pliegues de datos reales, la congelación de resultados y la generación de la versión final de la memoria. Cada hito debe dejar evidencia revisable.
-
 \section{Gestión de riesgos}
 
 La tabla \ref{tab:riesgos} recoge los riesgos principales, su efecto y la respuesta prevista. La probabilidad se valora de forma cualitativa antes de cerrar los experimentos.
 
 \begin{table}[H]
   \centering
-  \caption{Riesgos principales del proyecto.}
-  \label{tab:riesgos}
   \small
   \begin{tabularx}{\textwidth}{p{3.0cm}p{1.7cm}X}
     \toprule
@@ -83,29 +18,15 @@ La tabla \ref{tab:riesgos} recoge los riesgos principales, su efecto y la respue
     Fuga entre entrenamiento y prueba & Alta & Crear divisiones por paciente o semilla generativa antes del ajuste y guardar los identificadores \\
     Diferencia excesiva entre dominios & Alta & Medir transferencia directa y añadir armonización, ajuste fino y adaptación como experimentos separados \\
     Etiquetas reales no equivalentes & Alta & Separar diagnóstico y morfología y exigir anotación específica para la segunda tarea \\
-    Cambios de versión del modelo & Media & Registrar identificador exacto, fecha, revisión y parámetros de servicio \\
-    Cierre parcial de resultados & Alta & Mantener tablas sin cifras cuando no exista una predicción verificable y no sustituir resultados por estimaciones \\
+    Cambios de versión del modelo & Media & Registrar identificador exacto, revisión y parámetros de servicio \\
+    Alcance de la línea VLM & Alta & Separar protocolo y resultados medidos, sin sustituir predicciones por estimaciones \\
     \bottomrule
   \end{tabularx}
+  \caption{Riesgos principales del proyecto.}
+  \label{tab:riesgos}
 \end{table}
 
 Los riesgos se revisan al terminar cada bloque. Una desviación no se corrige ocultando el alcance real, sino reduciendo de forma explícita los experimentos secundarios y protegiendo las comparaciones principales.
-
-\section{Recursos y estimación de coste}
-
-El desarrollo local requiere un equipo capaz de ejecutar Python, generar imágenes y compilar LaTeX. El servicio de un modelo abierto de visión y lenguaje requiere una GPU con memoria suficiente. La configuración preparada solicita una NVIDIA A6000 para Gemma 4 E4B. La disponibilidad real, la versión de vLLM y el modelo cargado deberán registrarse en cada ejecución.
-
-No se asigna un importe ficticio al cómputo. El coste de una campaña se calculará mediante
-
-\begin{equation}
-  C_{\mathrm{computo}} =
-  \sum_{j=1}^{m}
-  h_j c_j,
-\end{equation}
-
-donde \(h_j\) es el número de horas consumidas por el recurso \(j\) y \(c_j\) es su precio por hora en la fecha de contratación. El informe final incluirá tiempo de GPU, tiempo de CPU, almacenamiento y, si se emplea un servicio propietario como control, número de tokens y tarifa vigente.
-
-También se registrará el tiempo por muestra y el consumo máximo de memoria. Estas magnitudes permiten comparar métodos aunque el precio comercial cambie. El coste de personal no se monetiza, pero queda representado por la distribución de 300 horas.
 
 \section{Gestión de configuración y trazabilidad}
 
@@ -123,7 +44,7 @@ El repositorio Git actúa como fuente de verdad del código, los mensajes y la m
 
 Los resultados agregados no sustituyen a las predicciones. Conservar ambos niveles permite detectar errores de análisis y recalcular métricas sin repetir inferencias costosas. Los archivos generados deben ser inmutables o incorporar un identificador de ejecución que evite sobrescrituras accidentales.
 
-Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque las inferencias VLM/ICL requieren trazabilidad específica de pesos, servidor, plantilla de conversación y esquema de salida. Antes de rellenar sus celdas numéricas será necesario registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
+Las dependencias de redes convolucionales ya están declaradas como extra opcional del proyecto mediante PyTorch y Torchvision. El entorno de servicio vLLM se gestiona por separado porque las inferencias VLM/ICL requieren trazabilidad específica de pesos, servidor, plantilla de conversación y esquema de salida. La comparación VLM/ICL exige registrar revisión de pesos, versión del servidor, plantilla de conversación y predicciones completas.
 
 \section{Principios éticos}
 
@@ -155,7 +76,7 @@ En España, la Ley Orgánica 3/2018 completa este marco \cite{lopdgdd}. Su dispo
 
 \subsection{Aplicación al proyecto}
 
-Brugada HUCA se publica sin información identificativa y su documentación declara anonimización mediante Safe Harbor \cite{morislara2026brugada}. El proyecto conservará únicamente los campos necesarios para las tareas definidas. Los identificadores públicos se transformarán en claves internas cuando se creen derivados, evitando incorporarlos a nombres de figura destinados a difusión.
+Brugada HUCA se publica sin información identificativa y su documentación declara anonimización mediante Safe Harbor \cite{costacortez2026brugada}. El proyecto conservará únicamente los campos necesarios para las tareas definidas. Los identificadores públicos se transformarán en claves internas cuando se creen derivados, evitando incorporarlos a nombres de figura destinados a difusión.
 
 Las medidas mínimas son almacenamiento local controlado, permisos restringidos, cifrado del dispositivo, ausencia de datos clínicos en servicios no autorizados, copias de seguridad protegidas y registro de procedencia. Las claves de API no se incluyen en el repositorio ni en la memoria. Si se incorporan datos adicionales no anónimos, deberá revisarse la base jurídica y realizarse el análisis de impacto antes del tratamiento.
 
@@ -167,7 +88,7 @@ El código propio deberá publicar una licencia compatible con las dependencias 
 
 Brugada HUCA utiliza CC BY SA 4.0. Toda redistribución de material derivado debe conservar atribución, indicar cambios y aplicar la licencia correspondiente. PTB XL y MIMIC IV ECG tienen condiciones de acceso y reutilización propias que deben comprobarse en su versión concreta. No se copiarán datos clínicos dentro del repositorio público.
 
-Los pesos de modelos de terceros también pueden imponer condiciones. El identificador comercial o técnico del modelo no basta. Deben conservarse la licencia, la revisión descargada y las restricciones de uso vigentes en la fecha del experimento.
+Los pesos de modelos de terceros también pueden imponer condiciones. El identificador comercial o técnico del modelo no basta. Deben conservarse la licencia, la revisión descargada y las restricciones de uso aplicables al experimento.
 
 \section{Regulación de sistemas de inteligencia artificial}
 
@@ -177,19 +98,19 @@ El Reglamento 2024/1689 establece las normas europeas en materia de inteligencia
 
 Si el sistema se integrara en un producto sanitario, su clasificación dependería de la finalidad prevista y de su relación con la legislación sectorial. El artículo 6 vincula determinados productos sujetos a evaluación de conformidad por terceros con la categoría de alto riesgo.
 
-A fecha de 22 de junio de 2026, el texto original prevé la aplicación general desde el 2 de agosto de 2026 y un calendario específico para sistemas asociados a productos regulados. El Consejo y el Parlamento anunciaron el 7 de mayo de 2026 un acuerdo político para desplazar determinadas obligaciones de alto riesgo al 2 de diciembre de 2027 y al 2 de agosto de 2028 \cite{consilium2026aiact}. Mientras el cambio no quede consolidado en el texto jurídico aplicable, cualquier proyecto de despliegue debe comprobar de nuevo las fechas y obligaciones vigentes. La memoria evita presentar un calendario legislativo en transición como si fuera definitivo.
+Antes de cualquier despliegue, habría que revisar el texto jurídico aplicable, las obligaciones sectoriales y la relación del sistema con productos regulados. La memoria no presenta el prototipo como herramienta desplegable ni como sistema de alto riesgo listo para uso clínico.
 
 \subsection{Producto sanitario}
 
 El Reglamento 2017/745 establece que un programa puede ser producto sanitario cuando el fabricante le atribuye una finalidad médica específica \cite{mdr2017}. La intención declarada, las funciones, los usuarios y el contexto de uso son determinantes. Un prototipo de investigación que clasifica imágenes para comparar algoritmos no adquiere por ello una autorización clínica.
 
-Si se desarrollara una herramienta para apoyar diagnóstico, pronóstico o tratamiento, habría que analizar la cualificación y clasificación del programa, la gestión de riesgos, la evaluación clínica, el ciclo de vida y la vigilancia posterior. La guía MDCG 2019 11, revisada en junio de 2025, orienta la cualificación y clasificación del software \cite{mdcg2019rev1}. La guía MDCG 2025 6 estudia la interacción entre el Reglamento de productos sanitarios y el Reglamento de Inteligencia Artificial \cite{mdcg2025six}.
+Si se desarrollara una herramienta para apoyar diagnóstico, pronóstico o tratamiento, habría que analizar la cualificación y clasificación del programa, la gestión de riesgos, la evaluación clínica, el ciclo de vida y la vigilancia posterior. Las guías MDCG sobre software sanitario e interacción con sistemas de inteligencia artificial orientan esa revisión \cite{mdcg2019rev1,mdcg2025six}.
 
-Por tanto, la memoria y la interfaz deben incluir una limitación visible de uso. El sistema no está validado como producto sanitario y no debe utilizarse para diagnosticar, descartar enfermedad ni decidir tratamiento.
+Por tanto, cualquier documentación o interfaz asociada debe incluir una limitación visible de uso. El sistema no está validado como producto sanitario y no debe utilizarse para diagnosticar, descartar enfermedad ni decidir tratamiento.
 
 \subsection{Espacio Europeo de Datos de Salud}
 
-El Reglamento 2025/327 crea el Espacio Europeo de Datos de Salud \cite{ehds2025}. Su aplicación comienza de forma escalonada desde el 26 de marzo de 2027. Aunque no constituye la base jurídica inmediata de este trabajo, será relevante para futuros proyectos que reutilicen datos sanitarios a escala europea. Cualquier extensión deberá revisar sus reglas de acceso, finalidad secundaria y entornos seguros.
+El Espacio Europeo de Datos de Salud será relevante para futuros proyectos que reutilicen datos sanitarios a escala europea \cite{ehds2025}. Cualquier extensión deberá revisar sus reglas de acceso, finalidad secundaria y entornos seguros.
 
 \section{Equidad, robustez y transparencia}
 
@@ -197,7 +118,7 @@ La base sintética no representa grupos demográficos. Por tanto, no permite med
 
 El modelo puede aprender propiedades del renderizado, del equipo o del centro. Las pruebas de robustez incluirán cambios de resolución, cuadrícula, recorte, contraste y ruido dentro de límites plausibles. Una caída intensa ante transformaciones inocuas indicaría dependencia de señales espurias.
 
-La transparencia se apoya en mensajes exactos, esquemas de respuesta, versiones, matrices de confusión, ejemplos de error y descripción de datos. Las explicaciones visuales como Grad CAM pueden ayudar a auditar una CNN \cite{selvaraju2017}, pero no demuestran causalidad ni corrección clínica.
+La transparencia se apoya en mensajes exactos, esquemas de respuesta, versiones, matrices de confusión, ejemplos de error y descripción de datos. Las recomendaciones TRIPOD+AI y PROBAST+AI proporcionan referencias útiles para informar y evaluar modelos predictivos basados en aprendizaje automático \cite{collins2024tripodai,moons2025probastai}. Las explicaciones visuales como Grad CAM pueden ayudar a auditar una CNN \cite{selvaraju2017}, pero no demuestran causalidad ni corrección clínica.
 
 \section{Sostenibilidad}
 

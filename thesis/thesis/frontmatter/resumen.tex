@@ -10,6 +10,6 @@ La evaluación combina un simulador QRS/ST, que genera imágenes de V1, V2 y V3 
 
 La línea base supervisada utiliza ResNet18. En el simulador alcanza una exactitud equilibrada de 0,848 para \(K=32\), con sensibilidad 0,883 y especificidad 0,812. En la cohorte cedida por el HUCA, el rendimiento se aproxima al azar: la mejor exactitud equilibrada del modelo base es 0,516 con \(K=16\). La especificidad se mantiene demasiado baja para un sistema de triaje fiable.
 
-Estos resultados delimitan el alcance de entrenar una CNN con pocos datos reales y motivan la comparación con modelos de visión y lenguaje mediante aprendizaje en contexto. El protocolo VLM/ICL se define con Gemma 4 y MedGemma, usando las mismas imágenes, particiones y presupuestos \(K\); sus tablas no incorporan cifras hasta que las predicciones VLM sean verificables.
+Estos resultados delimitan el alcance de entrenar una CNN con pocos datos reales y motivan la comparación con modelos de visión y lenguaje mediante aprendizaje en contexto. El protocolo VLM/ICL se define con Gemma 4 y MedGemma, usando las mismas imágenes, particiones y presupuestos \(K\), como extensión reproducible del marco de evaluación.
 
 \textbf{Palabras clave:} electrocardiograma como imagen, síndrome de Brugada, pocos datos, redes neuronales convolucionales, modelos de visión y lenguaje, aprendizaje en contexto, triaje clínico.

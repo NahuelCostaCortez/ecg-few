@@ -24,7 +24,7 @@ La figura \ref{fig:pipeline_experimental} resume el flujo experimental. Las imá
 
 \begin{figure}[H]
   \centering
-  \makebox[\textwidth][c]{\safeincludegraphics[width=1.45\textwidth]{results/fig_pipeline_experimental.drawio.png}}
+  \safeincludegraphics[width=\textwidth]{results/fig_pipeline_experimental.drawio.png}
   \caption{Flujo experimental: la CNN establece la línea base supervisada y el VLM/ICL constituye el comparador central propuesto.}
   \label{fig:pipeline_experimental}
 \end{figure}
@@ -48,8 +48,6 @@ La unidad de separación es siempre el paciente. En el conjunto sintético, cada
 
 \begin{table}[H]
   \centering
-  \caption{Conjuntos utilizados en los experimentos cerrados.}
-  \label{tab:datasets_cerrados}
   \small
   \begin{tabularx}{\textwidth}{p{3cm}rrrrX}
     \toprule
@@ -59,6 +57,8 @@ La unidad de separación es siempre el paciente. En el conjunto sintético, cada
     Cohorte HUCA & 317 & 951 & 116 & 201 & Caso Brugada confirmado frente a control, excluyendo categorías limítrofes o no equivalentes \\
     \bottomrule
   \end{tabularx}
+  \caption{Conjuntos utilizados en los experimentos cerrados.}
+  \label{tab:datasets_cerrados}
 \end{table}
 
 La diferencia entre ambas tareas debe conservarse al interpretar los resultados. En el simulador se evalúa composición morfológica derivada de reglas. En los datos cedidos por el HUCA se evalúa una etiqueta clínica binaria disponible en los metadatos. Por tanto, el salto sintético-real no mide únicamente cambio de renderizado, sino también un cambio de definición de etiqueta.
@@ -100,14 +100,12 @@ La exactitud equilibrada se define como:
 
 Esta métrica es especialmente importante en el contexto de triaje: un modelo puede obtener sensibilidad moderada a costa de marcar demasiados controles como positivos. En una herramienta de priorización, ese comportamiento solo es tolerable si se declara como alerta preliminar y se acompaña del circuito de revisión clínica descrito anteriormente. En la comparación con VLM/ICL se emplea el mismo criterio principal para garantizar que el cambio de paradigma de aprendizaje no implique un cambio en la regla de evaluación.
 
-\section{Estado de cierre}
+\section{Alcance experimental}
 
-La tabla~\ref{tab:estado_experimentos} resume el estado de cada bloque experimental. La línea CNN y la comprobación complementaria aportan valores numéricos completos. La línea VLM/ICL aporta especificación de modelos, mensajes, controles, esquema JSON y tablas de salida; sus celdas numéricas se mantienen sin cifras para no anticipar resultados.
+La tabla~\ref{tab:estado_experimentos} distingue los bloques con resultados medidos de los bloques definidos como protocolo. La línea CNN y la comprobación complementaria aportan valores numéricos completos. La línea VLM/ICL aporta especificación de modelos, mensajes, controles, esquema JSON y criterios de reporte.
 
 \begin{table}[H]
   \centering
-  \caption{Estado de los bloques experimentales al cierre de la memoria.}
-  \label{tab:estado_experimentos}
   \small
   \begin{tabularx}{\textwidth}{p{3.6cm}p{2.6cm}X}
     \toprule
@@ -116,10 +114,12 @@ La tabla~\ref{tab:estado_experimentos} resume el estado de cada bloque experimen
     Simulador QRS/ST & Completo & Datos, pliegues LOOCV, entrenamiento CNN, tablas, curvas, matriz de confusión y Grad-CAM \\
     Datos reales & Completo & Cohorte HUCA procesada, pliegues por paciente, entrenamiento CNN, comparación sintético-real y Grad-CAM \\
     Comparación sintético-real & Completo & Curvas y tablas que comparan el rendimiento de la CNN en el simulador y en la cohorte real \\
-    \textbf{VLM e ICL} & \textbf{Especificado} & Modelos, mensajes, controles, esquema JSON, agregación por paciente y tablas de resultados definidas; sin cifras VLM en esta versión \\
-    Auditoría final & Completa para CNN & Predicciones por paciente, matrices y métricas agregadas verificadas; esquema VLM definido con las mismas unidades de análisis \\
+    \textbf{VLM e ICL} & \textbf{Protocolo definido} & Modelos, mensajes, controles, esquema JSON, agregación por paciente y criterios de reporte \\
+    Auditoría final & Completa para los bloques con resultados & Predicciones por paciente, matrices y métricas agregadas verificadas; protocolo VLM definido con las mismas unidades de análisis \\
     \bottomrule
   \end{tabularx}
+  \caption{Alcance de los bloques experimentales.}
+  \label{tab:estado_experimentos}
 \end{table}
 
-Esta separación evita inventar valores y, al mismo tiempo, mantiene completo el diseño comparativo. Las conclusiones numéricas actuales proceden de la CNN y de la comprobación complementaria; el capítulo~\ref{chap:vlm} fija la estructura de lectura para Gemma 4 y MedGemma.
+Esta separación mantiene completo el diseño comparativo sin mezclar resultados medidos y protocolo. Las conclusiones numéricas proceden de la CNN y de la comprobación complementaria; el capítulo~\ref{chap:vlm} fija la estructura de lectura para Gemma 4 y MedGemma.

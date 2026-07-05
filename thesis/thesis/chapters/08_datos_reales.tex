@@ -1,7 +1,7 @@
 \chapter{Evaluación sobre datos reales}
 \label{chap:datos_reales}
 
-El segundo bloque de resultados utiliza ECG clínicos reales cedidos por el Hospital Universitario Central de Asturias (HUCA) dentro del recurso Brugada HUCA \cite{morislara2026brugada}. La anotación procede de la recogida paciente a paciente y de la revisión manual especializada. La finalidad es medir cómo se comporta la CNN cuando abandona el simulador y se evalúa sobre trazados clínicos reales. Este paso es necesario porque un buen resultado sintético no garantiza utilidad en un dominio con ruido de adquisición, variabilidad clínica y una etiqueta definida a nivel de paciente.
+El segundo bloque de resultados utiliza ECG clínicos reales cedidos por el Hospital Universitario Central de Asturias (HUCA) dentro del recurso Brugada HUCA \cite{costacortez2026brugada}. La anotación procede de la recogida paciente a paciente y de la revisión manual especializada. La finalidad es medir cómo se comporta la CNN cuando abandona el simulador y se evalúa sobre trazados clínicos reales. Este paso es necesario porque un buen resultado sintético no garantiza utilidad en un dominio con ruido de adquisición, variabilidad clínica y una etiqueta definida a nivel de paciente.
 
 \section{Cohorte final}
 
@@ -9,8 +9,6 @@ El procesado parte de 363 pacientes. Se excluyen 46 casos con patrón basal lim�
 
 \begin{table}[H]
   \centering
-  \caption{Cohorte cedida por el HUCA utilizada en la evaluación CNN.}
-  \label{tab:huca_cohorte_final}
   \begin{tabular}{lrr}
     \toprule
     Grupo & Pacientes & Imágenes \\
@@ -22,6 +20,8 @@ El procesado parte de 363 pacientes. Se excluyen 46 casos con patrón basal lim�
     Total evaluado & 317 & 951 \\
     \bottomrule
   \end{tabular}
+  \caption{Cohorte cedida por el HUCA utilizada en la evaluación CNN.}
+  \label{tab:huca_cohorte_final}
 \end{table}
 
 La etiqueta real disponible no es equivalente a las tres etiquetas morfológicas del simulador. Los datos cedidos por el HUCA no contienen anotaciones independientes de RBBB, elevación ST e inversión T para cada imagen. Por ello, el experimento real se formula como caso Brugada confirmado frente a control y sus conclusiones se limitan a triaje de esa variable clínica. Es importante recordar que en la práctica asistencial, un resultado positivo del modelo no equivale a un diagnóstico: señala que el trazado debería ser revisado por un especialista y, si procede, iniciar el circuito diagnóstico que puede incluir prueba farmacológica con bloqueantes del canal de sodio \cite{wilde2023scbt}.
@@ -45,8 +45,6 @@ La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada s
 
 \begin{table}[H]
   \centering
-  \caption{Resultados CNN ResNet18 sobre los datos cedidos por el HUCA.}
-  \label{tab:huca_baseline_final}
   \small
   \begin{tabular}{rrrrrr}
     \toprule
@@ -59,6 +57,8 @@ La tabla \ref{tab:huca_baseline_final} resume la CNN base entrenada y evaluada s
     32 & \(0,499 \pm 0,012\) & 0,466 & 0,644 & 0,355 & 0,491 \\
     \bottomrule
   \end{tabular}
+  \caption{Resultados CNN ResNet18 sobre los datos cedidos por el HUCA.}
+  \label{tab:huca_baseline_final}
 \end{table}
 
 \begin{figure}[H]

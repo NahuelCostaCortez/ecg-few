@@ -9,7 +9,7 @@ Todos los modelos trabajan con imágenes de ECG. En la CNN, cada imagen correspo
 
 \begin{figure}[H]
   \centering
-  \makebox[\textwidth][c]{\safeincludegraphics[width=1.45\textwidth]{results/fig_pipeline_experimental.drawio.png}}
+  \safeincludegraphics[width=\textwidth]{results/fig_pipeline_experimental.drawio.png}
   \caption{Recorridos de entrada y evaluación: la CNN actualiza pesos con los \(K\) ejemplos etiquetados; el VLM los recibe como demostraciones en el prompt sin modificar parámetros.}
   \label{fig:model_routes}
 \end{figure}
@@ -57,8 +57,6 @@ La tabla~\ref{tab:cnn_vs_vlm_K} resume las diferencias prácticas. Ambos método
 
 \begin{table}[H]
   \centering
-  \caption{Uso del presupuesto \(K\) según la familia de modelos.}
-  \label{tab:cnn_vs_vlm_K}
   \small
   \begin{tabularx}{0.94\textwidth}{p{3.8cm}XX}
     \toprule
@@ -72,15 +70,17 @@ La tabla~\ref{tab:cnn_vs_vlm_K} resume las diferencias prácticas. Ambos método
     Escalabilidad de \(K\) & Sin límite práctico & Limitada por ventana de contexto \\
     \bottomrule
   \end{tabularx}
+  \caption{Uso del presupuesto \(K\) según la familia de modelos.}
+  \label{tab:cnn_vs_vlm_K}
 \end{table}
 
 La pregunta central no es cuál de los dos mecanismos es ``mejor'' en abstracto, sino a partir de qué \(K\) el entrenamiento supervisado se vuelve viable y fiable, y por debajo de qué \(K\) el aprendizaje en contexto ofrece una señal útil que el entrenamiento no puede igualar.
 
 \section{CNN ResNet18}
 
-El modelo supervisado ejecutado es una ResNet18 de \texttt{torchvision} con pesos iniciales \texttt{DEFAULT}. La cabeza de clasificación se sustituye por una salida binaria. En los experimentos sintéticos, la etiqueta positiva indica que el paciente simulado cumple simultáneamente los tres hallazgos asociados al patrón Brugada derivado: RBBB, elevación ST e inversión de T. En la cohorte cedida por el HUCA, la etiqueta positiva indica caso Brugada confirmado frente a control.
+El modelo supervisado ejecutado es una ResNet18 de \texttt{torchvision} con pesos iniciales \texttt{DEFAULT} \cite{torchvisionresnet18}. La cabeza de clasificación se sustituye por una salida binaria. En los experimentos sintéticos, la etiqueta positiva indica que el paciente simulado cumple simultáneamente los tres hallazgos asociados al patrón Brugada derivado: RBBB, elevación ST e inversión de T. En la cohorte cedida por el HUCA, la etiqueta positiva indica caso Brugada confirmado frente a control.
 
-La pérdida es \texttt{BCEWithLogitsLoss}. Cuando el pliegue lo requiere, la clase positiva se pondera automáticamente a partir de los ejemplos de entrenamiento. El optimizador es AdamW, con tasa de aprendizaje \(3\times10^{-4}\), lote de 32 imágenes y 20 épocas máximas. La selección de umbral se realiza en validación interna mediante exactitud equilibrada derivada por paciente; si no hay validación suficiente, se conserva el umbral 0,5.
+La pérdida es \texttt{BCEWithLogitsLoss} \cite{pytorchbce}. Cuando el pliegue lo requiere, la clase positiva se pondera automáticamente a partir de los ejemplos de entrenamiento. El optimizador es AdamW \cite{loshchilov2019}, con tasa de aprendizaje \(3\times10^{-4}\), lote de 32 imágenes y 20 épocas máximas. La selección de umbral se realiza en validación interna mediante exactitud equilibrada derivada por paciente; si no hay validación suficiente, se conserva el umbral 0,5.
 
 \begin{figure}[H]
   \centering
@@ -91,8 +91,6 @@ La pérdida es \texttt{BCEWithLogitsLoss}. Cuando el pliegue lo requiere, la cla
 
 \begin{table}[H]
   \centering
-  \caption{Configuración CNN utilizada en las campañas finales.}
-  \label{tab:modelo_cnn_final}
   \small
   \begin{tabularx}{0.92\textwidth}{p{4cm}X}
     \toprule
@@ -112,6 +110,8 @@ La pérdida es \texttt{BCEWithLogitsLoss}. Cuando el pliegue lo requiere, la cla
     Agregación & Media de probabilidades de V1, V2 y V3 antes del umbral \\
     \bottomrule
   \end{tabularx}
+  \caption{Configuración CNN utilizada en las campañas finales.}
+  \label{tab:modelo_cnn_final}
 \end{table}
 
 \section{Validación por paciente}
@@ -163,7 +163,7 @@ El modelo VLM generalista seleccionado es Gemma 4. La elección se fundamenta en
 \begin{itemize}
   \item \textbf{Pesos abiertos.} A diferencia de modelos propietarios accesibles solo mediante API, los pesos de Gemma 4 están disponibles públicamente. Esto permite la inferencia local, la reproducibilidad completa de los experimentos y la independencia de servicios externos cuyas condiciones de uso pueden cambiar.
   \item \textbf{Contexto multimodal con múltiples imágenes.} Gemma 4 acepta mensajes que combinan texto e imágenes de forma intercalada, lo que permite construir prompts de ICL que incluyan varias demostraciones imagen-etiqueta seguidas de la imagen de consulta. Esta capacidad es imprescindible para el aprendizaje en contexto multimodal con \(K > 1\).
-  \item \textbf{Inferencia local mediante vLLM.} El modelo se despliega localmente utilizando el \emph{framework} de inferencia vLLM, que permite servir modelos de gran tamaño con gestión eficiente de memoria GPU, batching continuo y cuantización cuando es necesario. Esto elimina la dependencia de servicios en la nube y permite controlar completamente el entorno de ejecución.
+  \item \textbf{Inferencia local mediante vLLM.} El modelo se despliega localmente utilizando el \emph{framework} de inferencia vLLM y su servidor compatible con OpenAI \cite{vllmserver}. La guía específica de Gemma~4 documenta la ejecución multimodal de esta familia en vLLM \cite{vllmgemma4}. Esto elimina la dependencia de servicios en la nube y permite controlar completamente el entorno de ejecución.
 \end{itemize}
 
 \subsection{MedGemma: adaptación al dominio médico}
