@@ -1,247 +1,56 @@
-\chapter{Modelos}
+\chapter{Dos enfoques de modelado}
 \label{chap:modelos}
 
-Este capítulo describe las dos familias de modelos que articulan la comparación metodológica del TFG. Por un lado, una CNN supervisada constituye la línea base convencional: un modelo que requiere entrenamiento explícito y cuyos resultados ponen de manifiesto las limitaciones del aprendizaje con pocas muestras. Por otro lado, los modelos de visión y lenguaje (VLM) representan la propuesta central de este trabajo: una vía alternativa para explotar los mismos pocos ejemplos etiquetados sin modificar ningún peso, aprovechando conocimiento visual y lingüístico adquirido durante el preentrenamiento a gran escala. La comparación entre ambas familias no es una competición abstracta, sino una evaluación de regímenes: cuándo conviene entrenar y cuándo conviene usar demostraciones en contexto.
+Este capítulo presenta las dos líneas seguidas en el TFG para abordar la escasez de datos etiquetados. La primera entrena modelos visuales directamente sobre las imágenes disponibles, ajustando el procedimiento a un número reducido de pacientes. La segunda utiliza modelos de visión y lenguaje con aprendizaje en contexto, de modo que los ejemplos etiquetados orientan la predicción sin modificar los pesos del modelo.
 
-\section{Entrada común}
-
-Todos los modelos trabajan con imágenes de ECG. En la CNN, cada imagen corresponde a una derivación precordial derecha renderizada y redimensionada a 224 por 224 píxeles. En la línea VLM, la misma imagen se incluye en un mensaje multimodal junto con instrucciones textuales y, cuando se emplea aprendizaje en contexto, ejemplos demostrativos. La comparación solo tiene sentido porque ambos enfoques reciben la misma evidencia visual y se evalúan por paciente con las mismas métricas.
+La distinción importa porque los dos enfoques consumen los mismos datos de forma diferente. En la CNN, \(K\) define el tamaño del conjunto de entrenamiento de cada pliegue. En el VLM, \(K\) define el número de demostraciones disponibles antes de la imagen que se quiere clasificar. Por tanto, el capítulo no compara únicamente arquitecturas, sino dos regímenes de uso de datos: entrenamiento supervisado frente a inferencia condicionada por contexto.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=\textwidth]{results/fig_pipeline_experimental.drawio.png}
-  \caption{Recorridos de entrada y evaluación: la CNN actualiza pesos con los \(K\) ejemplos etiquetados; el VLM los recibe como demostraciones en el prompt sin modificar parámetros.}
-  \label{fig:model_routes}
+  \caption{Dos formas de utilizar el mismo conjunto reducido de pacientes etiquetados: entrenamiento de ResNet18 y aprendizaje en contexto con Gemma~4.}
+  \label{fig:dos_enfoques_modelado}
 \end{figure}
 
-\section{Dos formas de usar \texorpdfstring{\(K\)}{K}}
+\section{Entrada y unidad de análisis}
+
+Todos los modelos reciben imágenes de ECG. En el caso de la CNN, cada imagen se redimensiona a 224 por 224 píxeles y se procesa como entrada RGB. En el caso del VLM, la imagen se introduce dentro de un mensaje multimodal junto con instrucciones textuales y, cuando procede, ejemplos etiquetados.
+
+La evaluación se realiza por paciente. En los experimentos con V1, V2 y V3, las predicciones por derivación se agregan antes de obtener la decisión final. Esta decisión evita que varias imágenes de una misma persona se traten como casos independientes y mantiene la interpretación clínica en el nivel correcto.
+
+\section{Enfoque supervisado con CNN}
+
+\subsection{Qué aprende}
+
+La CNN aprende una función que transforma una imagen en una probabilidad de clase positiva. Durante el entrenamiento, los ejemplos etiquetados generan una pérdida y esa pérdida actualiza los pesos de la red. Una vez terminado el entrenamiento, el modelo queda fijado y cada nueva predicción es una inferencia directa.
+
+Este enfoque es atractivo cuando hay suficientes ejemplos representativos. Permite ajustar rasgos visuales específicos de la tarea, produce salidas numéricas estables y tiene un coste bajo por predicción una vez entrenado. En un entorno hospitalario, esas propiedades son relevantes porque facilitan despliegues rápidos y reproducibles.
+
+\subsection{Riesgos con pocos ejemplos}
+
+La dificultad aparece cuando \(K\) es pequeño. Una ResNet18 tiene millones de parámetros y puede adaptarse demasiado a los pacientes concretos seleccionados en cada pliegue. En ese escenario, cambiar unos pocos ejemplos puede modificar la frontera de decisión. También puede aparecer aprendizaje de atajos visuales, como diferencias de escala, grosor del trazo, recorte o aspecto de la cuadrícula que no corresponden al hallazgo clínico.
+
+Por ese motivo, la CNN se interpreta como referencia supervisada. No se presenta como solución clínica por defecto, sino como una forma sólida de medir qué obtiene un entrenamiento visual clásico cuando la cantidad de datos es limitada.
+
+\section{Enfoque multimodal con VLM e ICL}
+
+\subsection{Qué cambia frente al entrenamiento}
+
+En el enfoque VLM, los ejemplos etiquetados no modifican pesos. Se colocan en el prompt como demostraciones de la tarea. El modelo recibe la imagen objetivo, observa el formato esperado de respuesta y usa el contexto para decidir. El aprendizaje en contexto no reemplaza al entrenamiento supervisado, pero ofrece una alternativa cuando entrenar con muy pocos datos resulta frágil.
+
+Esta diferencia es especialmente importante en enfermedades raras. Si cada positivo confirmado es costoso, puede interesar comprobar si un modelo generalista de visión y lenguaje ya contiene suficiente conocimiento visual para orientar la predicción con pocas demostraciones. La evaluación VLM contrasta esa hipótesis con Gemma~4, ejecutado en local.
+
+\subsection{Tres condiciones de consulta}
+
+El enfoque multimodal se evalúa en tres condiciones. Zero-shot no incluye ejemplos locales. ICL normal añade demostraciones seleccionadas con el muestreo estándar del experimento. ICL balanceado intenta incluir positivos y negativos cuando el pliegue lo permite. Esta última condición es relevante porque puede aumentar sensibilidad, aunque también puede reducir especificidad.
+
+La comparación con la CNN se hace con cautela. La CNN recibe \(K\) pacientes para entrenar. El VLM recibe \(K\) pacientes para construir el contexto. En ambos casos se respeta la separación por paciente y el paciente reservado no aparece entre los ejemplos.
+
+\section{Comparación entre enfoques}
 \label{sec:dos_formas_K}
 
-El presupuesto \(K\), entendido como el número de pacientes etiquetados disponibles, organiza la comparación del TFG. Sin embargo, su uso cambia de forma marcada según la familia de modelos que lo consume. Comprender esta diferencia es imprescindible para interpretar cualquier resultado posterior.
+La comparación mantiene explícito el significado de \(K\) en cada enfoque. En la CNN, \(K\) indica cuántos pacientes se incorporan al entrenamiento de cada pliegue. Sus imágenes contribuyen a la pérdida y modifican los pesos del modelo, con el riesgo esperado de sobreajuste y alta varianza cuando el conjunto es pequeño. En la evaluación con los datos cedidos por el HUCA, esos pacientes de entrenamiento proceden del simulador, ya que la cohorte real no dispone de etiquetas morfológicas para la cabeza multietiqueta. En el VLM, \(K\) indica cuántos pacientes se convierten en demostraciones dentro del prompt. No se actualizan parámetros, pero el resultado depende de la selección de ejemplos, de la ventana de contexto y del coste de cada consulta.
 
-\subsection{\texorpdfstring{CNN: \(K\) como conjunto de entrenamiento}{CNN: K como conjunto de entrenamiento}}
+El objetivo de la evaluación es observar si entrenar pesos resulta más eficaz que condicionar una inferencia con demostraciones, y en qué rango de pocos ejemplos cambia esa relación. Esta lectura se mantiene en los dos dominios de evaluación: primero en el simulador, donde la etiqueta está controlada, y después en ECG reales, donde la etiqueta clínica introduce mayor variabilidad.
 
-En un modelo supervisado como la CNN, los \(K\) pacientes etiquetados se utilizan para calcular una pérdida y propagar gradientes que actualizan los pesos de la red. El aprendizaje ocurre durante el entrenamiento: tras las épocas de ajuste, los pesos quedan fijados y la inferencia posterior se limita a aplicar la función aprendida a nuevas imágenes. El coste computacional del aprendizaje se concentra en la fase de entrenamiento; cada nueva predicción es rápida y barata.
-
-Cuando \(K\) es pequeño, este mecanismo presenta limitaciones conocidas:
-
-\begin{itemize}
-  \item \textbf{Alta varianza.} Con pocos ejemplos, la selección concreta de los \(K\) pacientes influye de forma desproporcionada en el modelo resultante. Cambiar un solo paciente del conjunto de entrenamiento puede producir un clasificador sustancialmente diferente.
-  \item \textbf{Sobreajuste.} La red tiene millones de parámetros y solo unas decenas o centenas de imágenes para ajustarlos. Sin una regularización cuidadosa, los pesos memorizan los ejemplos de entrenamiento en lugar de capturar la estructura general de la tarea.
-  \item \textbf{Atajos visuales.} El modelo puede aprender a distinguir artefactos de adquisición, diferencias de calibración o formato del trazado en lugar de patrones morfológicos clínicamente relevantes. Este problema es especialmente grave cuando el entrenamiento se realiza con datos sintéticos y la evaluación con datos clínicos.
-\end{itemize}
-
-\subsection{\texorpdfstring{VLM: \(K\) como demostraciones en contexto}{VLM: K como demostraciones en contexto}}
-
-En un VLM con aprendizaje en contexto (\emph{in-context learning}, ICL), los \(K\) pacientes etiquetados no se utilizan para modificar pesos. En su lugar, se insertan como demostraciones dentro del prompt que recibe el modelo: cada demostración consiste en una imagen de ECG y la etiqueta correcta asociada. Los pesos del modelo permanecen completamente fijos durante todo el proceso. El ``aprendizaje'' ocurre de forma implícita: el modelo usa las demostraciones para inferir el formato de la tarea, la correspondencia entre patrones visuales y etiquetas, y la distribución esperada de la respuesta.
-
-Este mecanismo presenta ventajas complementarias a las limitaciones de la CNN:
-
-\begin{itemize}
-  \item \textbf{Sin sobreajuste a los ejemplos.} Al no actualizar parámetros, no existe riesgo de memorizar los \(K\) ejemplos. El rendimiento depende de la capacidad del modelo preentrenado para generalizar a partir de la estructura del prompt.
-  \item \textbf{Punto de partida visual y textual.} Un VLM preentrenado a gran escala ha observado millones de imágenes y textos durante su formación. Ese preentrenamiento puede ser útil cuando hay pocos datos específicos del dominio, siempre que el ECG no quede completamente fuera de la distribución aprendida.
-  \item \textbf{Flexibilidad de \(K\).} Aumentar o reducir \(K\) solo requiere modificar el prompt, sin reentrenar ni desplegar un nuevo modelo. Esto permite explorar el efecto de \(K\) de forma inmediata.
-\end{itemize}
-
-Sin embargo, el ICL introduce sus propios riesgos:
-
-\begin{itemize}
-  \item \textbf{Dependencia del prompt.} El orden de las demostraciones, la redacción de las instrucciones y el formato de la respuesta solicitada pueden influir en la predicción tanto o más que el contenido visual.
-  \item \textbf{Ignorancia de la imagen.} El modelo puede basar su respuesta en patrones textuales, en la frecuencia relativa de etiquetas dentro del prompt o en sesgos de su preentrenamiento, sin analizar realmente la morfología del ECG.
-  \item \textbf{Respuestas inválidas.} A diferencia de una CNN, cuya salida es siempre un logit numérico, un VLM puede generar texto libre que no se ajuste al formato esperado, produciendo predicciones no utilizables.
-\end{itemize}
-
-\subsection{Síntesis: la misma evidencia, mecanismos opuestos}
-
-La tabla~\ref{tab:cnn_vs_vlm_K} resume las diferencias prácticas. Ambos métodos reciben exactamente los mismos \(K\) pacientes etiquetados y se evalúan sobre el mismo conjunto de test. Lo que difiere es el mecanismo por el cual esos ejemplos se traducen en una predicción. Esta diferencia es la motivación del estudio comparativo.
-
-\begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{0.94\textwidth}{p{3.8cm}XX}
-    \toprule
-    Dimensión & CNN supervisada & VLM con ICL \\
-    \midrule
-    Papel de \(K\) & Conjunto de entrenamiento & Demostraciones en el prompt \\
-    Actualización de pesos & Sí (gradiente) & No \\
-    Dónde ocurre el aprendizaje & Durante el entrenamiento & Durante la generación \\
-    Coste por cambio de \(K\) & Reentrenamiento completo & Edición del prompt \\
-    Riesgo con \(K\) pequeño & Sobreajuste, alta varianza & Prompt ruidoso, sesgo textual \\
-    Escalabilidad de \(K\) & Sin límite práctico & Limitada por ventana de contexto \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Uso del presupuesto \(K\) según la familia de modelos.}
-  \label{tab:cnn_vs_vlm_K}
-\end{table}
-
-La pregunta central no es cuál de los dos mecanismos es ``mejor'' en abstracto, sino a partir de qué \(K\) el entrenamiento supervisado se vuelve viable y fiable, y por debajo de qué \(K\) el aprendizaje en contexto ofrece una señal útil que el entrenamiento no puede igualar.
-
-\section{CNN ResNet18}
-
-El modelo supervisado ejecutado es una ResNet18 de \texttt{torchvision} con pesos iniciales \texttt{DEFAULT} \cite{torchvisionresnet18}. La cabeza de clasificación se sustituye por una salida binaria. En los experimentos sintéticos, la etiqueta positiva indica que el paciente simulado cumple simultáneamente los tres hallazgos asociados al patrón Brugada derivado: RBBB, elevación ST e inversión de T. En la cohorte cedida por el HUCA, la etiqueta positiva indica caso Brugada confirmado frente a control.
-
-La pérdida es \texttt{BCEWithLogitsLoss} \cite{pytorchbce}. Cuando el pliegue lo requiere, la clase positiva se pondera automáticamente a partir de los ejemplos de entrenamiento. El optimizador es AdamW \cite{loshchilov2019}, con tasa de aprendizaje \(3\times10^{-4}\), lote de 32 imágenes y 20 épocas máximas. La selección de umbral se realiza en validación interna mediante exactitud equilibrada derivada por paciente; si no hay validación suficiente, se conserva el umbral 0,5.
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.96\textwidth]{results/cnn_convolutional_pipeline.drawio.png}
-  \caption{Uso supervisado de los \(K\) ejemplos en la línea CNN: las muestras de entrenamiento actualizan los pesos de ResNet18 y la muestra reservada produce una predicción binaria junto con su mapa Grad-CAM.}
-  \label{fig:cnn_convolutional_pipeline}
-\end{figure}
-
-\begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{0.92\textwidth}{p{4cm}X}
-    \toprule
-    Propiedad & Valor \\
-    \midrule
-    Arquitectura & ResNet18 con cabeza binaria \\
-    Inicialización & Pesos \texttt{DEFAULT} de Torchvision para ResNet18 \\
-    Entrada & RGB, 224 por 224 píxeles \\
-    Pérdida & \texttt{BCEWithLogitsLoss}, \texttt{loss\_pos\_weight=auto} \\
-    Optimizador & AdamW \\
-    Tasa de aprendizaje & \(3\times10^{-4}\) \\
-    Épocas máximas & 20 \\
-    Tamaño de lote & 32 \\
-    Presupuestos & \(K=\{2,4,8,16,32\}\) \\
-    Semillas & 42, 123 y 2026 \\
-    Umbral & Seleccionado por validación con exactitud equilibrada por paciente \\
-    Agregación & Media de probabilidades de V1, V2 y V3 antes del umbral \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Configuración CNN utilizada en las campañas finales.}
-  \label{tab:modelo_cnn_final}
-\end{table}
-
-\section{Validación por paciente}
-
-El entrenamiento y la evaluación se organizan mediante validación leave-one-out. En cada pliegue se reserva un paciente completo y se entrena con un subconjunto de \(K\) pacientes del resto. Esto evita que imágenes de un mismo paciente aparezcan simultáneamente en entrenamiento y test. En los datos cedidos por el HUCA esta restricción es indispensable porque las tres derivaciones de un paciente comparten adquisición, calibración y contexto clínico.
-
-El informe de cada ejecución guarda:
-
-\begin{itemize}
-  \item configuración de entrenamiento;
-  \item pacientes seleccionados como ejemplos;
-  \item probabilidades por imagen;
-  \item predicción agregada por paciente;
-  \item umbral elegido;
-  \item matriz de confusión y métricas;
-  \item paneles Grad CAM para inspección cualitativa.
-\end{itemize}
-
-\section{Grad CAM}
-
-Grad CAM se utiliza como diagnóstico cualitativo, no como explicación clínica suficiente \cite{selvaraju2017}. El mapa indica regiones que influyen en el logit del modelo, pero no prueba que la red haya aprendido un criterio médico correcto. En esta memoria se usa para comprobar si las activaciones se concentran en zonas plausibles del trazado y para detectar errores en los que una atención visual razonable termina en una decisión equivocada.
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.92\textwidth]{results/cnn_simulator_qrs_gradcam_example.png}
-  \caption{Ejemplo Grad CAM del modelo CNN sobre el conjunto sintético.}
-  \label{fig:gradcam_sintetico_modelos}
-\end{figure}
-
-\section{Comprobación sintético-real}
-
-La comparación entre el simulador y los datos reales se cierra al final de la evaluación CNN. Allí se revisa si parte de la pérdida de rendimiento procede de un cambio de distribución visual entre imágenes sintéticas y ECG clínicos reales. Esta comprobación se mantiene separada del diseño principal de VLM/ICL: sirve para medir el alcance de la CNN antes de comparar su uso de \(K\) ejemplos con el aprendizaje en contexto.
-
-\section{Modelos de visión y lenguaje}
-\label{sec:vlm_modelos}
-
-\subsection{Motivación: por qué un VLM para pocos datos}
-
-Las secciones anteriores describen el rendimiento de la CNN y su pérdida de robustez al pasar del simulador a los datos reales. Los resultados empíricos muestran que, cuando \(K\) es pequeño, el entrenamiento supervisado presenta limitaciones estructurales: alta varianza entre semillas, dependencia de la selección concreta de pacientes y dificultad para transferir desde el dominio sintético al clínico. Con pocos ejemplos, el gradiente no dispone de evidencia suficiente para ajustar millones de parámetros de forma fiable.
-
-Los modelos de visión y lenguaje ofrecen una vía complementaria. Un VLM preentrenado a gran escala dispone de representaciones visuales y textuales aprendidas antes de ver el conjunto del proyecto. En lugar de aprender desde cero a partir de \(K\) ejemplos, usa esos ejemplos como demostraciones que especifican la tarea. La hipótesis es que este mecanismo puede ser más estable que el entrenamiento supervisado para valores de \(K\) en los que la CNN depende demasiado de la selección concreta de pacientes.
-
-Esta hipótesis no se asume como verdadera: se diseña un marco experimental que permita confirmarla o refutarla. Los controles descritos en la sección~\ref{sec:controles_vlm} son los instrumentos para verificar que cualquier rendimiento observado se debe efectivamente al análisis visual y no a artefactos del prompt.
-
-\subsection{Gemma 4: modelo generalista de código abierto}
-
-El modelo VLM generalista seleccionado es Gemma 4. La elección se fundamenta en tres propiedades:
-
-\begin{itemize}
-  \item \textbf{Pesos abiertos.} A diferencia de modelos propietarios accesibles solo mediante API, los pesos de Gemma 4 están disponibles públicamente. Esto permite la inferencia local, la reproducibilidad completa de los experimentos y la independencia de servicios externos cuyas condiciones de uso pueden cambiar.
-  \item \textbf{Contexto multimodal con múltiples imágenes.} Gemma 4 acepta mensajes que combinan texto e imágenes de forma intercalada, lo que permite construir prompts de ICL que incluyan varias demostraciones imagen-etiqueta seguidas de la imagen de consulta. Esta capacidad es imprescindible para el aprendizaje en contexto multimodal con \(K > 1\).
-  \item \textbf{Inferencia local mediante vLLM.} El modelo se despliega localmente utilizando el \emph{framework} de inferencia vLLM y su servidor compatible con OpenAI \cite{vllmserver}. La guía específica de Gemma~4 documenta la ejecución multimodal de esta familia en vLLM \cite{vllmgemma4}. Esto elimina la dependencia de servicios en la nube y permite controlar completamente el entorno de ejecución.
-\end{itemize}
-
-\subsection{MedGemma: adaptación al dominio médico}
-
-MedGemma es una variante de Gemma adaptada al dominio biomédico mediante entrenamiento adicional con datos médicos. Su inclusión permite responder a una pregunta específica: ¿mejora el rendimiento en ECG cuando el VLM ha sido expuesto a imágenes y textos médicos durante su preentrenamiento, aunque no necesariamente a ECG?
-
-La comparación Gemma 4 \emph{versus} MedGemma aísla el efecto del dominio de preentrenamiento. Si MedGemma supera a Gemma 4 en varios presupuestos \(K\), esto indicaría que el preentrenamiento biomédico se transfiere al dominio electrocardiográfico. Si el rendimiento es similar, sugeriría que el conocimiento relevante para la tarea ya está capturado en el preentrenamiento generalista, o que las imágenes de ECG son suficientemente distintas de las imágenes médicas convencionales como para que la especialización no aporte ventaja.
-
-\subsection{Pipeline de inferencia VLM}
-
-El flujo de inferencia VLM sigue una estructura reproducible (figura~\ref{fig:vlm_prompt_pipeline}):
-
-\begin{enumerate}
-  \item \textbf{Selección de demostraciones.} Se eligen \(K\) pacientes etiquetados del conjunto disponible. La selección sigue el mismo protocolo que en la CNN para garantizar comparabilidad.
-  \item \textbf{Construcción del prompt multimodal.} Se compone un mensaje que incluye: instrucciones de sistema que definen la tarea y el formato de respuesta, las \(K\) demostraciones (imagen + etiqueta) y la imagen de consulta.
-  \item \textbf{Generación.} El modelo VLM procesa el prompt y genera una respuesta textual.
-  \item \textbf{Validación JSON.} La respuesta se analiza sintácticamente como JSON. Se verifica que contenga los campos requeridos (predicción binaria, confianza opcional) y que los valores sean válidos.
-  \item \textbf{Gestión de fallos.} Las respuestas que no superan la validación se registran como predicciones inválidas. La tasa de respuestas inválidas es una métrica de calidad del flujo.
-\end{enumerate}
-
-La respuesta esperada es un objeto JSON estructurado. No se solicita explicación libre obligatoria. Un formato cerrado reduce la ambigüedad en la evaluación y permite comparar directamente con la salida numérica de la CNN. Si el VLM genera texto fuera del formato esperado, la predicción se marca como inválida en lugar de intentar interpretarla heurísticamente.
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.96\textwidth]{results/fig_vlm_prompt_pipeline.pdf}
-  \caption{Flujo VLM/ICL: selección de demostraciones, construcción del prompt multimodal, generación local, validación JSON y controles de ablación.}
-  \label{fig:vlm_prompt_pipeline}
-\end{figure}
-
-\section{Controles previstos para VLM}
-\label{sec:controles_vlm}
-
-Un VLM puede obtener rendimiento aparentemente bueno por razones ajenas al análisis visual. Puede explotar la frecuencia relativa de etiquetas en las demostraciones, copiar patrones textuales del prompt o basarse en sesgos de su preentrenamiento sin examinar la imagen. Para distinguir aprendizaje multimodal real de artefactos, se diseñan tres condiciones experimentales de control:
-
-\begin{itemize}
-  \item \textbf{Normal.} Cada demostración incluye la imagen del ECG y la etiqueta correcta asociada. Esta es la condición completa que se espera que maximice el rendimiento si el modelo efectivamente utiliza la correspondencia imagen-etiqueta.
-
-  \item \textbf{Respuestas permutadas.} Las imágenes de las demostraciones se mantienen inalteradas, pero las etiquetas se barajan aleatoriamente, rompiendo la correspondencia imagen-etiqueta. Este control mide si el modelo depende realmente de la relación entre cada imagen específica y su diagnóstico, o si basta con ver imágenes y etiquetas en cualquier combinación para producir predicciones similares.
-
-  Si el rendimiento \emph{no cae} con respuestas permutadas, significa que el modelo no está aprendiendo de la correspondencia imagen-etiqueta, sino de otros aspectos del prompt: la proporción de etiquetas positivas, el formato general, o sesgos textuales. En ese caso, cualquier rendimiento observado en la condición normal no puede atribuirse a aprendizaje en contexto genuino.
-
-  \item \textbf{Demostraciones sin imagen.} El prompt conserva las instrucciones textuales y las etiquetas de cada demostración, pero se eliminan las imágenes de ejemplo. Solo la imagen de consulta permanece. Este control aísla la contribución de la evidencia visual de las demostraciones.
-
-  Si el rendimiento \emph{se mantiene} sin las imágenes de ejemplo, el modelo está basando sus decisiones en la estructura textual del prompt y no en el contenido visual de las demostraciones. Esto indicaría que el ICL multimodal, en la práctica, no está aprovechando las imágenes de referencia.
-\end{itemize}
-
-La interpretación conjunta de las tres condiciones permite clasificar el comportamiento del VLM:
-
-\begin{itemize}
-  \item Si Normal supera a Permutadas y Permutadas supera a Sin imagen: el modelo utiliza tanto las imágenes como la correspondencia con las etiquetas. Es el escenario más favorable.
-  \item Si Normal y Permutadas son similares, pero ambas superan a Sin imagen: el modelo usa las imágenes pero ignora la correspondencia con las etiquetas.
-  \item Si las tres condiciones son similares: el modelo ignora las demostraciones por completo y responde basándose solo en la imagen de consulta y las instrucciones.
-  \item Si cualquier control supera a Normal: hay indicios de inestabilidad o de que las demostraciones introducen ruido en lugar de información.
-\end{itemize}
-
-\section{Criterio de comparación}
-\label{sec:criterio_comparacion}
-
-La métrica principal de comparación entre métodos es la exactitud equilibrada (\emph{balanced accuracy}) agregada por paciente. Esta métrica es apropiada para el problema porque el conjunto de datos es pequeño y presenta desbalance de clases; la exactitud equilibrada pondera por igual ambas clases independientemente de su prevalencia. Como métricas complementarias se reportan F1, sensibilidad, especificidad, área bajo la curva ROC y precisión media (AP).
-
-Sin embargo, la comparación no se reduce a determinar cuál método obtiene mayor exactitud equilibrada en un único punto. El análisis se estructura como una \textbf{curva de decisión} en función de \(K\):
-
-\begin{itemize}
-  \item \textbf{Zona de \(K\) muy bajo} (\(K = 2, 4\)). El entrenamiento supervisado dispone de tan pocos ejemplos que la CNN es altamente inestable: gran varianza entre semillas, sensibilidad extrema a qué pacientes se seleccionan, y riesgo elevado de sobreajuste o de aprender atajos. En esta zona, el ICL puede ofrecer una señal más estable porque no depende de la convergencia de un optimizador con datos insuficientes.
-
-  \item \textbf{Zona de transición} (\(K = 8, 16\)). A medida que aumenta \(K\), la CNN dispone de más evidencia para generalizar. La pregunta clave es: ¿a partir de qué \(K\) el entrenamiento supervisado iguala o supera consistentemente al ICL? Si aparece un punto de cruce, definirá el umbral práctico por encima del cual merece la pena invertir en entrenamiento.
-
-  \item \textbf{Zona de \(K\) suficiente} (\(K = 32\) y más). Con datos suficientes, el entrenamiento supervisado debería dominar porque puede ajustar representaciones específicas para la tarea. El ICL, limitado por la ventana de contexto y por la ausencia de actualización de pesos, tiene un techo de rendimiento que el entrenamiento puede superar.
-\end{itemize}
-
-Además de la exactitud, la comparación incluye dimensiones prácticas que condicionan la viabilidad en un entorno clínico real:
-
-\begin{itemize}
-  \item \textbf{Coste de entrenamiento.} La CNN requiere un proceso de entrenamiento por cada configuración de \(K\) y semilla. El VLM no requiere entrenamiento.
-  \item \textbf{Coste por inferencia.} La inferencia de una CNN es rápida y ligera. La inferencia de un VLM con contexto multimodal extenso es significativamente más costosa en tiempo y memoria GPU.
-  \item \textbf{Tasa de respuestas inválidas.} La CNN siempre produce una salida numérica válida. El VLM puede generar respuestas que no se ajustan al formato JSON esperado, reduciendo la cobertura efectiva.
-  \item \textbf{Latencia.} Para aplicaciones de triaje en tiempo real, la diferencia de latencia entre una pasada forward de CNN y una generación autoregresiva de VLM puede ser determinante.
-  \item \textbf{Requisitos de hardware.} Una ResNet18 cabe en cualquier GPU moderna. Un VLM de varios miles de millones de parámetros requiere hardware especializado o cuantización agresiva.
-\end{itemize}
-
-La lectura final no será ``CNN contra VLM'' como veredicto único. Será un mapa de decisión: para un presupuesto de etiquetado dado, un coste computacional aceptable y un nivel de robustez requerido, ¿conviene invertir en entrenamiento supervisado o utilizar aprendizaje en contexto como herramienta de triaje preliminar? La base cuantitativa de CNN establecida en este trabajo proporciona el punto de referencia sobre el cual se evalúa la alternativa VLM.
+Los capítulos siguientes desarrollan los dos métodos por separado. El capítulo~\ref{chap:cnn_enfoque} describe la CNN y su protocolo de entrenamiento. El capítulo~\ref{chap:vlm} describe el VLM, las condiciones de consulta y las decisiones de privacidad. La evaluación cuantitativa se presenta después en el simulador y en los ECG reales.

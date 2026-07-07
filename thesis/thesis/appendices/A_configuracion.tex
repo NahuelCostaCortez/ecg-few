@@ -1,39 +1,7 @@
 \chapter{Configuración experimental}
 \label{app:configuracion}
 
-Este apéndice recoge los parámetros principales de la configuración experimental utilizada en la memoria. Se incluyen los valores necesarios para interpretar los resultados y comparar las líneas CNN y VLM/ICL.
-
-\section{Entorno de software}
-
-El proyecto declara Python 3.12 o posterior y utiliza \texttt{uv} como gestor de entorno. Las dependencias directas y opcionales relevantes se recogen en la tabla \ref{tab:dependencias_python_final}.
-
-\begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{0.92\textwidth}{Xl}
-    \toprule
-    Paquete & Versión mínima \\
-    \midrule
-    Matplotlib & 3.9 \\
-    NumPy & 2.0 \\
-    OpenAI Python & 2.35.1 \\
-    pandas & 2.2 \\
-    Pillow & 10.4 \\
-    Pydantic & 2.8 \\
-    scikit-learn & 1.5 \\
-    tqdm & 4.66 \\
-    PyTorch, extra \texttt{cnn} & 2.3 \\
-    Torchvision, extra \texttt{cnn} & 0.18 \\
-    WFDB, extra \texttt{real-data} & 4.1 \\
-    pytest, extra \texttt{dev} & 8.3 \\
-    Ruff, extra \texttt{dev} & 0.6 \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Dependencias principales declaradas por el proyecto.}
-  \label{tab:dependencias_python_final}
-\end{table}
-
-La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo no interactivo, con el mismo estilo tipográfico usado en el documento. Las ejecuciones con PyTorch aplican las recomendaciones de reproducibilidad disponibles en su documentación oficial \cite{pytorchrepro}.
+Este apéndice recoge los parámetros principales de la configuración experimental. Se incluyen los valores necesarios para interpretar los resultados y comparar los enfoques CNN y VLM/ICL.
 
 \section{Conjunto sintético QRS/ST}
 
@@ -44,7 +12,7 @@ La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo 
     \toprule
     Propiedad & Valor \\
     \midrule
-    Fuente & \texttt{ecg\_few.simulator} \\
+    Fuente & Simulador QRS/ST descrito en el capítulo~\ref{chap:simulador} \\
     Pacientes & 100 \\
     Imágenes & 300 \\
     Familias fuente & NORMAL, RBBB, ST\_ELEVATION, T\_WAVE\_INVERSION, COMBINED\_QRS\_ST \\
@@ -55,7 +23,7 @@ La memoria se compila con XeLaTeX. Las figuras de resultados se generan en modo 
     Resolución de guardado & 130 ppp \\
     Positivos derivados & 20 \\
     Negativos o incompletos & 80 \\
-    Presupuestos & \(K=\{2,4,8,16,32\}\) \\
+    Valores de \(K\) & \(K=\{2,4,8,16,32\}\) \\
     Semillas & 42, 123 y 2026 \\
     \bottomrule
   \end{tabularx}
@@ -104,15 +72,15 @@ Los datos cedidos por el HUCA no contienen anotaciones independientes para las t
     Propiedad & Valor \\
     \midrule
     Arquitectura & ResNet18 \\
-    Pesos iniciales & \texttt{default} de Torchvision \\
+    Pesos iniciales & Inicialización estándar de ResNet18 \\
     Entrada & RGB, 224 por 224 \\
-    Salida & Un logit binario \\
-    Pérdida & \texttt{BCEWithLogitsLoss} con \texttt{loss\_pos\_weight=auto} \\
+    Salida & Tres hallazgos morfológicos \\
+    Pérdida & Entropía cruzada binaria multietiqueta \\
     Optimizador & AdamW \\
     Tasa de aprendizaje & \(3\times10^{-4}\) \\
     Lote & 32 \\
     Épocas máximas & 20 \\
-    Estrategia de umbral & \texttt{val\_derived\_balanced\_accuracy} \\
+    Estrategia de umbral & Selección en validación mediante exactitud equilibrada \\
     Métrica principal & Exactitud equilibrada por paciente \\
     Grad CAM & 12 paneles en sintético y 6 en datos reales por ejecución agregada \\
     \bottomrule
@@ -130,24 +98,24 @@ Los datos cedidos por el HUCA no contienen anotaciones independientes para las t
     \toprule
     Propiedad & Valor \\
     \midrule
-    Origen etiquetado & \texttt{data/simulator\_qrs} \\
-    Destino no etiquetado & \texttt{data/brugada\_huca} \\
-    Métodos & SSL, CORAL, MMD y DANN \cite{ganin2016} \\
-    Presupuestos & \(K=16\) y \(K=32\) \\
+    Origen etiquetado & Conjunto sintético QRS/ST \\
+    Destino no etiquetado & Datos cedidos por el HUCA \\
+    Métodos & SSL, CORAL, MMD y DANN \cite{chen2020simclr,sun2016deepcoral,long2015dan,ganin2016} \\
+    Valores de \(K\) & \(K=16\) y \(K=32\) \\
     Semillas & 42, 123 y 2026 \\
     Peso de adaptación & 0,1 \\
     Escalas MMD & 0,5, 1,0, 2,0 y 4,0 \\
-    SSL & SimCLR durante 3 épocas, \texttt{ssl\_pretrain\_lr=0.0001} \\
+    SSL & SimCLR durante 3 épocas \\
     Política de destino & Transductiva compartida, sin etiquetas destino en la pérdida supervisada \\
     \bottomrule
   \end{tabularx}
-  \caption{Configuración de la línea de adaptación de dominio.}
+  \caption{Configuración de los experimentos de adaptación de dominio.}
   \label{tab:config_domain_appendix}
 \end{table}
 
 \section{Configuración VLM/ICL}
 
-La línea VLM/ICL usa los mismos pacientes reservados, presupuestos \(K\) y métricas por paciente que la línea CNN. Los modelos comparados son Gemma~4 y MedGemma~1.5, ejecutados con temperatura 0 y salida estructurada.
+El enfoque VLM/ICL usa los mismos pacientes reservados, valores de \(K\) y métricas por paciente que la CNN. La evaluación final corresponde a Gemma~4, ejecutado con temperatura 0 y salida estructurada.
 
 \begin{table}[H]
   \centering
@@ -156,17 +124,18 @@ La línea VLM/ICL usa los mismos pacientes reservados, presupuestos \(K\) y mét
     \toprule
     Elemento & Valor \\
     \midrule
-    Modelos & Gemma~4 y MedGemma~1.5 \\
+    Modelo informado & Gemma~4 \\
     Entrada & Imagen ECG y demostraciones imagen-etiqueta \\
-    Presupuestos & \(K=\{0,2,4,8,16,32\}\) \\
-    Condiciones & Sin ejemplos, ICL normal, ICL balanceado, etiquetas permutadas y sin imagen de apoyo \\
-    Salida morfológica & \texttt{RBBB}, \texttt{ST\_ELEVATION} y \texttt{T\_WAVE\_INVERSION} \\
-    Salida clínica & \texttt{clinical\_brugada} \\
+    Valores de \(K\) & \(K=\{0,2,4,8,16,32\}\) \\
+    Condiciones informadas & Zero-shot, ICL normal e ICL balanceado \\
+    Contextos sobre datos reales & Contexto tomado de la cohorte cedida por el HUCA y contexto sintético del simulador \\
+    Salida morfológica & RBBB, elevación ST e inversión de T \\
+    Salida clínica & Caso Brugada confirmado frente a control \\
     Métrica principal & Exactitud equilibrada por paciente \\
     \bottomrule
   \end{tabularx}
-  \caption{Configuración resumida de la línea VLM/ICL.}
+  \caption{Configuración resumida del enfoque VLM/ICL.}
   \label{tab:config_vlm_appendix}
 \end{table}
 
-El capítulo~\ref{chap:vlm} desarrolla las condiciones, controles y criterios de lectura de esta línea.
+El capítulo~\ref{chap:vlm} describe este enfoque y los capítulos de resultados desarrollan su comparación con la CNN.

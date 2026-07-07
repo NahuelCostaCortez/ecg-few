@@ -1,50 +1,23 @@
 \chapter{Diseño experimental}
 \label{chap:diseno}
 
-La pregunta central de este TFG es si un modelo de visión y lenguaje (VLM) con aprendizaje en contexto (ICL) puede aprovechar mejor que una CNN un número reducido de ECG etiquetados. Para responderla, el diseño experimental se organiza en dos líneas comparables. Una usa una ResNet18 entrenada con presupuestos reducidos. La otra usa un VLM abierto que recibe los mismos ejemplos como demostraciones dentro del prompt. Ambos métodos trabajan con ECG renderizados como imagen y se evalúan por paciente.
+La pregunta de este trabajo nace de una limitación muy concreta: cómo aprovechar un conjunto pequeño de pacientes etiquetados cuando la entrada disponible es una imagen de ECG. El diseño experimental se construye para comparar dos respuestas a esa limitación. Los dos enfoques reciben la misma evidencia visual, respetan la separación por paciente y se evalúan con las mismas métricas.
 
-Desde el punto de vista clínico, el sistema se concibe como herramienta de triaje, no como diagnóstico autónomo. Cualquier predicción positiva del modelo coloca al paciente dentro del circuito clínico de Brugada: una alerta prioriza la revisión experta del ECG, que puede conducir al reposicionamiento de las derivaciones V1/V2, y, en los pacientes seleccionados, a la provocación farmacológica con ajmalina o flecainida. La decisión diagnóstica definitiva recae siempre en el especialista. El modelo actúa, por tanto, como filtro de priorización que reduce el tiempo hasta la evaluación experta, sin sustituir ningún paso del protocolo.
+En el enfoque supervisado, una ResNet18 utiliza los ejemplos disponibles para modificar sus pesos durante el entrenamiento. En el enfoque multimodal, Gemma~4 utiliza esos ejemplos de otra manera: no los convierte en gradiente, sino en demostraciones dentro del prompt. Esta diferencia metodológica es el eje del protocolo, y se mantiene explícito qué representa \(K\) en cada caso: pacientes de entrenamiento para la CNN y ejemplos de contexto para el VLM.
 
-\section{Pregunta experimental}
+El papel clínico del sistema se define con prudencia. Una predicción positiva no confirma ni descarta síndrome de Brugada. Indica que el trazado merece revisión experta y podría entrar en el circuito habitual, que incluye revisión del ECG completo, posible reposicionamiento de V1/V2 y prueba farmacológica en pacientes seleccionados. Esta definición afecta a la lectura de las métricas. La sensibilidad mide cuántos positivos llegan a la alerta y la especificidad mide cuántos controles no se derivan innecesariamente.
 
-La pregunta experimental completa puede formularse así: \emph{¿puede un VLM con ICL mejorar el uso de pocos ejemplos etiquetados respecto a una CNN entrenada de forma supervisada sobre las mismas imágenes?}
+La estructura del protocolo sigue una lógica habitual en estudios de modelos predictivos y de exactitud diagnóstica: separa datos, partición, métricas, papel previsto del sistema y resultados, e informa matrices \(2\times2\), sensibilidad y especificidad para que la lectura sea transparente \cite{collins2024tripodai,bossuyt2015stard,sounderajah2025stardai}. En una tarea con imágenes clínicas, también es importante dejar claro qué entrada recibe el modelo, cómo se agregan las predicciones y qué evidencia queda fuera de la imagen.
 
-Esta formulación asigna a cada línea un papel claro:
+\section{Planteamiento común}
 
-\begin{enumerate}
-  \item \textbf{Línea CNN.} La CNN se entrena con presupuestos progresivos (\(K=2,\dots,32\)) sobre datos sintéticos y sobre datos clínicos reales. Este enfoque establece la referencia supervisada con la que se comparará el uso de ICL.
-  \item \textbf{Línea VLM/ICL.} El VLM recibe las mismas imágenes y los mismos presupuestos \(K\), pero los ejemplos se introducen como demostraciones en contexto dentro del prompt, sin modificar los pesos del modelo. La hipótesis es que el conocimiento visual y lingüístico adquirido durante el preentrenamiento puede ser útil cuando los datos específicos son escasos.
-\end{enumerate}
+El enfoque supervisado entrena una ResNet18 con pocos ejemplos. El enfoque VLM/ICL usa Gemma~4 y evalúa zero-shot, ICL normal e ICL balanceado. Ambos comparten los mismos valores de \(K\), la misma separación por paciente y la misma agregación de métricas, de modo que las diferencias observadas puedan atribuirse al modo de utilizar los ejemplos etiquetados.
 
-La comparación entre ambas líneas se realiza sobre las mismas particiones de pacientes, los mismos valores de \(K\) y la misma métrica principal, exactitud equilibrada, para que la diferencia observada proceda del paradigma de aprendizaje y no de cambios en el protocolo de evaluación.
+La comparación se apoya en dos dominios. El simulador QRS/ST permite comprobar si la imagen contiene una señal morfológica aprendible en condiciones controladas. Los datos cedidos por el HUCA permiten medir qué ocurre al pasar a ECG clínicos reales, con ruido de adquisición, variabilidad entre pacientes y una etiqueta clínica que no equivale exactamente a las reglas del simulador.
 
-\section{Canalización experimental}
+\section{Datos evaluados}
 
-La figura \ref{fig:pipeline_experimental} resume el flujo experimental. Las imágenes sintéticas y reales se convierten al mismo formato visual de entrada. La ruta CNN entrena modelos con presupuestos reducidos, evalúa por paciente, agrega predicciones por derivación y produce tablas, curvas, matrices de confusión y mapas Grad-CAM. La ruta VLM reutiliza las mismas imágenes y los mismos presupuestos \(K\), pero introduce los ejemplos como demostraciones dentro del prompt y obtiene la predicción sin ajuste de pesos. Ambas rutas desembocan en el mismo módulo de evaluación, lo que permite una comparación directa.
-
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=\textwidth]{results/fig_pipeline_experimental.drawio.png}
-  \caption{Flujo experimental: la CNN establece la línea base supervisada y el VLM/ICL constituye el comparador central propuesto.}
-  \label{fig:pipeline_experimental}
-\end{figure}
-
-\section{Orientación clínica: triaje, no diagnóstico}
-
-El modelo no emite un diagnóstico de síndrome de Brugada, sino una señal de sospecha que prioriza la revisión clínica. En la práctica asistencial, una predicción positiva activa el siguiente circuito:
-
-\begin{enumerate}
-  \item \textbf{Revisión experta del ECG.} El cardiólogo examina el trazado completo para valorar la morfología del segmento ST en las derivaciones precordiales derechas.
-  \item \textbf{Reposicionamiento de derivaciones.} Cuando la sospecha se mantiene, se repite el registro con V1 y V2 colocadas en posiciones superiores (segundo o tercer espacio intercostal), maniobra que aumenta la sensibilidad para detectar el patrón tipo~1.
-  \item \textbf{Provocación farmacológica.} En los pacientes seleccionados por el clínico, se administra ajmalina o flecainida bajo monitorización para desenmascarar un patrón de Brugada tipo~1 oculto.
-  \item \textbf{Decisión clínica.} El diagnóstico definitivo y las decisiones terapéuticas, como seguimiento, estudio genético o implantación de desfibrilador, corresponden al equipo médico, nunca al modelo.
-\end{enumerate}
-
-Este encuadre tiene implicaciones directas sobre las métricas. Dado que el modelo es un filtro de priorización, un falso negativo (paciente con Brugada no alertado) tiene mayor coste que un falso positivo (control enviado a revisión). Sin embargo, un exceso de falsos positivos sobrecarga el circuito clínico y reduce la confianza de los usuarios. La exactitud equilibrada captura ambos aspectos al ponderar sensibilidad y especificidad por igual, y se complementa con la inspección de la curva ROC para evaluar el equilibrio entre ambos errores.
-
-\section{Unidades de análisis}
-
-La unidad de separación es siempre el paciente. En el conjunto sintético, cada paciente simulado contiene tres imágenes correspondientes a V1, V2 y V3. En los datos cedidos por el HUCA, cada paciente clínico aporta las ventanas renderizadas de esas derivaciones precordiales derechas. El modelo produce una probabilidad por imagen y la decisión de paciente se obtiene promediando las probabilidades de sus derivaciones antes de aplicar el umbral.
+La unidad de separación es siempre el paciente. En el conjunto sintético, cada paciente simulado aporta tres imágenes correspondientes a V1, V2 y V3. En los datos cedidos por el HUCA, cada paciente aporta las ventanas renderizadas de esas derivaciones precordiales derechas. El modelo produce una predicción por imagen y la decisión final se agrega por paciente.
 
 \begin{table}[H]
   \centering
@@ -53,73 +26,41 @@ La unidad de separación es siempre el paciente. En el conjunto sintético, cada
     \toprule
     Conjunto & Pacientes & Imágenes & Positivos & Negativos & Tarea \\
     \midrule
-    Sintético QRS/ST & 100 & 300 & 20 & 80 & Detección derivada de patrón Brugada: RBBB, elevación ST e inversión T presentes \\
-    Cohorte HUCA & 317 & 951 & 116 & 201 & Caso Brugada confirmado frente a control, excluyendo categorías limítrofes o no equivalentes \\
+    Sintético QRS/ST & 100 & 300 & 20 & 80 & Patrón derivado de Brugada con RBBB, elevación ST e inversión T presentes \\
+    Datos HUCA & 317 & 951 & 116 & 201 & Caso Brugada confirmado frente a control, tras excluir registros limítrofes \\
     \bottomrule
   \end{tabularx}
-  \caption{Conjuntos utilizados en los experimentos cerrados.}
-  \label{tab:datasets_cerrados}
+  \caption{Conjuntos utilizados en los experimentos finales.}
+  \label{tab:datasets_finales}
 \end{table}
 
-La diferencia entre ambas tareas debe conservarse al interpretar los resultados. En el simulador se evalúa composición morfológica derivada de reglas. En los datos cedidos por el HUCA se evalúa una etiqueta clínica binaria disponible en los metadatos. Por tanto, el salto sintético-real no mide únicamente cambio de renderizado, sino también un cambio de definición de etiqueta.
+Esta diferencia de etiqueta es importante. En el simulador se evalúa una regla morfológica definida por construcción, mientras que en los ECG reales se evalúa una variable clínica recogida en los metadatos. El paso del simulador al entorno clínico no mide solo una diferencia visual, sino también una diferencia en el significado de la etiqueta.
 
-\section{Presupuestos de pocos ejemplos}
+\section{Valores de K y validación}
 
-Los presupuestos de entrenamiento son \(K=\{2,4,8,16,32\}\). Para cada \(K\) positivo se ejecutan tres semillas: 42, 123 y 2026. La selección de ejemplos se realiza dentro de cada pliegue, sin utilizar el paciente reservado para test. El objetivo no es maximizar rendimiento con todos los datos, sino medir cómo evoluciona cada estrategia, supervisada y en contexto, cuando las etiquetas son escasas.
+Los valores de pocos ejemplos son \(K=\{2,4,8,16,32\}\). En el enfoque VLM se añade \(K=0\), que corresponde a zero-shot. Para cada valor positivo de \(K\) se ejecutan tres semillas, 42, 123 y 2026. La selección de ejemplos se realiza dentro de cada pliegue y nunca incluye el paciente reservado para prueba.
+
+En la evaluación real, \(K\) no tiene el mismo origen en todas las ramas. La CNN evaluada con los datos cedidos por el HUCA se ajusta con \(K\) pacientes del simulador porque la cohorte clínica no contiene las etiquetas morfológicas que exige la cabeza multietiqueta. En el VLM, \(K\) indica demostraciones de contexto y se estudian dos posibilidades: demostraciones tomadas de la cohorte real para la comparación clínica principal y demostraciones sintéticas para analizar la transferencia desde el simulador.
 
 \begin{figure}[H]
   \centering
-  \safeincludegraphics[width=0.94\textwidth]{results/fig_k_budget_split.pdf}
-  \caption{Validación leave-one-out por paciente y selección de presupuestos \(K\).}
-  \label{fig:k_budget_split}
+  \safeincludegraphics[width=0.94\textwidth]{results/fig_k_examples_split.pdf}
+  \caption{Validación leave-one-out por paciente y selección de ejemplos para cada valor de \(K\).}
+  \label{fig:k_examples_split}
 \end{figure}
 
-En cada ejecución se conserva el identificador de pliegue, la semilla, los pacientes usados como ejemplos, las predicciones por imagen y las métricas agregadas. El informe de auditoría final verifica 1500 predicciones de paciente en el simulador y 4755 predicciones de paciente en los datos cedidos por el HUCA para la CNN base.
-
-\section{Modelo CNN evaluado}
-
-El modelo supervisado es ResNet18 con pesos iniciales de ImageNet y una cabeza binaria. Aunque el simulador original contiene tres hallazgos morfológicos, la campaña cerrada utiliza una etiqueta derivada de patrón Brugada: positiva cuando RBBB, elevación ST e inversión de T están simultáneamente presentes, y negativa cuando el paciente simulado es normal o incompleto. Esta reducción facilita la comparación con la cohorte cedida por el HUCA, donde la etiqueta disponible es binaria.
-
-El entrenamiento utiliza \texttt{BCEWithLogitsLoss}, ponderación automática de la clase positiva cuando procede, AdamW y selección interna de umbral sobre el subconjunto de validación del pliegue. La métrica principal es la exactitud equilibrada porque la prevalencia positiva es desigual y porque interesa medir sensibilidad y especificidad de forma simétrica.
-
-La función de esta línea dentro del diseño es doble: por un lado, establece la referencia numérica contra la que se comparará el VLM; por otro, permite cuantificar el deterioro que introduce la escasez de datos en un enfoque supervisado estándar.
-
-\section{Comprobación complementaria}
-
-Además de la línea base, la evaluación CNN incluye una comprobación del salto entre imágenes sintéticas y datos reales. Su función es valorar si parte de la pérdida de rendimiento procede del cambio de distribución visual. Esta comprobación se interpreta al final de la evaluación sobre datos reales y no condiciona la definición principal de la tarea VLM/ICL.
+Este esquema evita una fuente de sesgo muy común en ECG. Las derivaciones o registros de la misma persona no deben aparecer a la vez en entrenamiento y prueba. Si eso ocurriera, el modelo podría aprender rasgos del paciente, del dispositivo o del renderizado en lugar de rasgos relacionados con la tarea.
 
 \section{Métricas}
 
-Se reportan exactitud, exactitud equilibrada, F1, precisión, sensibilidad, especificidad, área ROC y precisión media. Las tablas principales muestran la media y la desviación estándar sobre tres semillas. Además, para cada configuración se guardan matrices de confusión agregadas, curvas ROC/PR y predicciones por paciente.
-
-La exactitud equilibrada se define como:
+La métrica principal es la exactitud equilibrada, porque pondera sensibilidad y especificidad por igual aunque las clases estén desbalanceadas. Se calcula como
 
 \[
   \mathrm{BA}=\frac{1}{2}\left(\frac{TP}{TP+FN}+\frac{TN}{TN+FP}\right).
 \]
 
-Esta métrica es especialmente importante en el contexto de triaje: un modelo puede obtener sensibilidad moderada a costa de marcar demasiados controles como positivos. En una herramienta de priorización, ese comportamiento solo es tolerable si se declara como alerta preliminar y se acompaña del circuito de revisión clínica descrito anteriormente. En la comparación con VLM/ICL se emplea el mismo criterio principal para garantizar que el cambio de paradigma de aprendizaje no implique un cambio en la regla de evaluación.
+También se informan F1, sensibilidad, especificidad, área ROC y precisión media. Las tablas principales muestran medias sobre tres semillas y, cuando procede, desviación estándar. Las matrices de confusión agregan las predicciones de las tres ejecuciones.
 
-\section{Alcance experimental}
+La interpretación clínica se mantiene prudente. Un modelo con sensibilidad alta y especificidad baja puede ser interesante para investigación exploratoria, porque recupera más positivos, pero no basta para un circuito asistencial si genera demasiadas alertas. Esa tensión guía las comparaciones de los capítulos finales.
 
-La tabla~\ref{tab:estado_experimentos} distingue los bloques con resultados medidos de los bloques definidos como protocolo. La línea CNN y la comprobación complementaria aportan valores numéricos completos. La línea VLM/ICL aporta especificación de modelos, mensajes, controles, esquema JSON y criterios de reporte.
-
-\begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{\textwidth}{p{3.6cm}p{2.6cm}X}
-    \toprule
-    Bloque & Estado & Evidencia disponible \\
-    \midrule
-    Simulador QRS/ST & Completo & Datos, pliegues LOOCV, entrenamiento CNN, tablas, curvas, matriz de confusión y Grad-CAM \\
-    Datos reales & Completo & Cohorte HUCA procesada, pliegues por paciente, entrenamiento CNN, comparación sintético-real y Grad-CAM \\
-    Comparación sintético-real & Completo & Curvas y tablas que comparan el rendimiento de la CNN en el simulador y en la cohorte real \\
-    \textbf{VLM e ICL} & \textbf{Protocolo definido} & Modelos, mensajes, controles, esquema JSON, agregación por paciente y criterios de reporte \\
-    Auditoría final & Completa para los bloques con resultados & Predicciones por paciente, matrices y métricas agregadas verificadas; protocolo VLM definido con las mismas unidades de análisis \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Alcance de los bloques experimentales.}
-  \label{tab:estado_experimentos}
-\end{table}
-
-Esta separación mantiene completo el diseño comparativo sin mezclar resultados medidos y protocolo. Las conclusiones numéricas proceden de la CNN y de la comprobación complementaria; el capítulo~\ref{chap:vlm} fija la estructura de lectura para Gemma 4 y MedGemma.
+Con este diseño, los capítulos siguientes separan método y resultado. El capítulo~\ref{chap:modelos} fija el marco comparativo. Los capítulos~\ref{chap:cnn_enfoque} y \ref{chap:vlm} describen, respectivamente, la CNN y el enfoque VLM/ICL sin adelantar resultados. Los capítulos~\ref{chap:comparacion_simulador} y \ref{chap:comparacion_real} presentan la comparación cuantitativa en el dominio sintético y en los ECG reales.

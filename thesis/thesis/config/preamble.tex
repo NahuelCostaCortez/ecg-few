@@ -29,6 +29,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tabularx}
+\usepackage{longtable}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -64,7 +65,7 @@
   pdftitle={\ThesisTitle},
   pdfauthor={\AuthorName},
   pdfsubject={\DocumentType},
-  pdfkeywords={electrocardiograma, redes convolucionales, modelos de visión y lenguaje, aprendizaje en contexto, datos sintéticos}
+  pdfkeywords={ECG como imagen, síndrome de Brugada, triaje clínico, pocos ejemplos, modelos multimodales, privacidad de datos sanitarios}
 }
 
 \graphicspath{{assets/}{figures/}}
@@ -94,7 +95,7 @@
   {\normalfont\bfseries\fontsize{14}{17}\selectfont\color{Ink}}
   {\thesection.-}
   {0.75em}
-  {\MakeUppercase}
+  {}
 
 \titleformat{\subsection}
   {\normalfont\bfseries\normalsize\color{Ink}}
@@ -177,6 +178,7 @@
 \addto\captionsspanish{
   \renewcommand{\figurename}{Figura}
   \renewcommand{\tablename}{Tabla}
+  \renewcommand{\listfigurename}{Índice de figuras}
   \renewcommand{\listtablename}{Índice de tablas}
 }
 

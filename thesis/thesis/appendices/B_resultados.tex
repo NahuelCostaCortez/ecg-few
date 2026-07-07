@@ -1,7 +1,7 @@
 \chapter{Resultados completos}
 \label{app:resultados}
 
-Este apéndice reúne las tablas de resultados agregadas utilizadas en los capítulos \ref{chap:resultados} y \ref{chap:datos_reales}. Todas las cifras son medias sobre tres semillas salvo los recuentos, que acumulan las predicciones de las tres ejecuciones.
+Este apéndice reúne las tablas de resultados agregadas utilizadas en los capítulos \ref{chap:comparacion_simulador} y \ref{chap:comparacion_real}. Todas las cifras son medias sobre tres semillas salvo los recuentos, que acumulan las predicciones de las tres ejecuciones.
 
 \section{CNN en el conjunto sintético}
 
@@ -23,7 +23,7 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
   \label{tab:app_sintetico_completo}
 \end{table}
 
-\section{CNN en la cohorte cedida por el HUCA}
+\section{CNN en los datos cedidos por el HUCA}
 
 \begin{table}[H]
   \centering
@@ -87,8 +87,67 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
   \label{tab:app_domain_completo}
 \end{table}
 
-\section{Trazabilidad de resultados}
+\section{VLM/ICL}
 
-Las tablas anteriores proceden de ejecuciones agregadas por paciente. Para cada bloque se conservan las predicciones por imagen, la agregación por paciente, las matrices de confusión y las métricas resumidas por \(K\) y semilla.
+Se separan tres bloques. Simulador corresponde a la evaluación morfológica dentro del dominio sintético. Datos reales con contexto real corresponde a Gemma~4 sobre la imagen real V2 de cada paciente, usando demostraciones tomadas de la cohorte cedida por el HUCA y etiqueta clínica. Datos reales con contexto sintético corresponde al control de transferencia en el que las demostraciones proceden del simulador.
 
-La auditoría final verifica los conjuntos, los informes CNN, la comparación sintético-real y la adaptación de dominio. La línea VLM/ICL se documenta en el capítulo~\ref{chap:vlm}; sus tablas mantienen la misma estructura de lectura, sin mezclar cifras no verificadas con los resultados cerrados de la CNN.
+También se generaron controles de robustez con etiquetas permutadas y demostraciones sin imagen de apoyo. Esos controles se conservan en los artefactos de ejecución, pero se mantienen fuera de la comparación principal para no mezclar controles metodológicos con las tres condiciones interpretables: zero-shot, ICL normal e ICL balanceado.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabular}{llrrrrr}
+    \toprule
+    Tarea & Condición & \(K\) & BA & F1 & Sens. & Esp. \\
+    \midrule
+    Simulador & Zero-shot & 0  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    Simulador & ICL normal & 2  & 0,638 & 0,418 & 0,300 & 0,975 \\
+    Simulador & ICL normal & 4  & 0,688 & 0,489 & 0,533 & 0,842 \\
+    Simulador & ICL normal & 8  & 0,717 & 0,517 & 0,650 & 0,783 \\
+    Simulador & ICL normal & 16 & 0,750 & 0,529 & 0,817 & 0,683 \\
+    Simulador & ICL normal & 32 & 0,727 & 0,481 & 0,967 & 0,487 \\
+    Simulador & ICL balanceado & 2  & 0,608 & 0,357 & 0,250 & 0,967 \\
+    Simulador & ICL balanceado & 4  & 0,696 & 0,470 & 0,767 & 0,625 \\
+    Simulador & ICL balanceado & 8  & 0,754 & 0,511 & 0,950 & 0,558 \\
+    Simulador & ICL balanceado & 16 & 0,719 & 0,471 & 1,000 & 0,438 \\
+    Simulador & ICL balanceado & 32 & 0,637 & 0,409 & 1,000 & 0,275 \\
+    Real contexto real & Zero-shot & 0  & 0,508 & 0,044 & 0,023 & 0,993 \\
+    Real contexto real & ICL normal & 2  & 0,489 & 0,382 & 0,414 & 0,564 \\
+    Real contexto real & ICL normal & 4  & 0,490 & 0,445 & 0,586 & 0,393 \\
+    Real contexto real & ICL normal & 8  & 0,517 & 0,487 & 0,684 & 0,350 \\
+    Real contexto real & ICL normal & 16 & 0,522 & 0,491 & 0,690 & 0,355 \\
+    Real contexto real & ICL normal & 32 & 0,517 & 0,478 & 0,647 & 0,388 \\
+    Real contexto real & ICL balanceado & 2  & 0,510 & 0,406 & 0,440 & 0,580 \\
+    Real contexto real & ICL balanceado & 4  & 0,506 & 0,458 & 0,601 & 0,411 \\
+    Real contexto real & ICL balanceado & 8  & 0,516 & 0,481 & 0,661 & 0,371 \\
+    Real contexto real & ICL balanceado & 16 & 0,522 & 0,496 & 0,713 & 0,332 \\
+    Real contexto real & ICL balanceado & 32 & 0,521 & 0,484 & 0,658 & 0,385 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Resultados VLM/ICL principales informados en los capítulos de resultados. Las cifras son medias sobre tres semillas.}
+  \label{tab:app_vlm_completo}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Condición & \(K\) & BA & F1 & Sens. & Esp. \\
+    \midrule
+    Zero-shot & 0  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL normal & 2  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL normal & 4  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL normal & 8  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL normal & 16 & 0,501 & 0,006 & 0,003 & 0,998 \\
+    ICL normal & 32 & 0,500 & 0,006 & 0,003 & 0,997 \\
+    ICL balanceado & 2  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL balanceado & 4  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL balanceado & 8  & 0,501 & 0,006 & 0,003 & 1,000 \\
+    ICL balanceado & 16 & 0,499 & 0,000 & 0,000 & 0,998 \\
+    ICL balanceado & 32 & 0,505 & 0,022 & 0,011 & 0,998 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Resultados VLM/ICL con contexto sintético del simulador y consulta sobre los datos reales cedidos por el HUCA. Las cifras son medias sobre tres semillas.}
+  \label{tab:app_vlm_huca_synthetic_context}
+\end{table}

@@ -1,0 +1,79 @@
+\chapter*{Glosario de siglas}
+\addcontentsline{toc}{chapter}{Glosario de siglas}
+\markboth{Glosario de siglas}{Glosario de siglas}
+
+Este glosario reúne las siglas y abreviaturas que aparecen en la memoria. Se incluye el significado con el que se utilizan dentro del trabajo para mantener una lectura consistente entre capítulos, tablas y apéndices.
+
+{\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{2.20cm}>{\raggedright\arraybackslash}p{4.10cm}>{\raggedright\arraybackslash}p{7.95cm}@{}}
+\caption{Siglas y abreviaturas utilizadas en la memoria.}
+\label{tab:glosario_siglas}\\
+\toprule
+Sigla & Significado & Uso en este trabajo \\
+\midrule
+\endfirsthead
+\toprule
+Sigla & Significado & Uso en este trabajo \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Acc. & Exactitud & Proporción global de predicciones correctas. Se informa como métrica complementaria en los apéndices. \\
+ACCF & American College of Cardiology Foundation & Sociedad científica citada en recomendaciones de estandarización electrocardiográfica. \\
+AHA & American Heart Association & Sociedad científica citada en guías y recomendaciones clínicas sobre electrocardiografía. \\
+AP & Precisión media & Área bajo la curva precisión-recall. Se usa como métrica complementaria en las tablas completas. \\
+API & Interfaz de programación de aplicaciones & Se menciona al discutir modelos servidos por proveedores externos. \\
+AUC & Área bajo la curva & Resumen escalar de una curva de rendimiento, usado junto a ROC. \\
+aVR, aVL, aVF & Derivaciones aumentadas de miembros & Derivaciones del electrocardiograma convencional citadas al describir el registro de doce derivaciones. \\
+BA & Exactitud equilibrada & Métrica principal. Promedia sensibilidad y especificidad para no favorecer a la clase mayoritaria. \\
+BCE & Entropía cruzada binaria & Función de pérdida para clasificación binaria o multietiqueta. \\
+CAM & Mapa de activación de clase & En Grad CAM indica regiones de la imagen que influyen en una predicción. \\
+CC BY & Creative Commons Attribution & Licencia de reutilización asociada a una de las imágenes clínicas citadas. \\
+CC BY-SA & Creative Commons Attribution ShareAlike & Licencia de reutilización con atribución y obligación de compartir bajo condiciones equivalentes. \\
+CNN & Red neuronal convolucional & Modelo supervisado que ajusta pesos a partir de ejemplos etiquetados. En la memoria se concreta en ResNet18. \\
+CORAL & Correlation Alignment & Método de adaptación de dominio incluido como resultado complementario. \\
+CSV & Comma-separated values & Formato tabular utilizado en manifiestos y resultados. \\
+DANN & Domain-Adversarial Neural Network & Método de adaptación de dominio incluido como resultado complementario. \\
+ECG & Electrocardiograma & Trazado cardíaco utilizado como imagen, no como señal digital cruda. \\
+ECGBench & ECG Benchmark & Banco de evaluación multimodal citado en trabajos relacionados. \\
+ECGInstruct & ECG Instruction Dataset & Conjunto de instrucciones con imagen y texto citado en trabajos relacionados. \\
+Esp. & Especificidad & Proporción de controles identificados correctamente. \\
+F1 & Medida F1 & Media armónica entre precisión y sensibilidad. \\
+FN & Falso negativo & Caso positivo clasificado como negativo. \\
+FP & Falso positivo & Control clasificado como positivo. \\
+HRS & Heart Rhythm Society & Sociedad científica citada en recomendaciones clínicas. \\
+HUCA & Hospital Universitario Central de Asturias & Origen de los electrocardiogramas reales utilizados en la evaluación clínica. \\
+ICL & Aprendizaje en contexto & Uso de ejemplos etiquetados dentro del prompt sin modificar los pesos del modelo. \\
+ImageNet & ImageNet & Colección de imágenes usada como origen habitual de pesos preentrenados en modelos visuales. \\
+JSON & JavaScript Object Notation & Formato estructurado exigido en las respuestas del modelo multimodal. \\
+\(K\) & Número de ejemplos & Tamaño del conjunto usado en cada pliegue. En la CNN indica pacientes de entrenamiento y en el VLM indica demostraciones de contexto. \\
+LOOCV & Validación leave-one-out & Evaluación por paciente reservado. En cada pliegue se deja un paciente fuera. \\
+MEETI & MIMIC ECG Event-based Text-image & Recurso multimodal de electrocardiografía revisado en el estado del arte. \\
+MIMIC & Medical Information Mart for Intensive Care & Familia de recursos clínicos abiertos citada en trabajos relacionados. \\
+MMD & Maximum Mean Discrepancy & Medida usada como método complementario de adaptación de dominio. \\
+PDF & Portable Document Format & Formato habitual de documento clínico o de intercambio del electrocardiograma renderizado. \\
+PR & Intervalo PR & Intervalo electrocardiográfico entre la activación auricular y ventricular. \\
+Prec. & Precisión & Proporción de predicciones positivas que corresponden a positivos reales. \\
+PTB XL & Physikalisch-Technische Bundesanstalt XL & Conjunto abierto de electrocardiogramas de doce derivaciones citado en trabajos relacionados. \\
+PULSE & PULSE & Modelo multimodal especializado en ECG citado en el estado del arte. \\
+QRS & Complejo QRS & Región asociada a la despolarización ventricular. \\
+QRS/ST & Complejo QRS y segmento ST & Nombre abreviado del dominio sintético utilizado en la memoria. \\
+QT & Intervalo QT & Intervalo electrocardiográfico relacionado con despolarización y repolarización ventricular. \\
+QTc & Intervalo QT corregido & Intervalo QT ajustado por frecuencia cardíaca, mencionado en el contexto clínico. \\
+RBBB & Bloqueo de rama derecha & En el simulador se usa como etiqueta morfológica compatible, no como diagnóstico completo. \\
+ResNet18 & Residual Network 18 & Arquitectura convolucional utilizada como referencia supervisada. \\
+RGB & Red, green, blue & Representación de imagen con tres canales de color. \\
+ROC & Receiver Operating Characteristic & Curva que relaciona sensibilidad y tasa de falsos positivos. \\
+RSR & Morfología RSR prima & Patrón visual con segunda deflexión positiva terminal en el complejo QRS. \\
+Sens. & Sensibilidad & Proporción de positivos identificados correctamente. \\
+SimCLR & Simple Framework for Contrastive Learning of Visual Representations & Método autosupervisado citado en la configuración complementaria. \\
+SSL & Aprendizaje autosupervisado & Estrategia complementaria de adaptación de dominio incluida en resultados completos. \\
+ST & Segmento ST & Región posterior al QRS cuya elevación participa en la formulación morfológica del estudio. \\
+TFG & Trabajo de Fin de Grado & Documento académico en el que se enmarca el proyecto. \\
+TN & Verdadero negativo & Control clasificado correctamente como negativo. \\
+TP & Verdadero positivo & Caso positivo clasificado correctamente como positivo. \\
+TWI & Inversión de onda T & Deflexión tardía negativa utilizada como rasgo visible en el simulador. \\
+V1--V6 & Derivaciones precordiales & Derivaciones torácicas del electrocardiograma. En los experimentos se usan V1, V2 y V3. \\
+VLM & Modelo de visión y lenguaje & Modelo multimodal que recibe imágenes y texto en un mismo prompt. \\
+\end{longtable}
+}

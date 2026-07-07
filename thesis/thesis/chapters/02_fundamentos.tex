@@ -45,15 +45,15 @@ La onda T refleja la repolarización ventricular y suele aparecer después del s
 
 En el conjunto sintético, la inversión se define mediante una deflexión tardía negativa. El validador comprueba la profundidad mínima, la posición temporal del mínimo y la duración de la región situada por debajo de un nivel negativo. La regla incluye además condiciones sobre el QRS y el segmento ST para evitar que una oscilación temprana se confunda con una onda T.
 
-La etiqueta T\_WAVE\_INVERSION expresa por tanto una propiedad visual localizada. No determina si la inversión es primaria, secundaria, fisiológica o patológica. Esta limitación deberá conservarse cuando el modelo se evalúe con datos reales.
+La etiqueta T\_WAVE\_INVERSION expresa por tanto una propiedad visual localizada. No determina si la inversión es primaria, secundaria, fisiológica o patológica. Esta limitación se conserva al evaluar con datos reales.
 
-\subsection{Síndrome de Brugada: caso motivador y circuito diagnóstico}
+\subsection{Síndrome de Brugada como caso motivador y circuito diagnóstico}
 
 El síndrome de Brugada es una canalopatía hereditaria del canal de sodio, frecuentemente asociada a mutaciones en el gen \emph{SCN5A}, que predispone a fibrilación ventricular y muerte súbita cardíaca. Su prevalencia se estima entre 1 y 5 por cada 10\,000 personas, con predominio en varones adultos jóvenes, aunque puede manifestarse a cualquier edad. A pesar de su baja prevalencia, su asociación con arritmias malignas lo convierte en un problema clínico relevante \cite{sieira2017}.
 
-El elemento electrocardiográfico central es el patrón tipo 1, también denominado patrón \emph{coved}: una elevación descendente del segmento ST de al menos 2 mm en las derivaciones precordiales derechas V1 o V2, seguida de una onda T negativa. Este patrón es el único considerado diagnóstico según las guías vigentes \cite{zeppenfeld2022}. Los patrones tipo 2 y tipo 3, descritos históricamente, ya no se consideran suficientes por sí solos para establecer el diagnóstico.
+El elemento electrocardiográfico central es el patrón tipo 1, también denominado patrón \emph{coved}, con una elevación descendente del segmento ST de al menos 2 mm en las derivaciones precordiales derechas V1 o V2, seguida de una onda T negativa. Este patrón es el único considerado diagnóstico según las guías vigentes \cite{zeppenfeld2022}. Los patrones tipo 2 y tipo 3, descritos históricamente, ya no se consideran suficientes por sí solos para establecer el diagnóstico.
 
-La definición ha evolucionado con el tiempo. Los criterios actuales aceptan que el patrón tipo 1, ya sea espontáneo o inducido, es suficiente para el diagnóstico de síndrome de Brugada en ausencia de otras causas que lo expliquen \cite{zeppenfeld2022}. No obstante, el contexto clínico es fundamental: síntomas como síncope inexplicado, respiración agónica nocturna, antecedentes familiares de muerte súbita o arritmias ventriculares documentadas refuerzan la sospecha y orientan la estratificación del riesgo.
+La definición ha evolucionado con el tiempo. Los criterios actuales aceptan que el patrón tipo 1, ya sea espontáneo o inducido, es suficiente para el diagnóstico de síndrome de Brugada en ausencia de otras causas que lo expliquen \cite{zeppenfeld2022}. No obstante, el contexto clínico es fundamental. Síntomas como síncope inexplicado, respiración agónica nocturna, antecedentes familiares de muerte súbita o arritmias ventriculares documentadas refuerzan la sospecha y orientan la estratificación del riesgo.
 
 \subsubsection{Circuito diagnóstico clínico}
 
@@ -63,7 +63,7 @@ El diagnóstico del síndrome de Brugada sigue un circuito clínico estructurado
   \item \textbf{ECG basal de 12 derivaciones.} La evaluación comienza con un ECG estándar. Si el trazado muestra un patrón tipo 1 espontáneo en V1 o V2, el diagnóstico se puede establecer tras excluir fenocopias y otras causas de elevación del ST.
   \item \textbf{Recolocación de derivaciones precordiales.} Cuando el ECG basal es sospechoso pero no concluyente, las guías recomiendan registrar V1 y V2 en espacios intercostales superiores (segundo o tercero en lugar del cuarto estándar). Esta maniobra aumenta la sensibilidad para detectar el patrón tipo 1, porque la posición más alta acerca el electrodo al tracto de salida del ventrículo derecho \cite{brugadadrugsdiagnostic}.
   \item \textbf{Valoración clínica integral.} Se evalúan síntomas actuales y pasados, historia familiar de muerte súbita o síndrome de Brugada confirmado, exposición a fármacos o situaciones que puedan provocar fenocopias (fiebre, trastornos electrolíticos, isquemia) y comorbilidades.
-  \item \textbf{Prueba farmacológica con bloqueantes del canal de sodio.} En pacientes seleccionados con sospecha persistente y ECG basal no diagnóstico, se realiza una prueba de provocación farmacológica. Los fármacos empleados son bloqueantes del canal de sodio de clase I: ajmalina (la más utilizada, administrada por vía intravenosa a dosis aproximada de 1 mg/kg durante 10 minutos), flecainida, procainamida o pilsicainida según la disponibilidad local \cite{wilde2023scbt}. La prueba se administra en un entorno monitorizado con personal entrenado en reanimación cardiopulmonar avanzada y con equipo de desfibrilación disponible, dado el riesgo, infrecuente pero real, de desencadenar arritmias ventriculares malignas (taquicardia ventricular polimórfica o fibrilación ventricular). La monitorización electrocardiográfica continua debe prolongarse después de finalizar la infusión, ya que el patrón tipo 1 puede aparecer de forma diferida, incluso cuando los intervalos QRS y QTc han comenzado a normalizarse. La prueba se considera positiva si aparece un patrón tipo 1 durante o después de la administración del fármaco. La prueba está contraindicada en pacientes que ya presentan un patrón tipo 1 espontáneo, puesto que el diagnóstico ya está establecido \cite{wilde2023scbt}.
+  \item \textbf{Prueba farmacológica con bloqueantes del canal de sodio.} En pacientes seleccionados con sospecha persistente y ECG basal no diagnóstico, se realiza una prueba de provocación farmacológica. Los fármacos empleados son bloqueantes del canal de sodio de clase I, entre ellos ajmalina (la más utilizada, administrada por vía intravenosa a dosis aproximada de 1 mg/kg durante 10 minutos), flecainida, procainamida o pilsicainida según la disponibilidad local \cite{wilde2023scbt}. La prueba se administra en un entorno monitorizado con personal entrenado en reanimación cardiopulmonar avanzada y con equipo de desfibrilación disponible, dado el riesgo, infrecuente pero real, de desencadenar arritmias ventriculares malignas (taquicardia ventricular polimórfica o fibrilación ventricular). La monitorización electrocardiográfica continua debe prolongarse después de finalizar la infusión, ya que el patrón tipo 1 puede aparecer de forma diferida, incluso cuando los intervalos QRS y QTc han comenzado a normalizarse. La prueba se considera positiva si aparece un patrón tipo 1 durante o después de la administración del fármaco. La prueba está contraindicada en pacientes que ya presentan un patrón tipo 1 espontáneo, puesto que el diagnóstico ya está establecido \cite{wilde2023scbt}.
   \item \textbf{Estudio genético.} Se recomienda la secuenciación del gen \emph{SCN5A} en pacientes índice para confirmar la base molecular y facilitar el cribado familiar.
   \item \textbf{Decisión clínica final.} La decisión sobre estratificación de riesgo y tratamiento (seguimiento, modificación del estilo de vida, evitación de fármacos arritmogénicos, valoración de desfibrilador automático implantable) es siempre clínica, multifactorial y realizada por especialistas.
 \end{enumerate}
@@ -83,13 +83,13 @@ Este circuito subraya por qué el sistema desarrollado en este TFG se plantea ex
     \safeincludegraphics[width=\linewidth]{sources/brugada_patterns_orphanet.png}
     \caption{Patrones tipo 1--3.}
   \end{subfigure}
-  \caption{Ejemplos clínicos de morfología Brugada. Izquierda: ECGpedia, CC BY-SA 3.0 \cite{ecgpediaType1Image}. Derecha: Napolitano y Priori, CC BY 2.0 \cite{napolitano2006}.}
+  \caption{Ejemplos clínicos de morfología Brugada. La imagen izquierda procede de ECGpedia, CC BY-SA 3.0 \cite{ecgpediaType1Image}. La imagen derecha procede de Napolitano y Priori, CC BY 2.0 \cite{napolitano2006}.}
   \label{fig:brugada_clinical_examples}
 \end{figure}
 
 La relación con el bloqueo de rama derecha requiere una precisión adicional. El trazado tipo 1 puede recordar visualmente a una alteración terminal del QRS. Sin embargo, el mecanismo y los criterios no son equivalentes. La onda J del patrón de Brugada se concentra en las derivaciones precordiales derechas y no necesita la onda S lateral recíproca que forma parte del bloqueo de rama derecha \cite{corrado2010}. En este TFG, RBBB se utiliza como una etiqueta morfológica auxiliar y no como requisito clínico para Brugada.
 
-La familia generadora BRUGADA introduce una elevación inicial del segmento ST, una caída progresiva y una onda T negativa. Después de generar la señal, los tres validadores independientes determinan qué hallazgos están presentes. La familia de origen se conserva como metadato, mientras que la tarea predictiva utiliza únicamente las etiquetas observables. Esta separación es importante: el simulador crea un caso visual para probar modelos, no una reproducción diagnóstica del síndrome.
+La familia generadora BRUGADA introduce una elevación inicial del segmento ST, una caída progresiva y una onda T negativa. Después de generar la señal, los tres validadores independientes determinan qué hallazgos están presentes. La familia de origen se conserva como metadato, mientras que la tarea predictiva utiliza únicamente las etiquetas observables. Esta separación es importante. El simulador crea un caso visual para probar modelos, no una reproducción diagnóstica del síndrome.
 
 \begin{figure}[H]
   \centering
@@ -126,25 +126,6 @@ La imagen posee una ventaja práctica cuando la señal original no está disponi
 La alternativa consiste en digitalizar primero la imagen. El trabajo de Wu y colaboradores desarrolló una herramienta automática para segmentar trazados impresos y reconstruir las señales \cite{wu2022digitization}. La digitalización permite reutilizar modelos temporales, pero introduce errores cuando las derivaciones se solapan o la calidad del documento es baja. El análisis directo de imagen y la digitalización no son soluciones excluyentes. Responden a compromisos distintos.
 
 Esta doble naturaleza del ECG, señal temporal e imagen, es precisamente lo que hace relevante la comparación entre CNN y VLM. Una CNN entrenada con pocos ejemplos necesita extraer toda la información visual de los píxeles disponibles. Un modelo de visión y lenguaje puede complementar la imagen con conocimiento adquirido durante su preentrenamiento sobre colecciones masivas de imágenes y texto médico. La pregunta es si ese punto de partida mejora el uso de pocos ejemplos etiquetados.
-
-\begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.22\textwidth} X X}
-    \toprule
-    Aspecto & Señal temporal & Imagen \\
-    \midrule
-    Información primaria & Muestras de amplitud con frecuencia conocida & Geometría visible después del renderizado \\
-    Medición de intervalos & Directa si se conoce la frecuencia de muestreo & Depende de escala, resolución y posibles transformaciones \\
-    Disponibilidad histórica & Limitada cuando solo se conserva el documento & Frecuente en informes, PDF, papel y fotografías \\
-    Variabilidad técnica & Filtros, fabricantes y frecuencia de muestreo & Incluye además cuadrícula, color, perspectiva, recorte y compresión \\
-    Modelos habituales & Convoluciones unidimensionales, recurrentes y transformadores & CNN, transformadores visuales y modelos de visión y lenguaje \\
-    Riesgo principal & Dependencia del dispositivo y del preprocesado temporal & Aprendizaje de rasgos de estilo que no pertenecen a la fisiología \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Comparación entre la señal temporal y la imagen electrocardiográfica}
-  \label{tab:signal_image}
-\end{table}
 
 \section{Datos sintéticos y modelos gaussianos}
 
@@ -218,21 +199,21 @@ Una convolución aplica un conjunto de filtros compartidos sobre regiones locale
 
 El uso de pesos compartidos aporta cierta tolerancia a desplazamientos pequeños. Sin embargo, el ECG no es completamente invariante a la posición. Una deflexión negativa tiene un significado diferente si aparece dentro del QRS o en la región de la onda T. La arquitectura debe conservar suficiente información espacial y el preprocesado debe alinear los latidos.
 
-En este trabajo la referencia convolucional cerrada es una ResNet18 preentrenada. Las conexiones residuales facilitan la optimización de redes profundas al aprender transformaciones relativas a la entrada de cada bloque \cite{he2016}. El uso de pesos de ImageNet no garantiza una ventaja en ECG, pero aporta filtros visuales iniciales útiles para contornos, trazos y texturas cuando el número de ejemplos etiquetados es pequeño.
+En este trabajo la referencia convolucional es una ResNet18 preentrenada. Las conexiones residuales facilitan la optimización de redes profundas al aprender transformaciones relativas a la entrada de cada bloque \cite{he2016}. El uso de pesos de ImageNet no garantiza una ventaja en ECG, pero aporta filtros visuales iniciales útiles para contornos, trazos y texturas cuando el número de ejemplos etiquetados es pequeño.
 
 La evaluación debe comprobar si esa transferencia visual se mantiene fuera del simulador. Un resultado alto en imágenes sintéticas puede reflejar que la red aprendió reglas de renderizado, mientras que un resultado más bajo en datos reales puede revelar ruido, variabilidad clínica o diferencias en la definición de etiqueta. Los resultados de este TFG confirman que la CNN aprende bien en sintético pero falla en datos reales, lo que motiva la exploración de alternativas que no dependan exclusivamente del entrenamiento supervisado con pocos ejemplos.
 
 \section{Modelos de visión y lenguaje}
 
-Un modelo de visión y lenguaje (VLM) combina una representación visual con un modelo generativo de texto. La imagen se transforma en vectores que el componente lingüístico puede atender durante la generación. La salida puede adoptar la forma de una respuesta libre, una explicación o una estructura con campos definidos. Esta arquitectura introduce una capacidad fundamentalmente nueva respecto a las CNN: el modelo no solo procesa imágenes, sino que integra conocimiento visual y textual adquirido durante un preentrenamiento masivo.
+Un modelo de visión y lenguaje (VLM) combina una representación visual con un modelo generativo de texto. La imagen se transforma en vectores que el componente lingüístico puede atender durante la generación. La salida puede adoptar la forma de una respuesta libre, una explicación o una estructura con campos definidos. Esta arquitectura introduce una capacidad fundamentalmente nueva respecto a las CNN. El modelo no solo procesa imágenes, sino que integra conocimiento visual y textual adquirido durante un preentrenamiento masivo.
 
 Flamingo mostró que un modelo multimodal entrenado con secuencias intercaladas de imagen y texto podía adaptarse a tareas mediante ejemplos incluidos en el contexto \cite{alayrac2022}. Este paradigma evita actualizar los pesos para cada tarea. Las demostraciones especifican la relación entre entrada y salida durante la inferencia, eliminando la necesidad de un conjunto de entrenamiento propio.
 
-Esta propiedad es especialmente relevante para el problema de este TFG. Cuando solo se dispone de pocos ejemplos etiquetados de un fenómeno raro como el patrón de Brugada, el entrenamiento supervisado de una CNN puede resultar insuficiente, como muestran los resultados experimentales. Un VLM, en cambio, parte de representaciones visuales y textuales adquiridas durante su preentrenamiento, que pueden incluir trazados, diagramas médicos, texto clínico y relaciones entre morfología y diagnóstico. La hipótesis central del TFG es que ese punto de partida puede ser útil cuando el conjunto etiquetado es pequeño.
+Esta propiedad es especialmente relevante para el problema de este TFG. Cuando solo se dispone de pocos ejemplos etiquetados de un fenómeno raro como el patrón de Brugada, el entrenamiento supervisado de una CNN puede resultar insuficiente, como muestran los resultados experimentales. Un VLM parte de representaciones visuales y textuales adquiridas durante su preentrenamiento, que pueden incluir trazados, diagramas médicos, texto clínico y relaciones entre morfología y diagnóstico. La hipótesis central del TFG es que ese punto de partida puede ser útil cuando el conjunto etiquetado es pequeño.
 
-Gemma 4 admite texto e imagen y permite ajustar el número de tokens visuales dedicados a cada imagen \cite{gemma4card}. Un presupuesto visual mayor conserva más detalle, aunque incrementa el coste. Esta decisión es relevante para ECG porque los cambios morfológicos pueden ocupar una región pequeña del lienzo. La posibilidad de ejecución local facilita experimentos reproducibles y reduce la necesidad de enviar imágenes a un servicio externo.
+El desarrollo reciente de modelos multimodales médicos ha abierto una vía intermedia entre los modelos generalistas y los sistemas entrenados para una tarea concreta. MedGemma 1.5 pertenece a esa línea de modelos médicos abiertos: parte de la familia Gemma y ha sido adaptado con modalidades clínicas como radiología, histopatología, dermatología, fondo de ojo, documentos y registros clínicos \cite{medgemma15}. La documentación disponible no presenta el ECG como una de sus modalidades principales y remite a una validación específica antes de utilizarlo en una tarea concreta.
 
-MedGemma 1.5 es un modelo multimodal médico basado en Gemma 3. Su entrenamiento incluye radiología, histopatología, dermatología, fondo de ojo, documentos y registros clínicos \cite{medgemma15}. La documentación oficial no sitúa el ECG entre sus modalidades principales de entrenamiento. También indica que el modelo debe adaptarse y validarse antes de cualquier uso específico. La comparación entre Gemma 4 (modelo generalista de última generación) y MedGemma (modelo con adaptación médica sobre una base anterior) permitirá evaluar si el preentrenamiento médico específico aporta ventaja adicional en un dominio no cubierto explícitamente.
+La evaluación cuantitativa de esta memoria se centra en Gemma 4, un VLM abierto de altas prestaciones que admite texto e imagen y permite ajustar el número de tokens visuales dedicados a cada imagen \cite{gemma4card}. Un mayor número de tokens visuales conserva más detalle, aunque incrementa el coste computacional. Esta decisión es relevante para ECG porque los cambios morfológicos pueden ocupar una región pequeña del lienzo. La ejecución local facilita experimentos reproducibles, fija la versión del modelo y reduce la necesidad de enviar imágenes clínicas a un servicio externo.
 
 \section{Aprendizaje multimodal en contexto}
 
@@ -258,30 +239,21 @@ x^\ast,
 
 sin modificar los parámetros \(\theta\). Esta diferencia con el entrenamiento supervisado es fundamental. Los mismos \(K\) ejemplos etiquetados que una CNN utilizaría para actualizar millones de pesos, un VLM los recibe como contexto dentro del prompt. Los pesos del modelo permanecen fijos y el aprendizaje se produce de forma implícita durante la generación.
 
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=0.96\textwidth]{results/vlm_icl_context_window.drawio.png}
-  \caption{Esquema de aprendizaje en contexto multimodal: los ejemplos etiquetados se incorporan al prompt como demostraciones y la imagen de consulta se predice sin actualizar los pesos del VLM.}
-  \label{fig:icl_context_window}
-\end{figure}
+Esta formulación convierte al número de ejemplos \(K\) en la variable de comparación natural entre ambos enfoques. Con el mismo \(K\) de ejemplos etiquetados, la CNN debe aprender a distinguir patrones visuales mediante actualización de pesos, mientras que el VLM recibe esos ejemplos como guía de la tarea dentro del prompt. La pregunta experimental es a partir de qué valor de \(K\) merece la pena entrenar un modelo específico y en qué rango resulta más razonable usar ICL.
 
-Esta formulación convierte al número de ejemplos \(K\) en la variable de comparación natural entre ambos enfoques. Con un mismo presupuesto de \(K\) ejemplos etiquetados, la CNN debe aprender a distinguir patrones visuales; el VLM recibe esos ejemplos como guía de la tarea. La pregunta experimental es directa: ¿a partir de qué valor de \(K\) merece la pena entrenar un modelo específico y en qué rango resulta más razonable usar ICL?
+El número de ejemplos no determina por sí solo la calidad del contexto, ya que también importan la selección, la diversidad, el orden y la coherencia entre la imagen y la etiqueta. Qin y colaboradores identificaron la recuperación multimodal, el orden interno de cada demostración y la posición de la instrucción como factores relevantes \cite{zhang2024mmicl}.
 
-El número de ejemplos no determina por sí solo la calidad del contexto. Importan la selección, la diversidad, el orden y la coherencia entre la imagen y la etiqueta. Qin y colaboradores identificaron la recuperación multimodal, el orden interno de cada demostración y la posición de la instrucción como factores relevantes \cite{zhang2024mmicl}.
-
-Chen y colaboradores observaron que varios modelos podían depender más del texto que de la información visual contenida en las demostraciones \cite{chen2024}. Esta observación justifica los controles del proyecto. En el control de respuestas permutadas se conservan las imágenes y se destruye la asociación correcta con la etiqueta. En el control sin imágenes se mantiene la estructura textual y se elimina la evidencia visual de las demostraciones.
-
-Si un modelo mejora solo con demostraciones correctas y pierde esa mejora en ambos controles, existe evidencia de que utiliza la correspondencia multimodal. Si mantiene el rendimiento con respuestas permutadas, puede estar ignorando las demostraciones o explotando la distribución de clases. Si funciona sin las imágenes de apoyo, la mejora puede proceder del formato de respuesta o de la descripción textual.
+Chen y colaboradores observaron que varios modelos podían depender más del texto que de la información visual contenida en las demostraciones \cite{chen2024}. Esta observación obliga a leer el ICL con cautela. En esta memoria, la comparación principal separa zero-shot, ICL normal e ICL balanceado. Si las condiciones con demostraciones mejoran el zero-shot, el contexto aporta señal. Si normal y balanceado divergen, la composición de las demostraciones también influye en el tipo de error.
 
 \section{Explicabilidad y fidelidad}
 
 Los mapas de activación de clase permiten visualizar qué regiones de una imagen influyen en una salida. Grad CAM utiliza los gradientes de una clase para ponderar los mapas de activación de una capa convolucional \cite{selvaraju2017}. En una tarea de ECG, una explicación razonable debería destacar regiones distintas para QRS, segmento ST y onda T.
 
-Un mapa visual no demuestra causalidad clínica. La resolución suele ser inferior a la imagen de entrada y el resultado depende de la capa seleccionada. También puede señalar una región amplia aunque el modelo utilice un artefacto local. Su función en este proyecto será detectar comportamientos incompatibles con la tarea, no certificar una explicación.
+Un mapa visual no demuestra causalidad clínica. La resolución suele ser inferior a la imagen de entrada y el resultado depende de la capa seleccionada. También puede señalar una región amplia aunque el modelo utilice un artefacto local. Su función en este proyecto es detectar comportamientos incompatibles con la tarea, no certificar una explicación.
 
 Las explicaciones generadas por un modelo de visión y lenguaje plantean un problema diferente. El texto puede describir correctamente la morfología aunque esa descripción no haya causado la predicción. La plausibilidad lingüística y la fidelidad del razonamiento son propiedades distintas. La evaluación principal utilizará respuestas estructuradas. Las justificaciones se analizarán como un artefacto cualitativo separado.
 
-\section{Cambio de dominio}
+\section{Adaptación de dominio}
 
 El dominio sintético y el dominio real difieren en fisiología, adquisición y presentación. El simulador genera un único latido alineado, con una cuadrícula uniforme y sin variabilidad entre pacientes. Un ECG real contiene ruido, deriva de línea base, diferencias de frecuencia cardíaca, trazos superpuestos, anotaciones y múltiples derivaciones.
 
@@ -291,10 +263,10 @@ Una red puede obtener un rendimiento elevado en sintético y fallar en real si a
 
 Los fundamentos anteriores determinan varias decisiones de diseño que sitúan la comparación CNN frente a VLM/ICL en el centro del trabajo.
 
-La primera decisión es que las etiquetas se describirán como hallazgos morfológicos. La segunda es que la familia BRUGADA no se convertirá en un diagnóstico automático, sino en una señal de triaje que remite al circuito clínico descrito anteriormente. La tercera, y más importante para la pregunta de investigación, es que CNN y modelos de visión y lenguaje recibirán exactamente la misma imagen objetivo y el mismo presupuesto de ejemplos \(K\). La diferencia estará en cómo usan esos ejemplos: la CNN para actualizar pesos; el VLM como demostraciones en contexto.
+Estas consideraciones se traducen en tres decisiones de diseño: describir las etiquetas como hallazgos morfológicos, tratar la familia BRUGADA como señal de triaje y no como diagnóstico automático, y asegurar que la CNN y los modelos de visión y lenguaje reciban la misma imagen objetivo junto con el mismo número de ejemplos \(K\). La comparación se centra en el uso de esos ejemplos, ya que la CNN los emplea para actualizar sus pesos, mientras que el modelo de visión y lenguaje los recibe como demostraciones dentro del contexto.
 
-La separación por pacientes no puede evaluarse en el conjunto sintético porque cada imagen se genera de forma independiente. En datos reales será obligatoria para impedir que registros de una misma persona aparezcan en entrenamiento y test. También será necesario preservar la escala o documentar cualquier normalización.
+La separación por pacientes no puede evaluarse en el conjunto sintético porque cada imagen se genera de forma independiente, pero en datos reales es obligatoria para impedir que registros de una misma persona aparezcan en entrenamiento y test. También es necesario preservar la escala o documentar cualquier normalización.
 
-El rendimiento se analizará por etiqueta porque cada hallazgo ocupa una región distinta. La coincidencia exacta medirá si se recupera el conjunto completo. La sensibilidad y la especificidad mostrarán qué tipo de error domina. La medida F1 resumirá el equilibrio entre precisión y sensibilidad. Estas métricas serán idénticas para CNN y VLM/ICL, garantizando una comparación justa.
+El rendimiento se analiza por etiqueta cuando la tarea es morfológica, porque cada hallazgo ocupa una región distinta. En ese análisis, la coincidencia exacta mide si se recupera el conjunto completo, la sensibilidad y la especificidad muestran qué tipo de error domina, y la medida F1 resume el equilibrio entre precisión y sensibilidad. Estas métricas se usan de forma común en CNN y VLM/ICL, garantizando una comparación justa.
 
-Finalmente, cualquier conclusión sobre utilidad clínica quedará condicionada a una evaluación real. El dominio sintético responde preguntas sobre aprendibilidad, sensibilidad al contexto y comportamiento relativo de los modelos. No permite estimar por sí solo la seguridad de un sistema médico. La lectura clínica de los resultados debe interpretarse siempre dentro del circuito de triaje: priorización de revisión seguida de circuito diagnóstico completo cuando proceda.
+En consecuencia, las conclusiones sobre utilidad clínica solo podrían sostenerse tras una evaluación específica en datos reales y en un circuito asistencial definido. El dominio sintético permite estudiar aprendibilidad, sensibilidad al contexto y comportamiento relativo de los modelos, pero no estima por sí solo la seguridad de un sistema médico. La lectura clínica de los resultados debe interpretarse siempre dentro del circuito de triaje, con priorización de revisión y circuito diagnóstico completo cuando proceda.

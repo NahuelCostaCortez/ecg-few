@@ -3,215 +3,71 @@
 
 \section{Criterio de conservación}
 
-Los mensajes forman parte de la configuración experimental. Una modificación de una palabra puede alterar la respuesta de un modelo de visión y lenguaje. Por esta razón se conservan los textos completos, su ruta y la revisión del repositorio. Los listados siguientes reproducen la versión utilizada para preparar la campaña.
+Los mensajes forman parte del protocolo experimental. En un modelo de visión y lenguaje, cambios pequeños en instrucciones, orden o formato pueden modificar la respuesta. Por esa razón se conserva el contenido de los prompts y el esquema de salida exigido.
 
-\section{Mensaje de sistema}
-
-\textbf{Ruta:} \texttt{prompts/system/default.md}
+\section{Sistema para tarea morfológica}
 
 \begin{lstlisting}
-You are analyzing synthetic images of single ECG beats from a precordial-like lead.
-
-This is a visual morphology classification task. It is not a patient diagnosis.
-
-Use the waveform shown in the image as the only evidence. Follow the requested JSON schema exactly. Do not add explanations, markdown, or additional keys.
-
-Relevant terminology:
-
-- Q is the first negative deflection before any positive ventricular deflection.
-- R is the first positive ventricular deflection.
-- S is the negative deflection after R.
-- R prime is a second positive deflection after S.
-- The J point marks the transition from the end of the QRS complex to the ST segment.
-- The T wave follows the ST segment and represents ventricular repolarization.
+You are evaluating single-beat right precordial ECG images.
+Return only the requested JSON. Do not include prose, markdown, caveats, a
+diagnosis, or a clinical recommendation.
 \end{lstlisting}
 
-\section{Tarea multietiqueta mínima}
-
-\textbf{Ruta:} \texttt{prompts/multilabel/label\_only.md}
+\section{Tarea morfológica}
 
 \begin{lstlisting}
-Analyze this synthetic single-beat ECG image.
+Analyze this single-beat right precordial ECG image from lead {lead}.
 
-Decide whether each visual morphology finding is present:
-
-- RBBB
-- ST_ELEVATION
-- T_WAVE_INVERSION
-
-Return only valid JSON with boolean values for exactly these keys:
-
-{
-  "RBBB": true,
-  "ST_ELEVATION": false,
-  "T_WAVE_INVERSION": false
-}
-\end{lstlisting}
-
-\section{Tarea multietiqueta descrita}
-
-\textbf{Ruta:} \texttt{prompts/multilabel/morphology\_described.md}
-
-\begin{lstlisting}
-Analyze this synthetic single-beat ECG image.
-
-Evaluate these visual morphology findings.
+Evaluate these morphology findings independently:
 
 RBBB:
-
-- Look for an RSR prime pattern with an initial positive R wave, a negative S wave, and a distinct second positive peak.
-- The second positive peak should occur late in the QRS region.
-- The terminal positive component should be visibly broad rather than a narrow isolated spike.
+  - terminal RSR' or rSr' morphology in the QRS complex
+  - delayed terminal right-precordial activation compatible with right bundle branch block
 
 ST_ELEVATION:
-
-- The ST region begins after the QRS complex at the J point and ends before the T wave.
-- In the absence of elevation, this region remains close to the baseline.
-- ST elevation is present when the trace remains visibly above the baseline after the QRS complex.
-- The elevated region may be smooth, concave, convex, or coved.
+  - J-point or ST segment remains elevated above the baseline after the QRS complex
+  - coved, convex, or saddleback elevation can count when visually present
 
 T_WAVE_INVERSION:
-
-- The T wave follows the ST region.
-- An upright T wave forms a positive late deflection.
-- T wave inversion is present when the late repolarization wave forms a sustained negative deflection below the baseline.
+  - the T wave after the ST segment is predominantly negative below baseline
 
 Return only valid JSON with boolean values for exactly these keys:
 
 {
   "RBBB": true,
-  "ST_ELEVATION": false,
-  "T_WAVE_INVERSION": false
-}
-\end{lstlisting}
-
-\section{Consultas binarias}
-
-\subsection{RBBB}
-
-\textbf{Ruta:} \texttt{prompts/binary/rbbb.md}
-
-\begin{lstlisting}
-Analyze this synthetic single-beat ECG image.
-
-Finding: RBBB.
-
-Operational visual definition:
-
-- Look for an RSR prime pattern with an initial positive R wave, a negative S wave, and a distinct second positive peak.
-- The second positive peak should occur late in the QRS region.
-- The terminal positive component should be visibly broad rather than a narrow isolated spike.
-
-Question: Is the RBBB morphology present?
-
-Return only valid JSON:
-
-{
-  "finding": "RBBB",
-  "present": true
-}
-
-Use `false` instead of `true` when the finding is absent.
-\end{lstlisting}
-
-\subsection{Elevación de ST}
-
-\textbf{Ruta:} \texttt{prompts/binary/st\_elevation.md}
-
-\begin{lstlisting}
-Analyze this synthetic single-beat ECG image.
-
-Finding: ST_ELEVATION.
-
-Operational visual definition:
-
-- The ST region begins after the QRS complex at the J point and ends before the T wave.
-- In the absence of elevation, this region remains close to the baseline.
-- ST elevation is present when the trace remains visibly above the baseline after the QRS complex.
-- The elevated region may be smooth, concave, convex, or coved.
-
-Question: Is ST_ELEVATION present?
-
-Return only valid JSON:
-
-{
-  "finding": "ST_ELEVATION",
-  "present": true
-}
-
-Use `false` instead of `true` when the finding is absent.
-\end{lstlisting}
-
-\subsection{Inversión de la onda T}
-
-\textbf{Ruta:} \texttt{prompts/binary/t\_wave\_inversion.md}
-
-\begin{lstlisting}
-Analyze this synthetic single-beat ECG image.
-
-Finding: T_WAVE_INVERSION.
-
-Operational visual definition:
-
-- The T wave follows the ST region.
-- An upright T wave forms a positive late deflection.
-- T wave inversion is present when the late repolarization wave forms a sustained negative deflection below the baseline.
-
-Question: Is T_WAVE_INVERSION present?
-
-Return only valid JSON:
-
-{
-  "finding": "T_WAVE_INVERSION",
-  "present": true
-}
-
-Use `false` instead of `true` when the finding is absent.
-\end{lstlisting}
-
-\section{Ejemplos de respuestas}
-
-Una respuesta multietiqueta válida contiene exactamente tres booleanos:
-
-\begin{lstlisting}
-{
-  "RBBB": true,
   "ST_ELEVATION": true,
-  "T_WAVE_INVERSION": false
+  "T_WAVE_INVERSION": true
 }
 \end{lstlisting}
 
-El siguiente contenido es JSON válido, pero no cumple el esquema porque incorpora una clave adicional:
+\section{Sistema para tarea clínica}
 
 \begin{lstlisting}
-{
-  "RBBB": true,
-  "ST_ELEVATION": true,
-  "T_WAVE_INVERSION": false,
-  "explanation": "The trace is elevated."
-}
+You are evaluating right precordial ECG beat images from one patient.
+Return only the requested JSON. Do not include prose, markdown, caveats,
+a diagnosis, or a clinical recommendation.
+
+The label is a research reference for suspected Brugada triage. It must not be
+used as an autonomous diagnosis.
 \end{lstlisting}
 
-La respuesta siguiente tampoco es admisible porque utiliza cadenas en lugar de booleanos:
+\section{Tarea clínica directa}
 
 \begin{lstlisting}
+Analyze this single right precordial ECG beat image from one patient.
+
+Decide whether the patient is clinically compatible with the Brugada-positive
+reference used in this study.
+
+Return only valid JSON with exactly this key:
+
 {
-  "RBBB": "true",
-  "ST_ELEVATION": "false",
-  "T_WAVE_INVERSION": "false"
+  "clinical_brugada": true
 }
 \end{lstlisting}
-
-En la tarea binaria, el nombre del hallazgo debe coincidir con la consulta. Una respuesta con \texttt{finding} distinto se registra como error aunque el booleano sea correcto.
 
 \section{Construcción del contexto}
 
-Para \(K>0\), cada demostración contiene el mensaje de tarea, una imagen y la respuesta correcta. Las demostraciones se seleccionan una vez por ejecución y se reutilizan para todas las imágenes objetivo. Los identificadores quedan almacenados en el fichero de predicciones.
+En zero-shot no se añaden demostraciones. El modelo recibe el mensaje de sistema, la tarea y la imagen objetivo. En ICL normal, cada demostración contiene una imagen y la respuesta JSON correcta, sin forzar explícitamente la proporción de clases. En ICL balanceado, la selección intenta incluir pacientes positivos y negativos siempre que el pliegue lo permita. En ambos casos, el contexto nunca incluye el paciente reservado para test.
 
-El control de respuestas permutadas reasigna las soluciones entre demostraciones. El control de demostraciones sin imagen conserva el texto y la respuesta, pero retira la entrada visual de cada ejemplo. La imagen objetivo nunca se retira.
-
-\section{Análisis de la salida}
-
-El servidor recibe un esquema JSON cuando admite \texttt{json\_schema}. El texto devuelto se valida de nuevo mediante modelos Pydantic. Se conservan el texto original, la predicción analizada, la latencia, el uso informado y cualquier excepción.
-
-El análisis principal no elimina silenciosamente las respuestas fallidas. Una campaña puede calcular un análisis secundario sobre respuestas válidas, pero debe informar también la tasa de error y considerar los fallos como predicciones incorrectas en la comparación principal.
+Las respuestas se validan de forma estricta. Una salida con claves ausentes, claves adicionales, texto libre o tipos incorrectos se registra como fallo de formato. En la evaluación final, la tasa de JSON inválido fue 0, por lo que las diferencias de rendimiento proceden de las decisiones del modelo y no de errores sintácticos.

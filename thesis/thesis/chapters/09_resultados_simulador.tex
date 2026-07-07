@@ -1,0 +1,144 @@
+\chapter{Resultados sintéticos}
+\label{chap:comparacion_simulador}
+
+El simulador QRS/ST es el dominio controlado del estudio. La etiqueta positiva está definida por construcción: RBBB, elevación ST e inversión de T deben aparecer simultáneamente. Por tanto, este capítulo no pretende demostrar utilidad clínica, sino comprobar si los dos enfoques recuperan una regla visual conocida cuando el ECG se representa como imagen.
+
+La lectura se organiza de forma paralela a la evaluación real. Primero se presentan los resultados de la CNN, después Gemma~4 con aprendizaje en contexto y, finalmente, la comparación directa entre ambos enfoques. Las tablas del cuerpo recogen los puntos principales. Las tablas completas por \(K\) quedan en el apéndice~\ref{app:resultados}.
+
+\section{CNN en el simulador}
+
+La CNN aprende de forma progresiva a medida que aumenta \(K\). Con pocos ejemplos ya supera el azar, pero el salto más claro aparece cuando el entrenamiento dispone de 16 o 32 pacientes etiquetados por pliegue.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{rrrrrr}
+    \toprule
+    \(K\) & BA & F1 & Sens. & Esp. & ROC AUC \\
+    \midrule
+    2  & \(0,625 \pm 0,022\) & 0,401 & 0,650 & 0,600 & 0,520 \\
+    4  & \(0,631 \pm 0,042\) & 0,407 & 0,617 & 0,646 & 0,566 \\
+    8  & \(0,685 \pm 0,023\) & 0,468 & 0,683 & 0,688 & 0,629 \\
+    16 & \(0,773 \pm 0,013\) & 0,569 & 0,800 & 0,746 & 0,755 \\
+    32 & \(0,848 \pm 0,030\) & 0,673 & 0,883 & 0,812 & 0,857 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Resultados CNN ResNet18 sobre el conjunto sintético QRS/ST. Las cifras son medias sobre tres semillas.}
+  \label{tab:resultados_sinteticos_finales}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.82\textwidth]{results/cnn_simulator_qrs_balanced_accuracy_by_k.png}
+  \caption{Exactitud equilibrada de la CNN sobre el conjunto sintético según \(K\). Los puntos muestran la media de tres semillas y las barras la desviación estándar.}
+  \label{fig:cnn_simulator_ba}
+\end{figure}
+
+El mejor punto de la CNN aparece en \(K=32\), con 0,848 de exactitud equilibrada, sensibilidad 0,883 y especificidad 0,812. La matriz agregada de ese punto contiene 53 verdaderos positivos, 195 verdaderos negativos, 45 falsos positivos y 7 falsos negativos.
+
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.58\textwidth]{results/cnn_simulator_qrs_k32_confusion_matrix.png}
+  \caption{Matriz de confusión agregada de la CNN en el conjunto sintético para \(K=32\), acumulando las tres semillas.}
+  \label{fig:cnn_simulator_confusion}
+\end{figure}
+
+\section{VLM e ICL en el simulador}
+
+Gemma~4 parte de una condición zero-shot poco útil para esta tarea. Predice todos los casos como negativos y obtiene una exactitud equilibrada de 0,500. Al añadir demostraciones, el comportamiento cambia de forma clara: el modelo empieza a recuperar positivos y la exactitud equilibrada sube hasta valores propios de un clasificador visual razonable, aunque por debajo del mejor punto de la CNN.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{0.94\textwidth}{p{3.6cm}rrrrr}
+    \toprule
+    Condición & \(K\) & BA & F1 & Sens. & Esp. \\
+    \midrule
+    Zero-shot & 0  & 0,500 & 0,000 & 0,000 & 1,000 \\
+    ICL normal & 16 & 0,750 & 0,529 & 0,817 & 0,683 \\
+    ICL balanceado & 8  & 0,754 & 0,511 & 0,950 & 0,558 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Puntos principales de Gemma~4 en el simulador QRS/ST. Las cifras son medias sobre tres semillas.}
+  \label{tab:vlm_simulador_key}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \safeincludegraphics[width=\textwidth]{results/vlm_simulator_qrs_ba_by_k.png}
+    \caption{Exactitud equilibrada.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \safeincludegraphics[width=\textwidth]{results/vlm_simulator_qrs_f1_by_k.png}
+    \caption{F1.}
+  \end{subfigure}
+  \caption{Curvas VLM/ICL de Gemma~4 en el simulador QRS/ST. Los puntos muestran la media de tres semillas y las barras la desviación estándar.}
+  \label{fig:vlm_simulator_curves}
+\end{figure}
+
+El ICL normal alcanza su mejor punto en \(K=16\), con 0,750 de exactitud equilibrada. El ICL balanceado obtiene el máximo VLM con 0,754 en \(K=8\). La diferencia entre ambos no está solo en la métrica principal: el contexto balanceado aumenta mucho la sensibilidad, pero paga ese aumento con menor especificidad.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.42\textwidth}
+    \centering
+    \safeincludegraphics[width=\textwidth]{results/vlm_simulator_qrs_normal_k16_confusion_matrix.png}
+    \caption{ICL normal, \(K=16\).}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.42\textwidth}
+    \centering
+    \safeincludegraphics[width=\textwidth]{results/vlm_simulator_qrs_balanced_k8_confusion_matrix.png}
+    \caption{ICL balanceado, \(K=8\).}
+  \end{subfigure}
+  \caption{Matrices de confusión agregadas de Gemma~4 en el simulador para los dos puntos principales de ICL, acumulando las tres semillas.}
+  \label{fig:vlm_simulator_confusions}
+\end{figure}
+
+\section{Comparación entre enfoques}
+
+La comparación directa muestra una lectura equilibrada. En el simulador, la CNN aprovecha mejor el aumento de ejemplos y alcanza el mejor rendimiento global. El VLM, sin entrenar pesos, transforma una condición zero-shot inútil en un clasificador razonable cuando recibe demostraciones.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabularx}{\textwidth}{p{4.2cm}p{1.4cm}rrrr}
+    \toprule
+    Método & \(K\) & BA & F1 & Sens. & Esp. \\
+    \midrule
+    CNN ResNet18 & 32 & 0,848 & 0,673 & 0,883 & 0,812 \\
+    Gemma~4 zero-shot & 0 & 0,500 & 0,000 & 0,000 & 1,000 \\
+    Gemma~4 ICL normal & 16 & 0,750 & 0,529 & 0,817 & 0,683 \\
+    Gemma~4 ICL balanceado & 8 & 0,754 & 0,511 & 0,950 & 0,558 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Comparación principal en el simulador QRS/ST.}
+  \label{tab:comparacion_simulador}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \safeincludegraphics[width=\textwidth]{results/comparison_simulator_ba_by_k.png}
+    \caption{Exactitud equilibrada.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \safeincludegraphics[width=\textwidth]{results/comparison_simulator_f1_by_k.png}
+    \caption{F1.}
+  \end{subfigure}
+  \caption{Comparación gráfica entre CNN, ICL normal e ICL balanceado en el simulador QRS/ST. Las curvas usan las mismas métricas y los mismos valores de \(K\) para los tres enfoques.}
+  \label{fig:comparacion_simulador_curvas}
+\end{figure}
+
+La CNN demuestra que, cuando la tarea está bien alineada con la imagen y hay suficientes ejemplos por pliegue, el entrenamiento supervisado extrae una señal estable. Por su parte, el VLM muestra que, incluso sin ajuste de pesos, las demostraciones visuales pueden desplazar la relación entre sensibilidad y especificidad. En un escenario de pocos datos, esta propiedad plantea una vía intermedia entre zero-shot y entrenamiento completo, con menor necesidad de adaptar el modelo a cada conjunto local.
+
+\section{Lectura del dominio sintético}
+
+El resultado del simulador es favorable para ambos enfoques, aunque con ventaja cuantitativa para la CNN. No debe trasladarse directamente a clínica. El simulador es limpio, sus etiquetas están separadas por diseño y sus imágenes no incluyen toda la variabilidad de un ECG real. Su valor está en mostrar que la formulación visual funciona y en ofrecer un punto de comparación controlado para interpretar después la adaptación al dominio clínico.

@@ -14,14 +14,10 @@
 \setcounter{page}{1}
 \input{frontmatter/resumen}
 \input{frontmatter/abstract}
+\input{frontmatter/glosario}
 
+\setcounter{tocdepth}{2}
 \tableofcontents
-\clearpage
-\vspace*{1.2cm}
-{\let\clearpage\relax\listoffigures}
-\clearpage
-\vspace*{1.2cm}
-{\let\clearpage\relax\listoftables}
 
 \cleardoublepage
 \pagenumbering{arabic}
@@ -33,19 +29,29 @@
 \include{chapters/04_diseno_experimental}
 \include{chapters/05_simulador}
 \include{chapters/06_modelos}
-\include{chapters/07_resultados_sinteticos}
-\include{chapters/08_datos_reales}
-\include{chapters/09_vlm_icl}
-\include{chapters/10_gestion_etica}
+\include{chapters/07_cnn_resultados}
+\include{chapters/08_icl_resultados}
+\include{chapters/09_resultados_simulador}
+\include{chapters/10_resultados_reales}
 \include{chapters/11_conclusiones}
+\include{chapters/12_gestion_etica}
 
 \appendix
 \renewcommand{\chaptername}{Apéndice}
 \include{appendices/A_configuracion}
 \include{appendices/B_resultados}
 \include{appendices/C_prompts}
-\include{appendices/D_reproduccion}
 
 \input{references}
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Índice de figuras}
+\listoffigures
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Índice de tablas}
+\listoftables
 
 \end{document}

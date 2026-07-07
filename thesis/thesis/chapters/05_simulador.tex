@@ -1,9 +1,9 @@
-\chapter{Simulador y conjunto de datos sintético}
+\chapter{El simulador QRS/ST}
 \label{chap:simulador}
 
 \section{Objetivo del dominio sintético}
 
-La disponibilidad de datos sintéticos permite estudiar una pregunta metodológica sin esperar a reunir una cohorte clínica extensa. En este trabajo el simulador actúa como un laboratorio controlado. Cada beat se construye a partir de componentes interpretables, se valida mediante reglas explícitas y se transforma en una imagen que puede entregarse tanto a una CNN como a un modelo de visión y lenguaje.
+La disponibilidad de datos sintéticos permite estudiar una pregunta metodológica sin esperar a reunir una colección clínica extensa. En este trabajo el simulador actúa como un laboratorio controlado. Cada beat se construye a partir de componentes interpretables, se valida mediante reglas explícitas y se transforma en una imagen que puede entregarse tanto a una CNN como a un modelo de visión y lenguaje.
 
 El objetivo no es reproducir toda la fisiología cardíaca. Un simulador clínicamente exhaustivo tendría que modelar varias derivaciones, cambios de frecuencia, interacción entre ciclos, conducción auricular y ventricular, ruido de adquisición, variación anatómica y efectos del dispositivo. El sistema implementado reduce el problema a un único beat de apariencia precordial derecha. Esta simplificación permite controlar tres hallazgos visuales que intervienen en la motivación del proyecto.
 
@@ -12,7 +12,7 @@ El uso de datos sintéticos cumple cuatro funciones:
 \begin{enumerate}
 \item Generar etiquetas sin depender de anotación manual para cada imagen.
 \item Separar la forma de una onda de factores externos como fabricante, hospital o estilo de documento.
-\item Construir presupuestos de ejemplos con tamaños exactos y semillas conocidas.
+\item Construir conjuntos de ejemplos con tamaños exactos y semillas conocidas.
 \item Reservar una familia generadora compuesta para estudiar transferencia.
 \end{enumerate}
 
@@ -169,7 +169,7 @@ El muestreo independiente de los átomos puede producir órdenes temporales inco
 
 Estas reglas no garantizan fisiología. Garantizan una geometría mínima para que cada parámetro conserve una interpretación. Las reglas específicas de una familia refuerzan relaciones adicionales, como la posición tardía de R prima o el signo negativo de T.
 
-Modificar una regla puede tener efectos indirectos. Mover T1 cambia el resultado del validador de inversión y también puede alterar la media tardía del ST. Por eso cada cambio debe acompañarse de una nueva generación de ejemplos, un análisis de frecuencias y una comprobación de aceptación.
+Modificar una regla puede tener efectos indirectos. Mover T1 cambia el resultado del validador de inversión y también puede alterar la media tardía del ST. Cada cambio debe acompañarse, por tanto, de una nueva generación de ejemplos, un análisis de frecuencias y una comprobación de aceptación.
 
 \section{Muestreo con rechazo}
 
@@ -231,7 +231,7 @@ Las tres etiquetas finales se calculan de forma independiente. Para una señal a
 
 Cada beat se representa sobre un lienzo cuadrado. La configuración final guarda imágenes de 896 por 896 píxeles a 130 puntos por pulgada. El eje horizontal utiliza una cuadrícula menor cada 40 ms y una cuadrícula mayor cada 200 ms. El eje vertical utiliza divisiones menores de 0,1 mV y mayores de 0,5 mV. La señal se dibuja en negro con un grosor de dos puntos y la cuadrícula en rosa con dos intensidades.
 
-El renderizado conserva títulos de ejes y valores numéricos. Estos elementos aportan información de escala, pero también pueden transformarse en atajos si los límites cambian entre muestras. Por ese motivo, los límites horizontal y vertical se fijan para todas las imágenes de la campaña final. La inspección visual verifica que ninguna familia posee un encuadre, margen o patrón de marcas propio.
+El renderizado conserva títulos de ejes y valores numéricos. Estos elementos aportan información de escala, pero también pueden transformarse en atajos si los límites cambian entre muestras. Por ese motivo, los límites horizontal y vertical se fijan para todas las imágenes del experimento final. La inspección visual verifica que ninguna familia posee un encuadre, margen o patrón de marcas propio.
 
 No se aplicarán reflejos horizontales. Invertir el eje temporal cambiaría el orden fisiológico de las ondas. Tampoco se aplicarán reflejos verticales, ya que intercambiarían elevación y depresión. Las transformaciones visuales admisibles deben conservar la semántica, como pequeñas variaciones de grosor, contraste, desplazamiento y escala dentro de límites conocidos.
 
@@ -244,67 +244,17 @@ No se aplicarán reflejos horizontales. Invertir el eje temporal cambiaría el o
 
 \section{Construcción del conjunto de datos}
 
-El constructor crea primero un ejemplo de verificación por familia. Después genera el número solicitado de beats y asigna una semilla independiente a cada muestra. Finalmente crea las particiones y guarda las imágenes.
+La generación del conjunto sintético parte de las familias definidas y asigna a cada muestra una semilla propia. Una vez aceptadas las señales, se crean las particiones de entrenamiento, validación y prueba y se guardan las imágenes junto con el manifiesto correspondiente.
 
-Cada fila del manifiesto contiene:
-
-\begin{itemize}
-\item ruta relativa de la imagen
-\item nombre de la partición
-\item familia generadora
-\item semilla de la muestra
-\item número de intento de aceptación
-\item subtipo cuando corresponde
-\item índice interno
-\item tres columnas binarias de etiquetas
-\end{itemize}
-
-Además se genera un esquema de etiquetas y un resumen con frecuencias por partición, familia, etiqueta y combinación. Los manifiestos CSV permiten entrenar modelos visuales sin depender de la estructura de carpetas. Los ficheros JSON conservan información para auditoría y generación de informes.
-
-\begin{table}[H]
-\centering
-\footnotesize
-\begin{tabularx}{\textwidth}{p{2.9cm} p{1.25cm} p{4.4cm} X}
-\toprule
-\textbf{Elemento} & \textbf{Total} & \textbf{Organización} & \textbf{Finalidad} \\
-\midrule
-Pacientes simulados & 100 & 20 por familia fuente & Construir una cohorte equilibrada por mecanismo generador \\
-Imágenes & 300 & Beat central en V1, V2 y V3 & Mismo formato visual que los datos reales \\
-Pliegues LOOCV & 100 & Un paciente reservado por pliegue & Medir rendimiento agregado por paciente \\
-Presupuestos \(K\) & 5 & 2, 4, 8, 16 y 32 ejemplos & Estudiar aprendizaje supervisado con pocos datos \\
-\bottomrule
-\end{tabularx}
-\caption{Configuración final del conjunto sintético QRS/ST}
-\label{tab:config_dataset}
-\end{table}
+Cada muestra queda asociada a su imagen, partición, familia generadora, semilla, subtipo cuando procede, número de intento e índices internos, junto con las etiquetas binarias correspondientes. Además, se guardan ficheros auxiliares con el esquema de etiquetas y resúmenes de frecuencia por partición, familia y combinación de clases. De este modo, el entrenamiento puede realizarse directamente desde los manifiestos CSV, sin depender de la organización física de las carpetas, y los ficheros JSON quedan como apoyo para revisar el proceso o elaborar resultados.
 
 \section{Comprobación de integración}
 
 La configuración final se ejecutó para generar 100 pacientes sintéticos, 300 imágenes, pliegues LOOCV y resúmenes de etiquetas. El conjunto contiene 20 pacientes con los tres hallazgos presentes y 80 pacientes normales o incompletos. Las combinaciones observadas incluyen NORMAL, RBBB, RBBB+ST, RBBB+ST+TWI, RBBB+TWI y TWI.
 
-Esta comprobación no se limita a una prueba de humo: es el conjunto utilizado en la campaña CNN sintética. Su objetivo es verificar que la ruta de generación, aceptación, partición y escritura funciona correctamente y que el conjunto final conserva variabilidad suficiente para estudiar la curva por \(K\).
+El conjunto generado constituye la base de la evaluación sintética posterior. La comprobación de integración confirma que la generación de señales, la aceptación por validadores, la partición por paciente y la escritura de manifiestos producen un artefacto experimental reutilizable. La presencia de varias combinaciones de etiquetas permite estudiar la evolución del rendimiento al variar \(K\) sin reducir la tarea a una separación trivial entre normalidad y un único patrón patológico.
 
-La inspección visual mostró que las familias pueden compartir etiquetas. Una muestra de elevación del ST puede satisfacer además el validador RBBB. Una muestra generada como inversión de T puede presentar una segunda deflexión positiva terminal. Este comportamiento confirma que el problema no es una clasificación encubierta de cinco carpetas.
-
-\section{Control de calidad del simulador}
-
-La validación del conjunto sintético se organiza en cuatro niveles.
-
-\subsection{Nivel estructural}
-
-Se comprueba que cada señal tiene 450 muestras, que sus valores son finitos y que las imágenes tienen dimensiones constantes. Los manifiestos deben contener todas las rutas y no puede haber duplicados entre pliegues de evaluación.
-
-\subsection{Nivel semántico}
-
-Se recalculan las etiquetas directamente desde la señal cuando esta se conserva. Los valores de los validadores se comparan con las columnas del manifiesto. La familia normal debe tener el vector vacío. La familia Brugada debe superar su regla interna aunque su vector final pueda contener una combinación parcial.
-
-\subsection{Nivel distribucional}
-
-Se analizan las frecuencias de cada etiqueta y de cada combinación. Un balance perfecto por familia no implica balance por etiqueta. Si una combinación domina el conjunto, la macro \(F_1\) puede ocultar que el modelo utiliza coocurrencias. Se revisarán matrices entre familia y etiqueta, distribuciones de intentos y rangos de amplitud.
-
-\subsection{Nivel visual}
-
-Se generan paneles sin intervención del modelo. La revisión busca ondas truncadas, escalas diferentes, textos que revelen la clase, cuadrículas inconsistentes, trazos fuera del lienzo y formas que no se correspondan con sus métricas. Una muestra que pasa reglas numéricas pero resulta visualmente inverosímil debe motivar una revisión del generador.
+La revisión de los ejemplos generados confirma que la familia de origen y las etiquetas finales cumplen funciones distintas. Una familia modifica los rangos de muestreo para favorecer una morfología concreta, pero los validadores se aplican después sobre la señal resultante. Por eso una señal orientada a elevación del ST puede activar también RBBB, y una señal con inversión de T puede conservar una deflexión terminal compatible con otros hallazgos. La tarea experimental queda definida por los rasgos detectados en la señal, no por el nombre de la familia que inició la generación.
 
 \begin{figure}[H]
   \centering
@@ -327,6 +277,6 @@ El simulador representa un beat aislado y una geometría semejante a una derivac
 
 La forma de cada onda se construye con gaussianas. Esta elección produce curvas suaves y puede simplificar bordes que en un ECG real son más irregulares. Los validadores se basan en ventanas y umbrales creados para este dominio. Una señal clínica no debe procesarse con ellos como si fueran reglas diagnósticas.
 
-La familia Brugada es una aproximación a una morfología coved. No representa la heterogeneidad del síndrome, la variación entre derivaciones ni la posibilidad de patrones intermitentes. Su uso se limita a estudiar composición visual de los tres hallazgos.
+En la familia Brugada se modela de forma simplificada una elevación del ST con morfología convexa, asociada al patrón de Brugada tipo 1. No representa la heterogeneidad del síndrome, la variación entre derivaciones ni la posibilidad de patrones intermitentes. Su uso se limita a estudiar la composición visual de los tres hallazgos.
 
 Estas limitaciones no invalidan el laboratorio sintético. Delimitan qué afirmaciones puede sostener. El dominio permite comparar eficiencia de ejemplos bajo condiciones controladas. La validez clínica dependerá de la evaluación externa descrita en el capítulo de datos reales.
