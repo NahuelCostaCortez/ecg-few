@@ -1,11 +1,14 @@
-\chapter{Resultados sintéticos}
+\chapter{Resultados}
+\label{chap:resultados}
+
+\section{Dominio sintético}
 \label{chap:comparacion_simulador}
 
-El simulador QRS/ST es el dominio controlado del estudio. La etiqueta positiva está definida por construcción: RBBB, elevación ST e inversión de T deben aparecer simultáneamente. Por tanto, este capítulo no pretende demostrar utilidad clínica, sino comprobar si los dos enfoques recuperan una regla visual conocida cuando el ECG se representa como imagen.
+El simulador QRS/ST actúa como dominio sintético del estudio y permite evaluar una regla morfológica explícita antes de pasar a los ECG reales. En esta tarea, un caso se considera positivo solo cuando aparecen a la vez tres hallazgos visuales: morfología compatible con RBBB, elevación del segmento ST e inversión de la onda T. Por ejemplo, una imagen con elevación ST e inversión de T, pero sin morfología compatible con RBBB, se mantiene como negativa. Este apartado no pretende demostrar utilidad clínica directa, sino comprobar si la CNN y el VLM con ICL identifican una combinación visual definida cuando el ECG se representa como imagen.
 
 La lectura se organiza de forma paralela a la evaluación real. Primero se presentan los resultados de la CNN, después Gemma~4 con aprendizaje en contexto y, finalmente, la comparación directa entre ambos enfoques. Las tablas del cuerpo recogen los puntos principales. Las tablas completas por \(K\) quedan en el apéndice~\ref{app:resultados}.
 
-\section{CNN en el simulador}
+\subsection{CNN}
 
 La CNN aprende de forma progresiva a medida que aumenta \(K\). Con pocos ejemplos ya supera el azar, pero el salto más claro aparece cuando el entrenamiento dispone de 16 o 32 pacientes etiquetados por pliegue.
 
@@ -43,7 +46,7 @@ El mejor punto de la CNN aparece en \(K=32\), con 0,848 de exactitud equilibrada
   \label{fig:cnn_simulator_confusion}
 \end{figure}
 
-\section{VLM e ICL en el simulador}
+\subsection{VLM con ICL}
 
 Gemma~4 parte de una condición zero-shot poco útil para esta tarea. Predice todos los casos como negativos y obtiene una exactitud equilibrada de 0,500. Al añadir demostraciones, el comportamiento cambia de forma clara: el modelo empieza a recuperar positivos y la exactitud equilibrada sube hasta valores propios de un clasificador visual razonable, aunque por debajo del mejor punto de la CNN.
 
@@ -99,7 +102,7 @@ El ICL normal alcanza su mejor punto en \(K=16\), con 0,750 de exactitud equilib
   \label{fig:vlm_simulator_confusions}
 \end{figure}
 
-\section{Comparación entre enfoques}
+\subsection{Comparación entre enfoques}
 
 La comparación directa muestra una lectura equilibrada. En el simulador, la CNN aprovecha mejor el aumento de ejemplos y alcanza el mejor rendimiento global. El VLM, sin entrenar pesos, transforma una condición zero-shot inútil en un clasificador razonable cuando recibe demostraciones.
 
@@ -139,6 +142,6 @@ La comparación directa muestra una lectura equilibrada. En el simulador, la CNN
 
 La CNN demuestra que, cuando la tarea está bien alineada con la imagen y hay suficientes ejemplos por pliegue, el entrenamiento supervisado extrae una señal estable. Por su parte, el VLM muestra que, incluso sin ajuste de pesos, las demostraciones visuales pueden desplazar la relación entre sensibilidad y especificidad. En un escenario de pocos datos, esta propiedad plantea una vía intermedia entre zero-shot y entrenamiento completo, con menor necesidad de adaptar el modelo a cada conjunto local.
 
-\section{Lectura del dominio sintético}
+El resultado del dominio sintético es favorable para ambos enfoques, aunque con ventaja cuantitativa para la CNN. No debe trasladarse directamente a clínica. El simulador es limpio, sus etiquetas están delimitadas por reglas y sus imágenes no incluyen toda la variabilidad de un ECG real. Su valor está en mostrar que la formulación visual funciona y en ofrecer un punto de comparación definido para interpretar después la adaptación al dominio clínico.
 
-El resultado del simulador es favorable para ambos enfoques, aunque con ventaja cuantitativa para la CNN. No debe trasladarse directamente a clínica. El simulador es limpio, sus etiquetas están separadas por diseño y sus imágenes no incluyen toda la variabilidad de un ECG real. Su valor está en mostrar que la formulación visual funciona y en ofrecer un punto de comparación controlado para interpretar después la adaptación al dominio clínico.
+\input{chapters/10_resultados_reales}

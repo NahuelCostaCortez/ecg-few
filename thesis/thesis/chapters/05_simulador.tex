@@ -3,9 +3,9 @@
 
 \section{Objetivo del dominio sintético}
 
-La disponibilidad de datos sintéticos permite estudiar una pregunta metodológica sin esperar a reunir una colección clínica extensa. En este trabajo el simulador actúa como un laboratorio controlado. Cada beat se construye a partir de componentes interpretables, se valida mediante reglas explícitas y se transforma en una imagen que puede entregarse tanto a una CNN como a un modelo de visión y lenguaje.
+La disponibilidad de datos sintéticos permite estudiar una pregunta metodológica sin esperar a reunir una colección clínica extensa. En este trabajo el simulador actúa como un laboratorio sintético. Cada beat se construye a partir de componentes interpretables, se valida mediante reglas explícitas y se transforma en una imagen que puede entregarse tanto a una CNN como a un modelo de visión y lenguaje.
 
-El objetivo no es reproducir toda la fisiología cardíaca. Un simulador clínicamente exhaustivo tendría que modelar varias derivaciones, cambios de frecuencia, interacción entre ciclos, conducción auricular y ventricular, ruido de adquisición, variación anatómica y efectos del dispositivo. El sistema implementado reduce el problema a un único beat de apariencia precordial derecha. Esta simplificación permite controlar tres hallazgos visuales que intervienen en la motivación del proyecto.
+El objetivo no es reproducir toda la fisiología cardíaca. Un simulador clínicamente exhaustivo tendría que modelar varias derivaciones, cambios de frecuencia, interacción entre ciclos, conducción auricular y ventricular, ruido de adquisición, variación anatómica y efectos del dispositivo. El sistema implementado reduce el problema a un único beat de apariencia precordial derecha. Esta simplificación permite parametrizar tres hallazgos visuales que intervienen en la motivación del proyecto.
 
 El uso de datos sintéticos cumple cuatro funciones:
 
@@ -16,7 +16,7 @@ El uso de datos sintéticos cumple cuatro funciones:
 \item Reservar una familia generadora compuesta para estudiar transferencia.
 \end{enumerate}
 
-La contrapartida es una brecha inevitable entre el dominio sintético y el real. El simulador puede demostrar que una tarea controlada es aprendible. No puede demostrar que el mismo rendimiento se mantenga en un ECG clínico. Esa distinción se conserva en toda la memoria.
+La contrapartida es una brecha inevitable entre el dominio sintético y el real. El simulador puede demostrar que una tarea definida por reglas es aprendible. No puede demostrar que el mismo rendimiento se mantenga en un ECG clínico. Esa distinción se conserva en toda la memoria.
 
 \section{Representación matemática}
 
@@ -40,7 +40,7 @@ x(t) =
 \label{eq:sum_gaussians}
 \end{equation}
 
-El signo de \(a_i\) controla la dirección de la deflexión. El valor absoluto de \(a_i\) controla su magnitud. El parámetro \(\mu_i\) desplaza el componente sobre el eje temporal y \(\sigma_i\) modifica su extensión. La suma permite formar transiciones suaves sin introducir discontinuidades.
+El signo de \(a_i\) define la dirección de la deflexión. El valor absoluto de \(a_i\) determina su magnitud. El parámetro \(\mu_i\) desplaza el componente sobre el eje temporal y \(\sigma_i\) modifica su extensión. La suma permite formar transiciones suaves sin introducir discontinuidades.
 
 La elección de gaussianas se inspira en modelos sintéticos previos que representan ondas electrocardiográficas mediante componentes paramétricos \cite{sayadi2010}. El presente simulador es más sencillo que un modelo dinámico electrofisiológico. Su ventaja es la capacidad de relacionar cada modificación con una región visual concreta.
 
@@ -279,4 +279,4 @@ La forma de cada onda se construye con gaussianas. Esta elección produce curvas
 
 En la familia Brugada se modela de forma simplificada una elevación del ST con morfología convexa, asociada al patrón de Brugada tipo 1. No representa la heterogeneidad del síndrome, la variación entre derivaciones ni la posibilidad de patrones intermitentes. Su uso se limita a estudiar la composición visual de los tres hallazgos.
 
-Estas limitaciones no invalidan el laboratorio sintético. Delimitan qué afirmaciones puede sostener. El dominio permite comparar eficiencia de ejemplos bajo condiciones controladas. La validez clínica dependerá de la evaluación externa descrita en el capítulo de datos reales.
+Estas limitaciones no invalidan el laboratorio sintético. Delimitan qué afirmaciones puede sostener. El dominio permite comparar eficiencia de ejemplos bajo condiciones sintéticas. La validez clínica dependerá de la evaluación externa descrita en el capítulo de datos reales.

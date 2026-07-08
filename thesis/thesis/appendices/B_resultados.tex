@@ -1,7 +1,7 @@
 \chapter{Resultados completos}
 \label{app:resultados}
 
-Este apéndice reúne las tablas de resultados agregadas utilizadas en los capítulos \ref{chap:comparacion_simulador} y \ref{chap:comparacion_real}. Todas las cifras son medias sobre tres semillas salvo los recuentos, que acumulan las predicciones de las tres ejecuciones.
+Este apéndice reúne las tablas de resultados agregadas utilizadas en el capítulo~\ref{chap:resultados}. Todas las cifras son medias sobre tres semillas salvo los recuentos, que acumulan las predicciones de las tres ejecuciones.
 
 \section{CNN en el conjunto sintético}
 
@@ -23,7 +23,7 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
   \label{tab:app_sintetico_completo}
 \end{table}
 
-\section{CNN en los datos cedidos por el HUCA}
+\section{CNN en los datos reales del HUCA}
 
 \begin{table}[H]
   \centering
@@ -39,7 +39,7 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
     32 & 0,461 & \(0,499 \pm 0,012\) & 0,466 & 0,366 & 0,644 & 0,355 & 0,423 \\
     \bottomrule
   \end{tabular}
-  \caption{Resultados completos de la CNN base sobre los datos cedidos por el HUCA.}
+  \caption{Resultados completos de la CNN base sobre los datos reales del HUCA.}
   \label{tab:app_huca_completo}
 \end{table}
 
@@ -83,15 +83,15 @@ Este apéndice reúne las tablas de resultados agregadas utilizadas en los capí
     DANN & 32 & 0,473 & \(0,509 \pm 0,028\) & 0,472 & 0,373 & 0,644 & 0,375 \\
     \bottomrule
   \end{tabular}
-  \caption{Resultados completos de adaptación de dominio sobre los datos cedidos por el HUCA.}
+  \caption{Resultados completos de adaptación de dominio sobre los datos reales del HUCA.}
   \label{tab:app_domain_completo}
 \end{table}
 
 \section{VLM/ICL}
 
-Se separan tres bloques. Simulador corresponde a la evaluación morfológica dentro del dominio sintético. Datos reales con contexto real corresponde a Gemma~4 sobre la imagen real V2 de cada paciente, usando demostraciones tomadas de la cohorte cedida por el HUCA y etiqueta clínica. Datos reales con contexto sintético corresponde al control de transferencia en el que las demostraciones proceden del simulador.
+Se separan tres grupos. Simulador corresponde a la evaluación morfológica dentro del dominio sintético. Datos reales con contexto real corresponde a Gemma~4 sobre la imagen real V1 de cada paciente, usando demostraciones tomadas de la cohorte real del HUCA y etiqueta clínica. Datos reales con contexto sintético corresponde al análisis de transferencia en el que las demostraciones proceden del simulador.
 
-También se generaron controles de robustez con etiquetas permutadas y demostraciones sin imagen de apoyo. Esos controles se conservan en los artefactos de ejecución, pero se mantienen fuera de la comparación principal para no mezclar controles metodológicos con las tres condiciones interpretables: zero-shot, ICL normal e ICL balanceado.
+También se generaron análisis de robustez con etiquetas permutadas y demostraciones sin imagen de apoyo. Esas pruebas se conservan en los artefactos de ejecución, pero se mantienen fuera de la comparación principal para no mezclarlas con las tres condiciones interpretables: zero-shot, ICL normal e ICL balanceado.
 
 \begin{table}[H]
   \centering
@@ -148,6 +148,6 @@ También se generaron controles de robustez con etiquetas permutadas y demostrac
     ICL balanceado & 32 & 0,505 & 0,022 & 0,011 & 0,998 \\
     \bottomrule
   \end{tabular}
-  \caption{Resultados VLM/ICL con contexto sintético del simulador y consulta sobre los datos reales cedidos por el HUCA. Las cifras son medias sobre tres semillas.}
+  \caption{Resultados VLM/ICL con contexto sintético del simulador y consulta sobre los datos reales del HUCA. Las cifras son medias sobre tres semillas.}
   \label{tab:app_vlm_huca_synthetic_context}
 \end{table}

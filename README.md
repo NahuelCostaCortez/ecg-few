@@ -257,8 +257,10 @@ scripts/run/run_all_vlm_experiments.sh
 Regeneración de figuras:
 
 ```bash
-python scripts/thesis/render_comparative_result_figures.py
+sh scripts/run/build_tfg_report_figures.sh
 ```
+
+Este script construye comparaciones derivadas bajo `reports/loocv`, renderiza las figuras finales del TFG y copia todas las figuras referenciadas por la memoria/README a `reports/tfg_figures`. En modo estricto falla si falta algun resumen o alguna figura.
 
 Validación rápida:
 

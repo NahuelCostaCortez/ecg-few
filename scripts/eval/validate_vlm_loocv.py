@@ -30,11 +30,12 @@ PERMUTED_CONDITION = "permuted"
 NO_SUPPORT_IMAGES_CONDITION = "no_support_images"
 MORPHOLOGY_TASK = "morphology"
 CLINICAL_TASK = "clinical"
+ONLY_LEAD = "V1"
 DEFAULT_MORPHOLOGY_SYSTEM_PROMPT = "prompts/system/qrs_huca.md"
 DEFAULT_MORPHOLOGY_PROMPT = "prompts/qrs/right_precordial_morphology.md"
 DEFAULT_CLINICAL_SYSTEM_PROMPT = "prompts/system/clinical_brugada_huca.md"
 DEFAULT_CLINICAL_PROMPT = "prompts/clinical/brugada_patient.md"
-DEFAULT_CLINICAL_LEADS = ("V1", "V2", "V3")
+DEFAULT_CLINICAL_LEADS = ("V1",)
 CLINICAL_AGGREGATIONS = {"majority", "any_positive", "all_positive"}
 ALL_CONDITIONS = {
     ZERO_SHOT_CONDITION,
@@ -60,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--control-k-values", default="8,16,32")
     parser.add_argument("--task", choices=(MORPHOLOGY_TASK, CLINICAL_TASK), default=MORPHOLOGY_TASK)
-    parser.add_argument("--clinical-lead", default="V2")
+    parser.add_argument("--clinical-lead", default="V1")
     parser.add_argument("--clinical-leads", default=",".join(DEFAULT_CLINICAL_LEADS))
     parser.add_argument("--clinical-aggregation", default="majority")
     parser.add_argument("--vlm-runtime", default=REMOTE_RUNTIME)
@@ -119,9 +120,9 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
     context_rows = []
     folds = []
     try:
-        rows = read_manifest(dataset_root / "labels" / "all_labels.csv")
+        rows = only_v1_rows(read_manifest(dataset_root / "labels" / "all_labels.csv"))
         context_rows = (
-            read_manifest(context_dataset_root / "labels" / "all_labels.csv")
+            only_v1_rows(read_manifest(context_dataset_root / "labels" / "all_labels.csv"))
             if has_context_dataset
             else rows
         )
@@ -291,7 +292,7 @@ def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
         for lead in parse_string_list(str(getattr(args, "clinical_leads", "")))
     ]
     if not leads:
-        leads = [str(getattr(args, "clinical_lead", "V2")).upper()]
+        leads = [str(getattr(args, "clinical_lead", "V1")).upper()]
     seen: set[str] = set()
     unique_leads: list[str] = []
     for lead in leads:
@@ -299,7 +300,13 @@ def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
             continue
         seen.add(lead)
         unique_leads.append(lead)
+    if unique_leads != [ONLY_LEAD]:
+        raise ValueError("This pipeline is configured to use V1 only.")
     return unique_leads
+
+
+def only_v1_rows(rows: list[Any]) -> list[Any]:
+    return [row for row in rows if str(row.lead).upper() == ONLY_LEAD]
 
 
 def resolve_prompt_path(path: str, *, task: str, kind: str) -> str:

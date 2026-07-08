@@ -10,8 +10,8 @@ K_VALUES="${K_VALUES:-0,2,4,8,16,32}"
 CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
 SEEDS="${SEEDS:-42,123,2026}"
 TASK="${TASK:-morphology}"
-CLINICAL_LEAD="${CLINICAL_LEAD:-V2}"
-CLINICAL_LEADS="${CLINICAL_LEADS:-V1,V2,V3}"
+CLINICAL_LEAD="${CLINICAL_LEAD:-V1}"
+CLINICAL_LEADS="${CLINICAL_LEADS:-V1}"
 CLINICAL_AGGREGATION="${CLINICAL_AGGREGATION:-majority}"
 if [ "${CONTEXT_DATASET_ROOT+x}" != "x" ]; then
   if [ "$TASK" = "clinical" ]; then
@@ -29,12 +29,20 @@ OUTPUT="${OUTPUT:-$REPORT_DIR/vlm_setup_validation.json}"
 PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONPATH
 
+run_python() {
+  if command -v "$UV" >/dev/null 2>&1; then
+    "$UV" run --no-sync python "$@"
+  else
+    python "$@"
+  fi
+}
+
 ARGS=""
 if [ "$API_BASE" != "" ]; then
   ARGS="$ARGS --api-base $API_BASE"
 fi
 
-"$UV" run --no-sync python \
+run_python \
   "$ROOT_DIR/scripts/eval/validate_vlm_loocv.py" \
   --dataset-root "$DATASET_ROOT" \
   --context-dataset-root "$CONTEXT_DATASET_ROOT" \

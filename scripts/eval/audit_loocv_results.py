@@ -276,9 +276,9 @@ def audit_dataset(
         folds = read_jsonl(folds_path)
     if rows:
         lead_counts = Counter(row.patient_id for row in rows)
-        bad_patients = sorted(patient for patient, count in lead_counts.items() if count != 3)
+        bad_patients = sorted(patient for patient, count in lead_counts.items() if count != 1)
         if bad_patients:
-            errors.append(f"Patients without exactly three rendered leads: {bad_patients[:10]}")
+            errors.append(f"Patients without exactly one rendered lead: {bad_patients[:10]}")
         labels = {row.reference_brugada for row in rows}
         if labels - {0, 1}:
             errors.append(f"Unsupported labels in manifest: {sorted(labels)}")
@@ -297,8 +297,8 @@ def audit_dataset(
     if summary:
         if summary.get("include_borderline_positive") is True:
             errors.append("Dataset summary says borderline positives were included.")
-        if summary.get("right_precordial_leads") != ["V1", "V2", "V3"]:
-            warnings.append("Dataset summary does not report V1/V2/V3 as the exact rendered leads.")
+        if summary.get("right_precordial_leads") != ["V1"]:
+            warnings.append("Dataset summary does not report V1 as the exact rendered lead.")
     return {
         "complete": not errors,
         "errors": errors,
@@ -334,10 +334,10 @@ def audit_simulator_dataset(
         if missing_qrs:
             errors.append("Simulator manifest contains rows without QRS finding labels.")
         lead_counts = Counter(row.patient_id for row in rows)
-        bad_patients = sorted(patient for patient, count in lead_counts.items() if count != 3)
+        bad_patients = sorted(patient for patient, count in lead_counts.items() if count != 1)
         if bad_patients:
             errors.append(
-                f"Simulator patients without exactly three rendered leads: {bad_patients[:10]}"
+                f"Simulator patients without exactly one rendered lead: {bad_patients[:10]}"
             )
         labels = {row.reference_brugada for row in rows}
         if labels != {0, 1}:

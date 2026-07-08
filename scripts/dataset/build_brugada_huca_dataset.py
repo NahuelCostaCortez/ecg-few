@@ -33,14 +33,12 @@ from ecg_few.loocv import (
 
 DATASET_URL = "https://physionet.org/content/brugada-huca/1.0.0/"
 DATASET_VERSION = "1.0.0"
-RIGHT_PRECORDIAL_LEADS = ("V1", "V2", "V3")
-R_DETECTION_LEADS = ("V2", "V1", "V3", "II")
+RIGHT_PRECORDIAL_LEADS = ("V1",)
+R_DETECTION_LEADS = ("V1", "II")
 DEFAULT_PRE_R_MS = 300
 DEFAULT_POST_R_MS = 600
 LEAD_GRID = (
-    ("I", "aVR", "V1", "V4"),
-    ("II", "aVL", "V2", "V5"),
-    ("III", "aVF", "V3", "V6"),
+    ("V1",),
 )
 
 
@@ -313,7 +311,8 @@ def render_12lead_ecg(record: Any, output_path: Path, *, patient_id: str, dpi: i
     finite = stacked[np.isfinite(stacked)]
     max_abs = max(0.5, float(np.nanpercentile(np.abs(finite), 99.0)) * 1.15)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig, axes = plt.subplots(3, 4, figsize=(12, 6.8), sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 1, figsize=(3.2, 3.2), sharex=True, sharey=True)
+    axes = np.asarray(axes).reshape(len(LEAD_GRID), len(LEAD_GRID[0]))
     for row_index, lead_row in enumerate(LEAD_GRID):
         for col_index, lead_name in enumerate(lead_row):
             axis = axes[row_index, col_index]
@@ -507,8 +506,8 @@ def dataset_summary(
         "excluded_patients": len(excluded),
         "include_borderline_positive": include_borderline_positive,
         "right_precordial_leads": list(RIGHT_PRECORDIAL_LEADS),
-        "image_layout": "single central beat per V1/V2/V3 lead",
-        "aggregation": "mean_condition_probability_by_patient_then_all_conditions_true",
+        "image_layout": "single central beat for V1 only",
+        "aggregation": "single_v1_condition_probability_then_all_conditions_true",
         "dpi": dpi,
         "pre_r_ms": pre_r_ms,
         "post_r_ms": post_r_ms,

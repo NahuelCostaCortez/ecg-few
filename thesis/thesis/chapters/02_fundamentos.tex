@@ -7,45 +7,33 @@ El electrocardiograma registra diferencias de potencial producidas por la activi
 
 El ECG convencional utiliza doce derivaciones obtenidas a partir de diez electrodos. Las derivaciones I, II, III, aVR, aVL y aVF describen la actividad en el plano frontal. Las derivaciones V1 a V6 ofrecen una perspectiva precordial en el plano horizontal. La colocación de los electrodos, la ganancia, la velocidad de registro y el filtrado influyen en la apariencia final. Las recomendaciones de estandarización insisten en conservar estos parámetros porque una modificación técnica puede alterar amplitudes, duraciones y relaciones espaciales que después se utilizan durante la interpretación \cite{kligfield2007}.
 
-La representación clínica habitual utiliza una velocidad de 25 mm por segundo y una ganancia de 10 mm por mV. Con esa convención, un milímetro horizontal equivale a 40 ms y un milímetro vertical equivale a 0,1 mV. Estas equivalencias permiten estimar intervalos y amplitudes directamente sobre el papel. Cuando el trazado se transforma en una imagen digital, la relación física deja de estar garantizada si la imagen se redimensiona, se recorta o se fotografía sin una referencia de escala.
+La representación clínica habitual utiliza una velocidad de 25 mm por segundo y una ganancia de 10 mm por mV. Con esa convención, un milímetro horizontal equivale a 40 ms y un milímetro vertical equivale a 0,1 mV. Estas equivalencias permiten estimar intervalos y amplitudes directamente sobre el trazado. Cuando el trazado se exporta como imagen digital, la relación física deja de estar garantizada si la imagen se redimensiona, se recorta o se guarda sin una referencia de escala.
 
-El presente trabajo no intenta reconstruir el vector cardíaco completo. La unidad experimental es una imagen de un latido sintético semejante a una ventana precordial derecha. Esta simplificación permite controlar el complejo QRS, el segmento ST y la onda T. También impide aplicar de forma literal criterios que requieren comparar varias derivaciones. La memoria distinguirá por tanto entre la definición clínica de un hallazgo y la aproximación visual utilizada por el simulador.
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.78\textwidth]{sources/ptbxl_real_12lead_ecg.png}
+  \caption{Representación clínica de un ECG real de doce derivaciones renderizado desde un registro de PTB-XL/PhysioNet \cite{wagner2020}.}
+  \label{fig:signal_to_image}
+\end{figure}
 
 \section{Morfología básica de un latido}
 
 Un latido normal puede describirse mediante una secuencia de ondas y segmentos. La onda P refleja la despolarización auricular. El intervalo PR incluye la propagación desde las aurículas hasta el sistema de conducción ventricular. El complejo QRS representa la despolarización ventricular. El punto J marca la transición entre el final del QRS y el comienzo del segmento ST. La onda T se relaciona con la repolarización ventricular.
 
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.86\textwidth]{sources/openstax_ecg_tracing.png}
+  \caption{Componentes morfológicos de un latido ECG: onda P, complejo QRS, onda T, segmentos PR y ST, e intervalos PR y QT. Fuente: OpenStax \cite{openstaxApecg}.}
+  \label{fig:morfologia_ecg}
+\end{figure}
+
 Las letras Q, R y S no designan posiciones anatómicas fijas. La onda Q es la primera deflexión negativa anterior a una deflexión positiva. La onda R es la primera deflexión positiva del complejo ventricular. La onda S es una deflexión negativa posterior a una onda R. Si aparece una segunda deflexión positiva, se denomina R prima. Esta nomenclatura describe la geometría de la señal y no establece por sí sola un diagnóstico.
 
 El segmento ST se evalúa con respecto a una referencia isoeléctrica. En un registro real, esa referencia puede aproximarse mediante el segmento TP o el segmento PR según el contexto. La elevación o depresión no se interpreta de forma independiente. Importan la derivación, la magnitud, la morfología, la distribución espacial y el cuadro clínico. Las recomendaciones de la AHA, el ACCF y la HRS separan de forma explícita la descripción del segmento ST, la onda T y el intervalo QT porque cada elemento aporta información diferente \cite{rautaharju2009st}.
 
-La onda T también depende de la derivación. Una deflexión negativa puede ser fisiológica en algunas posiciones y patológica en otras. Su significado cambia según la edad, el sexo, la secuencia de activación ventricular, los cambios del segmento ST y la presencia de otras alteraciones. El proyecto no intenta resolver esta interpretación completa. La etiqueta de inversión de T indica únicamente que la región tardía del latido sintético presenta una deflexión negativa que satisface las reglas del conjunto.
+La onda T también depende de la derivación. Una deflexión negativa puede ser fisiológica en algunas posiciones y patológica en otras. Su significado cambia según la edad, el sexo, la secuencia de activación ventricular, los cambios del segmento ST y la presencia de otras alteraciones. Por este motivo, la inversión de T se describe aquí como un rasgo morfológico que debe interpretarse junto con el resto del ECG y con el contexto clínico.
 
 \section{Hallazgos morfológicos utilizados en el proyecto}
-
-\subsection{Morfología compatible con bloqueo de rama derecha}
-
-El bloqueo de rama derecha es una alteración de la conducción intraventricular. En su forma completa se caracteriza por una duración del QRS igual o superior a 120 ms y por una morfología terminal compatible en las derivaciones apropiadas. Las recomendaciones de estandarización describen patrones como rsR prima o rSR prima en V1 o V2, junto con una onda S ensanchada en derivaciones laterales \cite{surawicz2009}.
-
-La segunda deflexión positiva en las derivaciones precordiales derechas aparece por la activación tardía del ventrículo derecho. No obstante, una forma semejante a rsR prima en una sola derivación no basta para diagnosticar un bloqueo completo. También deben considerarse la duración global del QRS, la morfología en I y V6, la posición de los electrodos y otras causas de retraso terminal.
-
-El simulador solo representa una ventana semejante a una derivación precordial. Por ello la etiqueta RBBB se entiende como \emph{morfología compatible con bloqueo de rama derecha}. El validador busca dos máximos positivos separados por una deflexión negativa, exige que el segundo máximo aparezca en una posición tardía y comprueba una anchura terminal mínima. Esta regla captura una forma visual útil para el experimento, pero no reproduce el criterio clínico completo.
-
-\subsection{Elevación del segmento ST}
-
-El segmento ST comienza en el punto J y termina con el inicio de la onda T. Su desplazamiento se mide con respecto a una referencia isoeléctrica. La magnitud clínicamente relevante depende de la derivación, del sexo, de la edad y de la situación diagnóstica. Además, una elevación puede aparecer en contextos diferentes, entre ellos isquemia aguda, pericarditis, repolarización precoz, alteraciones de conducción y síndromes de onda J.
-
-La etiqueta sintética ST\_ELEVATION no representa ninguna etiología concreta. El validador exige actividad ventricular suficiente y comprueba que la amplitud media alrededor del punto J y durante el segmento ST sea positiva. Se trata de una definición geométrica diseñada para separar imágenes, no de un umbral clínico expresado en milímetros.
-
-Esta distinción evita una inferencia incorrecta. El modelo aprende a reconocer una región elevada después del QRS. No aprende por ese hecho a diferenciar un patrón de Brugada, un infarto agudo u otra causa. Esa diferenciación requeriría varias derivaciones, contexto clínico y un conjunto de etiquetas mucho más amplio.
-
-\subsection{Inversión de la onda T}
-
-La onda T refleja la repolarización ventricular y suele aparecer después del segmento ST. Su polaridad normal varía entre derivaciones. También puede modificarse como consecuencia secundaria de una secuencia anómala de despolarización. Por ejemplo, una alteración de conducción puede producir cambios discordantes del segmento ST y de la onda T.
-
-En el conjunto sintético, la inversión se define mediante una deflexión tardía negativa. El validador comprueba la profundidad mínima, la posición temporal del mínimo y la duración de la región situada por debajo de un nivel negativo. La regla incluye además condiciones sobre el QRS y el segmento ST para evitar que una oscilación temprana se confunda con una onda T.
-
-La etiqueta T\_WAVE\_INVERSION expresa por tanto una propiedad visual localizada. No determina si la inversión es primaria, secundaria, fisiológica o patológica. Esta limitación se conserva al evaluar con datos reales.
 
 \subsection{Síndrome de Brugada como caso motivador y circuito diagnóstico}
 
@@ -68,7 +56,7 @@ El diagnóstico del síndrome de Brugada sigue un circuito clínico estructurado
   \item \textbf{Decisión clínica final.} La decisión sobre estratificación de riesgo y tratamiento (seguimiento, modificación del estilo de vida, evitación de fármacos arritmogénicos, valoración de desfibrilador automático implantable) es siempre clínica, multifactorial y realizada por especialistas.
 \end{enumerate}
 
-Este circuito subraya por qué el sistema desarrollado en este TFG se plantea exclusivamente como herramienta de triaje. Una predicción positiva del modelo no equivale a un diagnóstico de síndrome de Brugada. Equivale a una señal que sugiere priorizar la revisión del trazado por un especialista y, si procede, iniciar el circuito diagnóstico descrito. La decisión de realizar una prueba farmacológica, su interpretación y las consecuencias clínicas permanecen bajo responsabilidad médica \cite{wilde2023scbt}.
+Este circuito subraya que un resultado automático solo puede interpretarse dentro de una revisión clínica escalonada. Una predicción positiva señalaría un trazado que merece atención especializada y, si procede, entrada en el circuito diagnóstico descrito. La decisión de realizar una prueba farmacológica, su interpretación y las consecuencias clínicas permanecen bajo responsabilidad médica \cite{wilde2023scbt}.
 
 \begin{figure}[H]
   \centering
@@ -87,39 +75,38 @@ Este circuito subraya por qué el sistema desarrollado en este TFG se plantea ex
   \label{fig:brugada_clinical_examples}
 \end{figure}
 
-La relación con el bloqueo de rama derecha requiere una precisión adicional. El trazado tipo 1 puede recordar visualmente a una alteración terminal del QRS. Sin embargo, el mecanismo y los criterios no son equivalentes. La onda J del patrón de Brugada se concentra en las derivaciones precordiales derechas y no necesita la onda S lateral recíproca que forma parte del bloqueo de rama derecha \cite{corrado2010}. En este TFG, RBBB se utiliza como una etiqueta morfológica auxiliar y no como requisito clínico para Brugada.
-
-La familia generadora BRUGADA introduce una elevación inicial del segmento ST, una caída progresiva y una onda T negativa. Después de generar la señal, los tres validadores independientes determinan qué hallazgos están presentes. La familia de origen se conserva como metadato, mientras que la tarea predictiva utiliza únicamente las etiquetas observables. Esta separación es importante. El simulador crea un caso visual para probar modelos, no una reproducción diagnóstica del síndrome.
+La relación con el bloqueo de rama derecha requiere una precisión adicional. El trazado tipo 1 puede recordar visualmente a una alteración terminal del QRS. Sin embargo, el mecanismo y los criterios no son equivalentes. La onda J del patrón de Brugada se concentra en las derivaciones precordiales derechas y no necesita la onda S lateral recíproca que forma parte del bloqueo de rama derecha \cite{corrado2010}. Por tanto, la semejanza visual con RBBB debe entenderse como una característica morfológica, no como un requisito clínico para Brugada.
 
 \begin{figure}[H]
   \centering
-  \safeincludegraphics[width=0.94\textwidth]{results/fig_brugada_pattern.pdf}
-  \caption{Representación esquemática de los hallazgos visuales que motivan el triaje de patrón Brugada.}
+  \safeincludegraphics[width=0.94\textwidth]{results/fig_brugada_pattern.png}
+  \caption{Representación esquemática de rasgos morfológicos asociados al patrón tipo 1 de Brugada.}
   \label{fig:brugada_pattern}
 \end{figure}
 
-\begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.19\textwidth} >{\raggedright\arraybackslash}p{0.34\textwidth} X}
-    \toprule
-    Hallazgo & Interpretación clínica resumida & Criterio utilizado en el conjunto sintético \\
-    \midrule
-    RBBB & Trastorno de conducción que requiere duración y morfología compatibles en varias derivaciones & Dos máximos positivos en la región ventricular, una depresión intermedia y actividad terminal tardía y ancha \\
-    Elevación ST & Desplazamiento del punto J y del segmento ST cuya relevancia depende de derivación y contexto & Media positiva en ventanas posteriores al QRS junto con actividad ventricular suficiente \\
-    Inversión T & Onda T negativa con significado dependiente de la derivación y de la secuencia de activación & Deflexión tardía negativa con profundidad, posición y duración mínimas \\
-    Brugada tipo 1 & Patrón descendente en precordiales derechas que debe interpretarse dentro de criterios clínicos & Familia generadora que combina elevación inicial, descenso del ST y T negativa. No se utiliza como etiqueta diagnóstica \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Relación entre el concepto clínico y la traducción experimental utilizada en el proyecto}
-  \label{tab:clinical_operational}
-\end{table}
+\subsection{Morfología compatible con bloqueo de rama derecha}
+
+El bloqueo de rama derecha es una alteración de la conducción intraventricular. En su forma completa se caracteriza por una duración del QRS igual o superior a 120 ms y por una morfología terminal compatible en las derivaciones apropiadas. Las recomendaciones de estandarización describen patrones como rsR prima o rSR prima en V1 o V2, junto con una onda S ensanchada en derivaciones laterales \cite{surawicz2009}.
+
+La segunda deflexión positiva en las derivaciones precordiales derechas aparece por la activación tardía del ventrículo derecho. No obstante, una forma semejante a rsR prima en una sola derivación no basta para diagnosticar un bloqueo completo. También deben considerarse la duración global del QRS, la morfología en I y V6, la posición de los electrodos y otras causas de retraso terminal. En esta memoria, RBBB se usa como rasgo visual compatible y no como diagnóstico completo de bloqueo.
+
+\subsection{Elevación del segmento ST}
+
+El segmento ST comienza en el punto J y termina con el inicio de la onda T. Su desplazamiento se mide con respecto a una referencia isoeléctrica. La magnitud clínicamente relevante depende de la derivación, del sexo, de la edad y de la situación diagnóstica. Además, una elevación puede aparecer en contextos diferentes, entre ellos isquemia aguda, pericarditis, repolarización precoz, alteraciones de conducción y síndromes de onda J.
+
+Esta distinción evita una inferencia incorrecta. Un modelo visual puede aprender a reconocer una región elevada después del QRS, pero no aprende por ese hecho a diferenciar un patrón de Brugada, un infarto agudo u otra causa. Esa diferenciación requeriría varias derivaciones, contexto clínico y un conjunto de etiquetas mucho más amplio.
+
+\subsection{Inversión de la onda T}
+
+La onda T refleja la repolarización ventricular y suele aparecer después del segmento ST. Su polaridad normal varía entre derivaciones. También puede modificarse como consecuencia secundaria de una secuencia anómala de despolarización. Por ejemplo, una alteración de conducción puede producir cambios discordantes del segmento ST y de la onda T.
+
+La inversión de T expresa por tanto una propiedad visual localizada que debe interpretarse dentro del ECG completo. No determina por sí sola si la inversión es primaria, secundaria, fisiológica o patológica. En este trabajo se trata como un rasgo morfológico visible y se evita convertirlo en un diagnóstico aislado.
 
 \section{La señal y la imagen como representaciones}
 
 Una señal digital conserva muestras de amplitud ordenadas en el tiempo. Esta representación permite medir intervalos, aplicar filtros y comparar derivaciones con una escala conocida. La imagen es el resultado de transformar esas muestras mediante un proceso de renderizado. Contiene la forma visible del trazado, pero también incorpora decisiones de presentación.
 
-El renderizado establece el tamaño del lienzo, la cuadrícula, el grosor de la línea, los márgenes y la disposición de las derivaciones. Una red puede utilizar cualquiera de esos elementos si están correlacionados con la etiqueta. Por ello un conjunto de imágenes debe controlar que la clase no pueda deducirse a partir de una marca, un recorte o una diferencia de resolución.
+El renderizado establece el tamaño del lienzo, la cuadrícula, el grosor de la línea, los márgenes y la disposición de las derivaciones. Una red puede utilizar cualquiera de esos elementos si están correlacionados con la etiqueta. Por ello un conjunto de imágenes debe asegurar que la clase no pueda deducirse a partir de una marca, un recorte o una diferencia de resolución.
 
 La imagen posee una ventaja práctica cuando la señal original no está disponible. Sangha y colaboradores demostraron que un modelo multietiqueta podía analizar ECG renderizados y mantener un rendimiento alto en registros externos y trazados impresos \cite{sangha2022}. Gliner y colaboradores mostraron además que una CNN puede trabajar con fotografías de ECG, aunque la diferencia de formato requiere estrategias específicas de adaptación \cite{gliner2023}.
 
@@ -129,11 +116,11 @@ Esta doble naturaleza del ECG, señal temporal e imagen, es precisamente lo que 
 
 \section{Datos sintéticos y modelos gaussianos}
 
-Los datos sintéticos permiten controlar factores que resultan difíciles de aislar en una colección clínica. Es posible generar clases equilibradas, conocer los parámetros que originan cada señal y repetir exactamente el proceso. También se evita utilizar información de pacientes durante las primeras fases del desarrollo.
+Los datos sintéticos permiten aislar factores que resultan difíciles de separar en una colección clínica. Es posible generar clases equilibradas, conocer los parámetros que originan cada señal y repetir exactamente el proceso. También se evita utilizar información de pacientes durante las primeras fases del desarrollo.
 
 Un modelo sintético no elimina el problema de los datos. Lo transforma. La validez depende de que las reglas de generación representen los rasgos que se quieren estudiar y de que no introduzcan atajos visuales. Una morfología demasiado regular puede producir un conjunto fácil para una red y poco informativo sobre el comportamiento en registros reales.
 
-La representación mediante ondas gaussianas cuenta con precedentes en el procesamiento de ECG. Sayadi y colaboradores describieron un modelo dinámico basado en ondas gaussianas para generar señales y realizar filtrado bayesiano \cite{sayadi2010}. En el presente proyecto se adopta una variante más simple y directamente controlable. Cada componente se define como
+La representación mediante ondas gaussianas cuenta con precedentes en el procesamiento de ECG. Sayadi y colaboradores describieron un modelo dinámico basado en ondas gaussianas para generar señales y realizar filtrado bayesiano \cite{sayadi2010}. En el presente proyecto se adopta una variante más simple y directamente parametrizable. Cada componente se define como
 
 \begin{equation}
 g_i(t) =
@@ -144,7 +131,7 @@ a_i
 \label{eq:gaussian_atom}
 \end{equation}
 
-donde \(a_i\) controla la amplitud, \(\mu_i\) determina la posición temporal y \(\sigma_i\) regula la anchura. El latido completo se obtiene mediante
+donde \(a_i\) define la amplitud, \(\mu_i\) determina la posición temporal y \(\sigma_i\) regula la anchura. El latido completo se obtiene mediante
 
 \begin{equation}
 x(t) = \sum_{i=1}^{M} g_i(t).
@@ -153,9 +140,9 @@ x(t) = \sum_{i=1}^{M} g_i(t).
 
 La suma incluye componentes para P, Q, R, S, R prima, punto J, segmento ST y onda T. Los parámetros se muestrean dentro de intervalos dependientes de la familia generadora. Después se aplican relaciones temporales para mantener un orden coherente. Finalmente, un validador decide si la señal satisface las condiciones mínimas de la familia solicitada.
 
-Este procedimiento es un muestreo con rechazo. Si la señal no supera el validador se descarta y se genera otra. La estrategia mejora la consistencia interna, aunque también puede concentrar las muestras cerca de las regiones que aceptan las reglas. La tasa de aceptación y la distribución de parámetros deben analizarse como parte del control de calidad.
+Este procedimiento es un muestreo con rechazo. Si la señal no supera el validador se descarta y se genera otra. La estrategia mejora la consistencia interna, aunque también puede concentrar las muestras cerca de las regiones que aceptan las reglas. La tasa de aceptación y la distribución de parámetros deben analizarse como parte de la verificación de calidad.
 
-Los simuladores de mayor fidelidad utilizan modelos electrofisiológicos y geometrías cardíacas completas. MedalCare XL, por ejemplo, ofrece miles de ECG sintéticos de doce derivaciones obtenidos mediante simulaciones electrofisiológicas \cite{gillette2023}. Ese enfoque persigue realismo fisiológico y requiere un coste computacional mayor. El simulador de este TFG persigue interpretabilidad y control local. No son alternativas equivalentes.
+Los simuladores de mayor fidelidad utilizan modelos electrofisiológicos y geometrías cardíacas completas. MedalCare XL, por ejemplo, ofrece miles de ECG sintéticos de doce derivaciones obtenidos mediante simulaciones electrofisiológicas \cite{gillette2023}. Ese enfoque persigue realismo fisiológico y requiere un coste computacional mayor. El simulador de este TFG persigue interpretabilidad y ajuste local de las reglas. No son alternativas equivalentes.
 
 \section{Clasificación multietiqueta}
 
@@ -257,7 +244,7 @@ Las explicaciones generadas por un modelo de visión y lenguaje plantean un prob
 
 El dominio sintético y el dominio real difieren en fisiología, adquisición y presentación. El simulador genera un único latido alineado, con una cuadrícula uniforme y sin variabilidad entre pacientes. Un ECG real contiene ruido, deriva de línea base, diferencias de frecuencia cardíaca, trazos superpuestos, anotaciones y múltiples derivaciones.
 
-Una red puede obtener un rendimiento elevado en sintético y fallar en real si aprende características exclusivas del renderizado. Este fenómeno es relevante en este TFG porque la pregunta principal no es solo si una CNN aprende en un escenario controlado, sino si esa señal visual conserva valor cuando se enfrenta a ECG clínicos reales. La comprobación complementaria de este salto se presenta al final de la evaluación sobre datos reales.
+Una red puede obtener un rendimiento elevado en sintético y fallar en real si aprende características exclusivas del renderizado. Este fenómeno es relevante en este TFG porque la pregunta principal no es solo si una CNN aprende en un escenario sintético, sino si esa señal visual conserva valor cuando se enfrenta a ECG clínicos reales. La comprobación complementaria de este salto se presenta al final de la evaluación sobre datos reales.
 
 \section{Implicaciones para el diseño experimental}
 

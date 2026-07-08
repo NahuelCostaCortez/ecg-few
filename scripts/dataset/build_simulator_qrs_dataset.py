@@ -23,7 +23,7 @@ from ecg_few.loocv import (
 from ecg_few.simulator import SOURCE_FAMILIES, generate_beat
 from ecg_few.simulator.plotting import plot_beat
 
-LEADS = ("V1", "V2", "V3")
+LEADS = ("V1",)
 DISPLAY_SOURCE_FAMILY = {"BRUGADA": "COMBINED_QRS_ST"}
 
 
@@ -285,8 +285,8 @@ def dataset_summary(
         },
         "finding_combination_counts": dict(sorted(combo_counts.items())),
         "right_precordial_leads": list(LEADS),
-        "image_layout": "single simulated beat copied across V1/V2/V3 lead slots",
-        "aggregation": "mean_condition_probability_by_patient_then_all_conditions_true",
+        "image_layout": "single simulated beat rendered for V1 only",
+        "aggregation": "single_v1_condition_probability_then_all_conditions_true",
         "base_seed": base_seed,
         "fs": fs,
         "duration_ms": duration_ms,

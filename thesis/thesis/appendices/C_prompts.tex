@@ -1,35 +1,52 @@
-\chapter{Mensajes y respuestas estructuradas}
+\chapter{Prompts y respuestas estructuradas}
 \label{app:prompts}
 
-\section{Criterio de conservación}
+\section{Criterio de conservaci\'on}
 
-Los mensajes forman parte del protocolo experimental. En un modelo de visión y lenguaje, cambios pequeños en instrucciones, orden o formato pueden modificar la respuesta. Por esa razón se conserva el contenido de los prompts y el esquema de salida exigido.
+Los prompts forman parte del protocolo experimental. En un modelo de visi\'on y lenguaje, cambios peque\~nos en instrucciones, orden o formato pueden modificar la respuesta. Por esa raz\'on se conserva el contenido de los prompts y el esquema de salida exigido.
 
-\section{Sistema para tarea morfológica}
+\section{Sistema para tarea morfol\'ogica}
 
 \begin{lstlisting}
-You are evaluating single-beat right precordial ECG images.
+You are evaluating single-beat right precordial ECG images from lead V1.
+Use only the visible morphology in the ECG image. Treat each finding as an
+independent visual attribute of the beat, not as a final diagnosis.
+
 Return only the requested JSON. Do not include prose, markdown, caveats, a
 diagnosis, or a clinical recommendation.
 \end{lstlisting}
 
-\section{Tarea morfológica}
+\section{Tarea morfol\'ogica}
 
 \begin{lstlisting}
 Analyze this single-beat right precordial ECG image from lead {lead}.
 
+Inspect the beat from left to right:
+  - identify the QRS complex, including any second positive terminal deflection
+  - use the flat PR/TP segment around the beat as the visual baseline when visible
+  - inspect the J point and ST segment immediately after the QRS
+  - inspect the T wave that follows the ST segment
+
 Evaluate these morphology findings independently:
 
 RBBB:
-  - terminal RSR' or rSr' morphology in the QRS complex
-  - delayed terminal right-precordial activation compatible with right bundle branch block
+  - true when the QRS has a right-precordial terminal conduction pattern such as
+    RSR', rSr', rsR', or a clear late positive R' after the initial QRS deflection
+  - also true when the terminal part of the QRS looks delayed or widened in a way
+    compatible with right bundle branch block morphology
+  - false when there is no clear terminal R' or delayed terminal QRS morphology
 
 ST_ELEVATION:
-  - J-point or ST segment remains elevated above the baseline after the QRS complex
-  - coved, convex, or saddleback elevation can count when visually present
+  - true when the J point or ST segment after the QRS remains above the visual
+    baseline
+  - coved/convex elevation and saddleback elevation count when visually present
+  - false when the ST segment returns to baseline or is not visibly elevated
 
 T_WAVE_INVERSION:
-  - the T wave after the ST segment is predominantly negative below baseline
+  - true when the T wave after the ST segment is predominantly negative, below
+    the visual baseline
+  - false when the T wave is upright, flat without a clear negative component, or
+    not visible enough to judge as inverted
 
 Return only valid JSON with boolean values for exactly these keys:
 
@@ -40,24 +57,39 @@ Return only valid JSON with boolean values for exactly these keys:
 }
 \end{lstlisting}
 
-\section{Sistema para tarea clínica}
+\section{Sistema para tarea cl\'inica}
 
 \begin{lstlisting}
-You are evaluating right precordial ECG beat images from one patient.
-Return only the requested JSON. Do not include prose, markdown, caveats,
-a diagnosis, or a clinical recommendation.
+You are evaluating a single lead V1 right precordial ECG beat image from one
+patient.
 
-The label is a research reference for suspected Brugada triage. It must not be
-used as an autonomous diagnosis.
+Use only the visible morphology in the image and the in-context examples. The
+label is a research reference for suspected Brugada triage. It must not be used
+as an autonomous diagnosis.
+
+Return only the requested JSON. Do not include prose, markdown, caveats, a
+diagnosis, or a clinical recommendation.
 \end{lstlisting}
 
-\section{Tarea clínica directa}
+\section{Tarea cl\'inica directa}
 
 \begin{lstlisting}
-Analyze this single right precordial ECG beat image from one patient.
+Analyze this single right precordial ECG beat image from lead {lead} from one patient.
 
-Decide whether the patient is clinically compatible with the Brugada-positive
+Decide whether the patient is compatible with the Brugada-positive research
 reference used in this study.
+
+Look for right-precordial Brugada-type visual evidence in V1:
+  - J-point or ST elevation immediately after the QRS
+  - a coved or convex descending ST segment, especially when followed by a
+    predominantly negative T wave
+  - a saddleback ST shape can be supportive but is less specific by itself
+  - terminal right-precordial QRS features such as rSr' or RSR' can support the
+    visual pattern, but should not be the only reason for a positive label
+
+Return false when the beat is visually closer to a normal V1 morphology, when ST
+elevation is absent, or when the image does not show enough Brugada-type
+evidence. Use the support examples, when present, to calibrate the study label.
 
 Return only valid JSON with exactly this key:
 
@@ -66,8 +98,8 @@ Return only valid JSON with exactly this key:
 }
 \end{lstlisting}
 
-\section{Construcción del contexto}
+\section{Construcci\'on del contexto}
 
-En zero-shot no se añaden demostraciones. El modelo recibe el mensaje de sistema, la tarea y la imagen objetivo. En ICL normal, cada demostración contiene una imagen y la respuesta JSON correcta, sin forzar explícitamente la proporción de clases. En ICL balanceado, la selección intenta incluir pacientes positivos y negativos siempre que el pliegue lo permita. En ambos casos, el contexto nunca incluye el paciente reservado para test.
+En zero-shot no se a\~naden demostraciones. El modelo recibe el mensaje de sistema, la tarea y la imagen objetivo. En ICL normal, cada demostraci\'on contiene una imagen V1 y la respuesta JSON correcta; la selecci\'on garantiza al menos una muestra de cada clase cuando \(K \geq 2\) y despu\'es completa el contexto de forma reproducible. En ICL balanceado, la selecci\'on intenta una composici\'on aproximadamente 50/50 entre pacientes positivos y negativos siempre que el pliegue lo permita. En ambos casos, el contexto nunca incluye el paciente reservado para test.
 
-Las respuestas se validan de forma estricta. Una salida con claves ausentes, claves adicionales, texto libre o tipos incorrectos se registra como fallo de formato. En la evaluación final, la tasa de JSON inválido fue 0, por lo que las diferencias de rendimiento proceden de las decisiones del modelo y no de errores sintácticos.
+Las respuestas se validan de forma estricta. Una salida con claves ausentes, claves adicionales, texto libre o tipos incorrectos se registra como fallo de formato. En la evaluaci\'on final, la tasa de JSON inv\'alido fue 0, por lo que las diferencias de rendimiento proceden de las decisiones del modelo y no de errores sint\'acticos.

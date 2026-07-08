@@ -225,18 +225,18 @@ def main() -> None:
         title="VLM/ICL en simulador QRS/ST",
     )
     plot_vlm_metric(
-        OUT / "vlm_huca_v2_ba_by_k.png",
+        OUT / "vlm_huca_v1_ba_by_k.png",
         real_vlm,
         metric="balanced_accuracy",
         ylabel="Exactitud equilibrada",
-        title="VLM/ICL en V2 real",
+        title="VLM/ICL en V1 real",
     )
     plot_vlm_metric(
-        OUT / "vlm_huca_v2_f1_by_k.png",
+        OUT / "vlm_huca_v1_f1_by_k.png",
         real_vlm,
         metric="f1",
         ylabel="F1",
-        title="VLM/ICL en V2 real",
+        title="VLM/ICL en V1 real",
     )
     plot_vlm_metric(
         OUT / "vlm_huca_synthetic_context_ba_by_k.png",
@@ -357,12 +357,12 @@ def main() -> None:
         title="ICL balanceado, K=8",
     )
     plot_confusion(
-        OUT / "vlm_huca_v2_normal_k16_confusion_matrix.png",
+        OUT / "vlm_huca_v1_normal_k16_confusion_matrix.png",
         row_for(real_vlm, "normal", 16),
         title="ICL normal, K=16",
     )
     plot_confusion(
-        OUT / "vlm_huca_v2_balanced_k16_confusion_matrix.png",
+        OUT / "vlm_huca_v1_balanced_k16_confusion_matrix.png",
         row_for(real_vlm, "balanced", 16),
         title="ICL balanceado, K=16",
     )

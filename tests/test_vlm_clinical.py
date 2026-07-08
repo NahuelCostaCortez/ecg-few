@@ -40,10 +40,28 @@ def row(
     )
 
 
-def test_clinical_fold_aggregates_requested_leads() -> None:
+def morphology_row(patient_id: str, label: int) -> BrugadaImageRow:
+    value = int(label)
+    return BrugadaImageRow(
+        image_path=f"{patient_id}_V1.png",
+        patient_id=patient_id,
+        lead="V1",
+        source_family="sim" if patient_id.startswith("SIM") else "huca",
+        label_rbbb=value,
+        label_st_elevation=value,
+        label_t_wave_inversion=value,
+        clinical_brugada=None,
+        basal_pattern=0,
+        sudden_death=0,
+        sample_index=0,
+        aggregation_group_id=patient_id,
+    )
+
+
+def test_clinical_fold_uses_v1_only() -> None:
     runner = load_runner()
     args = argparse.Namespace(dry_run_predictions="expected")
-    rows = [row("1", lead, 1, qrs_labels=True) for lead in ("V1", "V2", "V3")]
+    rows = [row("1", "V1", 1, qrs_labels=True)]
 
     record = runner.run_clinical_fold(
         rows=rows,
@@ -63,7 +81,7 @@ def test_clinical_fold_aggregates_requested_leads() -> None:
         system_prompt="",
         prompt_template="lead {lead}",
         include_support_images=True,
-        clinical_leads=["V1", "V2", "V3"],
+        clinical_leads=["V1"],
         clinical_aggregation="majority",
         started=0.0,
         selection={"context_patient_ids": [], "validation_patient_ids": []},
@@ -73,25 +91,25 @@ def test_clinical_fold_aggregates_requested_leads() -> None:
     )
 
     assert record["pred_label"] == 1
-    assert record["valid_leads"] == 3
+    assert record["valid_leads"] == 1
     assert record["invalid_leads"] == 0
-    assert record["clinical_leads"] == "V1|V2|V3"
+    assert record["clinical_leads"] == "V1"
 
 
 def test_clinical_normal_uses_fold_selection_and_balanced_uses_stratified() -> None:
     runner = load_runner()
     rows = [
         row("1", lead, 1)
-        for lead in ("V1", "V2", "V3")
+        for lead in ("V1",)
     ] + [
         row("2", lead, 1)
-        for lead in ("V1", "V2", "V3")
+        for lead in ("V1",)
     ] + [
         row("3", lead, 0)
-        for lead in ("V1", "V2", "V3")
+        for lead in ("V1",)
     ] + [
         row("4", lead, 1)
-        for lead in ("V1", "V2", "V3")
+        for lead in ("V1",)
     ]
     fold = {
         "fold_id": 0,
@@ -134,3 +152,53 @@ def test_clinical_normal_uses_fold_selection_and_balanced_uses_stratified() -> N
         next(item for item in rows if item.patient_id == patient_id).reference_brugada
         for patient_id in balanced["context_patient_ids"]
     } == {0, 1}
+
+
+def test_external_morphology_controls_use_context_dataset_ids(tmp_path: Path) -> None:
+    runner = load_runner()
+    rows = [morphology_row("1", 1), morphology_row("2", 0), morphology_row("3", 1)]
+    context_rows = [
+        morphology_row("SIM001", 0),
+        morphology_row("SIM002", 1),
+        morphology_row("SIM003", 0),
+        morphology_row("SIM004", 1),
+    ]
+    fold = {
+        "fold_id": 0,
+        "test_patient_id": "1",
+        "selections": {
+            "42": {
+                "2": {
+                    "context_patient_ids": ["2", "3"],
+                    "validation_patient_ids": [],
+                }
+            }
+        },
+    }
+    args = argparse.Namespace(resume=False, dry_run_predictions="expected")
+
+    for condition in (runner.PERMUTED_CONDITION, runner.NO_SUPPORT_IMAGES_CONDITION):
+        predictions = runner.run_k_seed(
+            rows=rows,
+            context_pool_rows=context_rows,
+            folds=[fold],
+            dataset_root=ROOT,
+            context_dataset_root=ROOT,
+            run_dir=tmp_path / condition,
+            k=2,
+            seed=42,
+            task=runner.MORPHOLOGY_TASK,
+            condition=condition,
+            runtime=runner.REMOTE_RUNTIME,
+            model="google/gemma-4-E4B-it",
+            api_base=None,
+            api_key="",
+            system_prompt="",
+            prompt_template="lead {lead}",
+            args=args,
+            generator=None,
+        )
+
+        context_ids = predictions[0]["context_patient_ids"].split("|")
+        assert context_ids
+        assert all(patient_id.startswith("SIM") for patient_id in context_ids)

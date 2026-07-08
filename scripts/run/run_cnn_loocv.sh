@@ -2,6 +2,7 @@
 set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+UV="${UV:-uv}"
 
 DATASET_ROOT="${DATASET_ROOT:-$ROOT_DIR/data/brugada_huca}"
 TRAIN_DATASET_ROOT="${TRAIN_DATASET_ROOT:-$ROOT_DIR/data/simulator_qrs}"
@@ -30,6 +31,14 @@ PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 MPLBACKEND="${MPLBACKEND:-Agg}"
 export PYTHONPATH MPLBACKEND
 
+run_python() {
+  if command -v "$UV" >/dev/null 2>&1; then
+    "$UV" run --no-sync python "$@"
+  else
+    python "$@"
+  fi
+}
+
 ARGS=""
 if [ "$LIMIT_FOLDS" != "0" ]; then
   ARGS="$ARGS --limit-folds $LIMIT_FOLDS"
@@ -38,7 +47,7 @@ if [ "$RESUME" = "0" ]; then
   ARGS="$ARGS --no-resume"
 fi
 
-uv run --no-sync python \
+run_python \
   "$ROOT_DIR/scripts/eval/run_cnn_loocv.py" \
   --dataset-root "$DATASET_ROOT" \
   --train-dataset-root "$TRAIN_DATASET_ROOT" \

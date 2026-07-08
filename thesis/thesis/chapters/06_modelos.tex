@@ -5,18 +5,11 @@ Este capítulo presenta las dos líneas seguidas en el TFG para abordar la escas
 
 La distinción importa porque los dos enfoques consumen los mismos datos de forma diferente. En la CNN, \(K\) define el tamaño del conjunto de entrenamiento de cada pliegue. En el VLM, \(K\) define el número de demostraciones disponibles antes de la imagen que se quiere clasificar. Por tanto, el capítulo no compara únicamente arquitecturas, sino dos regímenes de uso de datos: entrenamiento supervisado frente a inferencia condicionada por contexto.
 
-\begin{figure}[H]
-  \centering
-  \safeincludegraphics[width=\textwidth]{results/fig_pipeline_experimental.drawio.png}
-  \caption{Dos formas de utilizar el mismo conjunto reducido de pacientes etiquetados: entrenamiento de ResNet18 y aprendizaje en contexto con Gemma~4.}
-  \label{fig:dos_enfoques_modelado}
-\end{figure}
-
 \section{Entrada y unidad de análisis}
 
 Todos los modelos reciben imágenes de ECG. En el caso de la CNN, cada imagen se redimensiona a 224 por 224 píxeles y se procesa como entrada RGB. En el caso del VLM, la imagen se introduce dentro de un mensaje multimodal junto con instrucciones textuales y, cuando procede, ejemplos etiquetados.
 
-La evaluación se realiza por paciente. En los experimentos con V1, V2 y V3, las predicciones por derivación se agregan antes de obtener la decisión final. Esta decisión evita que varias imágenes de una misma persona se traten como casos independientes y mantiene la interpretación clínica en el nivel correcto.
+La evaluación se realiza por paciente y usa exclusivamente V1. Cada paciente aporta una única imagen de entrada, por lo que no se promedian ni votan predicciones entre derivaciones. Esta decisión evita que varias imágenes de una misma persona se traten como casos independientes y mantiene la interpretación clínica en el nivel correcto.
 
 \section{Enfoque supervisado con CNN}
 
@@ -32,7 +25,7 @@ La dificultad aparece cuando \(K\) es pequeño. Una ResNet18 tiene millones de p
 
 Por ese motivo, la CNN se interpreta como referencia supervisada. No se presenta como solución clínica por defecto, sino como una forma sólida de medir qué obtiene un entrenamiento visual clásico cuando la cantidad de datos es limitada.
 
-\section{Enfoque multimodal con VLM e ICL}
+\section{VLM con ICL}
 
 \subsection{Qué cambia frente al entrenamiento}
 
@@ -49,8 +42,11 @@ La comparación con la CNN se hace con cautela. La CNN recibe \(K\) pacientes pa
 \section{Comparación entre enfoques}
 \label{sec:dos_formas_K}
 
-La comparación mantiene explícito el significado de \(K\) en cada enfoque. En la CNN, \(K\) indica cuántos pacientes se incorporan al entrenamiento de cada pliegue. Sus imágenes contribuyen a la pérdida y modifican los pesos del modelo, con el riesgo esperado de sobreajuste y alta varianza cuando el conjunto es pequeño. En la evaluación con los datos cedidos por el HUCA, esos pacientes de entrenamiento proceden del simulador, ya que la cohorte real no dispone de etiquetas morfológicas para la cabeza multietiqueta. En el VLM, \(K\) indica cuántos pacientes se convierten en demostraciones dentro del prompt. No se actualizan parámetros, pero el resultado depende de la selección de ejemplos, de la ventana de contexto y del coste de cada consulta.
+La comparación mantiene explícito el significado de \(K\) en cada enfoque. En la CNN, \(K\) indica cuántos pacientes se incorporan al entrenamiento de cada pliegue. Sus imágenes contribuyen a la pérdida y modifican los pesos del modelo, con el riesgo esperado de sobreajuste y alta varianza cuando el conjunto es pequeño. En la evaluación con los datos reales del HUCA, esos pacientes de entrenamiento proceden del simulador, ya que la cohorte real no dispone de etiquetas morfológicas para la cabeza multietiqueta. En el VLM, \(K\) indica cuántos pacientes se convierten en demostraciones dentro del prompt. No se actualizan parámetros, pero el resultado depende de la selección de ejemplos, de la ventana de contexto y del coste de cada consulta.
 
-El objetivo de la evaluación es observar si entrenar pesos resulta más eficaz que condicionar una inferencia con demostraciones, y en qué rango de pocos ejemplos cambia esa relación. Esta lectura se mantiene en los dos dominios de evaluación: primero en el simulador, donde la etiqueta está controlada, y después en ECG reales, donde la etiqueta clínica introduce mayor variabilidad.
+El objetivo de la evaluación es observar si entrenar pesos resulta más eficaz que condicionar una inferencia con demostraciones, y en qué rango de pocos ejemplos cambia esa relación. Esta lectura se mantiene en los dos dominios de evaluación: primero en el simulador, donde la etiqueta está definida por reglas, y después en ECG reales, donde la etiqueta clínica introduce mayor variabilidad.
 
-Los capítulos siguientes desarrollan los dos métodos por separado. El capítulo~\ref{chap:cnn_enfoque} describe la CNN y su protocolo de entrenamiento. El capítulo~\ref{chap:vlm} describe el VLM, las condiciones de consulta y las decisiones de privacidad. La evaluación cuantitativa se presenta después en el simulador y en los ECG reales.
+Las secciones siguientes desarrollan los dos métodos por separado. La sección~\ref{chap:cnn_enfoque} describe la CNN y su protocolo de entrenamiento. La sección~\ref{chap:vlm} describe el VLM, las condiciones de consulta y las decisiones de privacidad. La evaluación cuantitativa se presenta después en el simulador y en los ECG reales.
+
+\input{chapters/07_cnn_resultados}
+\input{chapters/08_icl_resultados}

@@ -40,7 +40,7 @@ TASKS = {
         "csv": "reports/loocv/vlm_simulator_qrs/vlm_summary_by_k.csv",
     },
     "real": {
-        "label": "HUCA, V2",
+        "label": "HUCA, V1",
         "csv": "reports/loocv/vlm_real_context/vlm_summary_by_k.csv",
     },
 }
@@ -207,8 +207,8 @@ def plot_icl_conditions(rows: dict[str, list[dict[str, str]]]) -> None:
     panels = (
         (axes[0, 0], rows["sim"], "balanced_accuracy", "Simulador: BA", "Exactitud equilibrada"),
         (axes[0, 1], rows["sim"], "f1", "Simulador: F1", "F1"),
-        (axes[1, 0], rows["real"], "balanced_accuracy", "HUCA V2: BA", "Exactitud equilibrada"),
-        (axes[1, 1], rows["real"], "f1", "HUCA V2: F1", "F1"),
+        (axes[1, 0], rows["real"], "balanced_accuracy", "HUCA V1: BA", "Exactitud equilibrada"),
+        (axes[1, 1], rows["real"], "f1", "HUCA V1: F1", "F1"),
     )
     for ax, panel_rows, metric, title, ylabel in panels:
         plot_condition_curves(ax, panel_rows, metric)

@@ -2,6 +2,7 @@
 set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+UV="${UV:-uv}"
 
 RAW_ROOT="${RAW_ROOT:-$ROOT_DIR/data/raw/brugada-huca/1.0.0}"
 DATASET_ROOT="${DATASET_ROOT:-$ROOT_DIR/data/brugada_huca}"
@@ -15,7 +16,15 @@ SEEDS="${SEEDS:-42,123,2026}"
 PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONPATH
 
-uv run --no-sync python \
+run_python() {
+  if command -v "$UV" >/dev/null 2>&1; then
+    "$UV" run --no-sync python "$@"
+  else
+    python "$@"
+  fi
+}
+
+run_python \
   "$ROOT_DIR/scripts/eval/audit_loocv_results.py" \
   --raw-root "$RAW_ROOT" \
   --dataset-root "$DATASET_ROOT" \

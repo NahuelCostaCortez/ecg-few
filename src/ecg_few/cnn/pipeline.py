@@ -70,6 +70,7 @@ from ecg_few.loocv import (
 )
 
 DEFAULT_MODEL_NAME = "resnet18"
+ONLY_LEAD = "V1"
 
 
 class GradCAM:
@@ -198,13 +199,13 @@ def run_with_args(args: argparse.Namespace) -> None:
     folds_path = resolve_folds_path(dataset_root, args.folds)
     output_root = Path(args.output_root).resolve()
     report_dir = Path(args.report_dir).resolve()
-    rows = read_manifest(dataset_root / "labels" / "all_labels.csv")
+    rows = only_v1_rows(read_manifest(dataset_root / "labels" / "all_labels.csv"))
     has_train_dataset = str(args.train_dataset_root) not in {"", "."}
     train_dataset_root = (
         Path(args.train_dataset_root).resolve() if has_train_dataset else dataset_root
     )
     train_pool_rows = (
-        read_manifest(train_dataset_root / "labels" / "all_labels.csv")
+        only_v1_rows(read_manifest(train_dataset_root / "labels" / "all_labels.csv"))
         if has_train_dataset
         else None
     )
@@ -218,7 +219,7 @@ def run_with_args(args: argparse.Namespace) -> None:
         needs_target_domain=needs_target_domain,
     )
     target_rows = (
-        read_manifest(target_dataset_root / "labels" / "all_labels.csv")
+        only_v1_rows(read_manifest(target_dataset_root / "labels" / "all_labels.csv"))
         if target_dataset_root is not None
         else None
     )
@@ -261,6 +262,10 @@ def run_with_args(args: argparse.Namespace) -> None:
                 )
             )
     write_summary_reports(summary_rows, report_dir)
+
+
+def only_v1_rows(rows: Sequence[BrugadaImageRow]) -> list[BrugadaImageRow]:
+    return [row for row in rows if row.lead.upper() == ONLY_LEAD]
 
 
 def run_k_seed(

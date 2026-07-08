@@ -14,7 +14,15 @@ PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 MPLBACKEND="${MPLBACKEND:-Agg}"
 export PYTHONPATH MPLBACKEND
 
-"$UV" run --no-sync python \
+run_python() {
+  if command -v "$UV" >/dev/null 2>&1; then
+    "$UV" run --no-sync python "$@"
+  else
+    python "$@"
+  fi
+}
+
+run_python \
   "$ROOT_DIR/scripts/eval/compare_loocv_reports.py" \
   --cnn-summary "$CNN_SUMMARY" \
   --vlm-summary "$VLM_SUMMARY" \

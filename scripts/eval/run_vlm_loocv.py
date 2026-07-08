@@ -58,11 +58,12 @@ NO_SUPPORT_IMAGES_CONDITION = "no_support_images"
 MORPHOLOGY_TASK = "morphology"
 CLINICAL_TASK = "clinical"
 CLINICAL_LABEL_NAME = "clinical_brugada"
+ONLY_LEAD = "V1"
 DEFAULT_MORPHOLOGY_SYSTEM_PROMPT = "prompts/system/qrs_huca.md"
 DEFAULT_MORPHOLOGY_PROMPT = "prompts/qrs/right_precordial_morphology.md"
 DEFAULT_CLINICAL_SYSTEM_PROMPT = "prompts/system/clinical_brugada_huca.md"
 DEFAULT_CLINICAL_PROMPT = "prompts/clinical/brugada_patient.md"
-DEFAULT_CLINICAL_LEADS = ("V1", "V2", "V3")
+DEFAULT_CLINICAL_LEADS = ("V1",)
 CLINICAL_AGGREGATIONS = ("majority", "any_positive", "all_positive")
 ALL_CONDITIONS = (
     ZERO_SHOT_CONDITION,
@@ -126,7 +127,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--clinical-lead",
-        default="V2",
+        default="V1",
         help="Legacy single lead used by TASK=clinical when --clinical-leads is empty.",
     )
     parser.add_argument(
@@ -181,7 +182,7 @@ def main() -> None:
 def run_with_args(args: argparse.Namespace) -> None:
     dataset_root = Path(args.dataset_root).resolve()
     folds_path = resolve_folds_path(dataset_root, args.folds)
-    rows = read_manifest(dataset_root / "labels" / "all_labels.csv")
+    rows = only_v1_rows(read_manifest(dataset_root / "labels" / "all_labels.csv"))
     has_context_dataset = str(args.context_dataset_root) not in {"", "."}
     context_dataset_root = (
         Path(args.context_dataset_root).resolve()
@@ -189,7 +190,7 @@ def run_with_args(args: argparse.Namespace) -> None:
         else dataset_root
     )
     context_pool_rows = (
-        read_manifest(context_dataset_root / "labels" / "all_labels.csv")
+        only_v1_rows(read_manifest(context_dataset_root / "labels" / "all_labels.csv"))
         if has_context_dataset
         else rows
     )
@@ -304,13 +305,17 @@ def parse_string_list(text: str) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
 
 
+def only_v1_rows(rows: list[BrugadaImageRow]) -> list[BrugadaImageRow]:
+    return [row for row in rows if row.lead.upper() == ONLY_LEAD]
+
+
 def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
     leads = [
         lead.upper()
         for lead in parse_string_list(str(getattr(args, "clinical_leads", "")))
     ]
     if not leads:
-        leads = [str(getattr(args, "clinical_lead", "V2")).upper()]
+        leads = [str(getattr(args, "clinical_lead", "V1")).upper()]
     seen: set[str] = set()
     unique_leads: list[str] = []
     for lead in leads:
@@ -320,6 +325,8 @@ def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
         unique_leads.append(lead)
     if not unique_leads:
         raise ValueError("TASK=clinical requires at least one clinical lead.")
+    if unique_leads != [ONLY_LEAD]:
+        raise ValueError("This pipeline is configured to use V1 only.")
     return unique_leads
 
 
@@ -403,7 +410,7 @@ def run_k_seed(
         if (
             task != CLINICAL_TASK
             and context_pool_rows is not rows
-            and condition == NORMAL_CONDITION
+            and condition in {NORMAL_CONDITION, PERMUTED_CONDITION, NO_SUPPORT_IMAGES_CONDITION}
             and k > 0
         ):
             context_ids = select_qrs_context_patient_ids(
@@ -826,7 +833,7 @@ def patient_sort_key(patient_id: str) -> tuple[int, str]:
 
 
 def sorted_rows_by_lead(rows: list[BrugadaImageRow]) -> list[BrugadaImageRow]:
-    order = {"V1": 0, "V2": 1, "V3": 2}
+    order = {"V1": 0}
     return sorted(rows, key=lambda row: (order.get(row.lead.upper(), 99), row.lead))
 
 

@@ -20,6 +20,7 @@ reports/**
 !reports/.gitkeep
 notebooks/
 outputs/
+tmp/
 
 # Local task-board/tooling files for this workspace
 .obsidian/

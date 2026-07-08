@@ -1,13 +1,13 @@
-\chapter{Resultados de la transición al dominio real}
+\section{Dominio real}
 \label{chap:comparacion_real}
 
-El capítulo anterior presentó el primer escalón de la evaluación, compuesto únicamente por imágenes sintéticas del simulador QRS/ST. En ese entorno, la etiqueta está definida por reglas morfológicas y la tarea permite comprobar si los modelos recuperan una señal visual controlada. Este capítulo avanza hacia el dominio clínico de forma gradual.
+El apartado anterior presentó el primer escalón de la evaluación, compuesto por imágenes sintéticas del simulador QRS/ST. En ese entorno, la etiqueta está definida por reglas morfológicas y la tarea permite comprobar si los modelos recuperan una señal visual conocida. Este apartado avanza hacia el dominio clínico de forma gradual.
 
-La lectura se ordena de lo más sintético a lo más real. Primero se describe la cohorte cedida por el Hospital Universitario Central de Asturias, ya que es el destino común de las pruebas clínicas. Después se presentan dos controles de transferencia sintético-real: adaptación de dominio de la CNN usando los datos reales sin etiquetas morfológicas e ICL de Gemma~4 con contexto procedente del simulador. Por último se presenta la comparación principal sobre los ECG reales, formada por la CNN entrenada con el simulador y evaluada sobre la cohorte clínica, y Gemma~4 con demostraciones tomadas de esa misma cohorte.
+La lectura se ordena de lo más sintético a lo más real. Primero se describe la cohorte real del HUCA, ya que es el destino común de las pruebas clínicas. Después se presentan dos análisis de transferencia sintético-real: adaptación de dominio de la CNN usando los datos reales sin etiquetas morfológicas e ICL de Gemma~4 con contexto procedente del simulador. Por último se presenta la comparación principal sobre los ECG reales, formada por la CNN entrenada con el simulador y evaluada sobre la cohorte clínica, y Gemma~4 con demostraciones tomadas de esa misma cohorte.
 
-\section{Datos cedidos por el HUCA y etiqueta clínica}
+\subsection{Datos reales del HUCA y etiqueta clínica}
 
-El bloque real usa ECG cedidos por el Hospital Universitario Central de Asturias dentro del recurso Brugada HUCA \cite{costacortez2026brugada}. A partir de 363 pacientes, el procesado excluye 46 registros con patrón basal limítrofe y conserva un conjunto final de 317 pacientes, formado por 116 casos Brugada confirmados y 201 controles. Para cada paciente se generan imágenes de V1, V2 y V3.
+El dataset real usa ECG del Hospital Universitario Central de Asturias dentro del recurso Brugada HUCA \cite{costacortez2026brugada}. A partir de 363 pacientes, el procesado excluye 46 registros con patrón basal limítrofe y conserva un conjunto final de 317 pacientes, formado por 116 casos Brugada confirmados y 201 pacientes normales. Para cada paciente se genera únicamente la imagen de V1.
 
 \begin{table}[H]
   \centering
@@ -16,34 +16,34 @@ El bloque real usa ECG cedidos por el Hospital Universitario Central de Asturias
     Grupo & Pacientes & Imágenes \\
     \midrule
     Brugada confirmado & 116 & 348 \\
-    Control & 201 & 603 \\
+    Normal & 201 & 603 \\
     Excluido por patrón basal limítrofe & 46 & -- \\
     \midrule
     Total evaluado & 317 & 951 \\
     \bottomrule
   \end{tabular}
-  \caption{Datos cedidos por el HUCA utilizados en la evaluación real.}
+  \caption{Datos reales del HUCA utilizados en la evaluación real.}
   \label{tab:huca_datos_finales}
 \end{table}
 
-La preparación selecciona las derivaciones precordiales derechas, detecta un latido central y recorta una ventana de 300 ms antes de R y 600 ms después de R. Cada imagen queda asociada a su paciente, derivación, etiqueta clínica y pliegue de evaluación.
+La preparación selecciona V1, detecta un latido central y recorta una ventana de 300 ms antes de R y 600 ms después de R. Cada imagen queda asociada a su paciente, derivación, etiqueta clínica y pliegue de evaluación.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.96\textwidth]{results/fig_huca_preprocesado.pdf}
-  \caption{Preprocesamiento de los ECG cedidos por el HUCA para V1, V2 y V3.}
+  \caption{Preprocesamiento de los ECG del HUCA para V1.}
   \label{fig:huca_preprocesado}
 \end{figure}
 
-La etiqueta disponible no equivale a las tres etiquetas morfológicas utilizadas en el simulador. Los datos cedidos por el HUCA no incorporan anotaciones independientes para RBBB, elevación ST e inversión de T por imagen. La tarea real se formula por tanto como caso Brugada confirmado frente a control, y sus conclusiones se limitan a priorización para revisión especializada.
+La etiqueta disponible no equivale a las tres etiquetas morfológicas utilizadas en el simulador. Los datos reales del HUCA no incorporan anotaciones independientes para RBBB, elevación ST e inversión de T por imagen. La tarea real se formula por tanto como caso Brugada confirmado frente a normal, y sus conclusiones se limitan a priorización para revisión especializada.
 
-\section{Controles de transferencia sintético-real}
+\subsection{Análisis de transferencia sintético-real}
 
-Antes de comparar los métodos principales sobre los ECG reales, se evalúa si la información sintética puede reducir por sí sola la brecha de dominio. Esta parte incluye dos controles complementarios. El primero mantiene la CNN como modelo supervisado y añade adaptación de dominio usando los datos reales sin etiquetas morfológicas. El segundo mantiene Gemma~4 sin ajuste de pesos y le proporciona demostraciones del simulador antes de consultar imágenes reales.
+Antes de comparar los métodos principales sobre los ECG reales, se evalúa si la información sintética puede reducir por sí sola la brecha de dominio. Esta parte incluye dos análisis complementarios. El primero mantiene la CNN como modelo supervisado y añade adaptación de dominio usando los datos reales sin etiquetas morfológicas. El segundo mantiene Gemma~4 sin ajuste de pesos y le proporciona demostraciones del simulador antes de consultar imágenes reales.
 
-\subsection{Adaptación de dominio en la CNN}
+\subsubsection{Adaptación de dominio en la CNN}
 
-En estos experimentos, el simulador sigue siendo el origen etiquetado. Los datos cedidos por el HUCA se usan solo como dominio objetivo no etiquetado. La pérdida supervisada nunca utiliza etiquetas morfológicas procedentes de la cohorte real. Esta restricción conserva la validez metodológica del experimento y evita convertir \texttt{clinical\_brugada} en una etiqueta morfológica que no existe.
+En estos experimentos, el simulador sigue siendo el origen etiquetado. Los datos reales del HUCA se usan solo como dominio objetivo no etiquetado. La pérdida supervisada nunca utiliza etiquetas morfológicas procedentes de la cohorte real. Esta restricción conserva la validez metodológica del experimento y evita convertir \texttt{clinical\_brugada} en una etiqueta morfológica que no existe.
 
 \begin{table}[H]
   \centering
@@ -64,15 +64,15 @@ En estos experimentos, el simulador sigue siendo el origen etiquetado. Los datos
     DANN & 32 & \(0,509 \pm 0,028\) & 0,472 & 0,644 & 0,375 \\
     \bottomrule
   \end{tabular}
-  \caption{Resultados de adaptación de dominio de la CNN usando los datos cedidos por el HUCA como dominio objetivo no etiquetado.}
+  \caption{Resultados de adaptación de dominio de la CNN usando los datos reales del HUCA como dominio objetivo no etiquetado.}
   \label{tab:cnn_domain_real}
 \end{table}
 
 La mejora es modesta. CORAL mejora la especificidad frente a la base en \(K=16\) y \(K=32\). MMD ofrece el mejor punto de esta batería, con BA 0,549 en \(K=32\), F1 0,498, sensibilidad 0,649 y especificidad 0,448. Aun así, el rendimiento sigue lejos de una separación robusta. La adaptación reduce parcialmente la brecha, pero no elimina la discrepancia entre la morfología sintética aprendida y la etiqueta clínica real.
 
-\subsection{ICL con contexto del simulador}
+\subsubsection{ICL con contexto del simulador}
 
-Como análisis complementario de transferencia, se usaron demostraciones procedentes del simulador y consultas sobre la cohorte clínica cedida por el HUCA. Esta condición no constituye la comparación clínica principal. Su objetivo es medir si unas demostraciones morfológicas sintéticas bastan para orientar al VLM cuando cambia el dominio de la imagen y la referencia de evaluación pasa a ser clínica.
+Como análisis complementario de transferencia, se usaron demostraciones procedentes del simulador y consultas sobre la cohorte clínica del HUCA. Esta condición no constituye la comparación clínica principal. Su objetivo es medir si unas demostraciones morfológicas sintéticas bastan para orientar al VLM cuando cambia el dominio de la imagen y la referencia de evaluación pasa a ser clínica.
 
 El modelo predice primero RBBB, elevación ST e inversión de T, deriva la decisión Brugada mediante la regla de los tres hallazgos y compara esa salida con la referencia clínica disponible. El resultado es marcadamente negativo. Zero-shot queda en BA 0,500, F1 0,000, sensibilidad 0,000 y especificidad 1,000. Con demostraciones sintéticas, casi todos los valores de \(K\) permanecen alrededor de BA 0,500. El mejor punto de esta condición, ICL balanceado con \(K=32\), solo alcanza BA 0,505, F1 0,022, sensibilidad 0,011 y especificidad 0,998. En términos prácticos, Gemma~4 mantiene un patrón de predicción casi siempre colapsado hacia la clase negativa.
 
@@ -90,33 +90,40 @@ El modelo predice primero RBBB, elevación ST e inversión de T, deriva la decis
     ICL balanceado & 32 & 0,505 & 0,022 & 0,011 & 0,998 \\
     \bottomrule
   \end{tabularx}
-  \caption{Puntos principales de Gemma~4 con contexto sintético y consulta sobre los datos reales cedidos por el HUCA. Las cifras son medias sobre tres semillas.}
+  \caption{Puntos principales de Gemma~4 con contexto sintético y consulta sobre los datos reales del HUCA. Las cifras son medias sobre tres semillas.}
   \label{tab:vlm_huca_synthetic_context_key}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \safeincludegraphics[width=0.98\textwidth]{results/transfer_controls_synthetic_to_real_summary.png}
-  \caption{Controles de transferencia sintético-real. La parte izquierda resume la adaptación de dominio de la CNN y la parte derecha resume Gemma~4 con demostraciones sintéticas antes de consultar imágenes reales.}
-  \label{fig:transfer_controls_summary}
+  \safeincludegraphics[width=0.98\textwidth]{results/transfer_synthetic_to_real_summary.png}
+  \caption{Análisis de transferencia sintético-real. La parte izquierda resume la adaptación de dominio de la CNN y la parte derecha resume Gemma~4 con demostraciones sintéticas antes de consultar imágenes reales.}
+  \label{fig:transfer_synthetic_real_summary}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.48\textwidth]{results/vlm_huca_synthetic_context_balanced_k32_confusion_matrix.png}
-  \caption{Matriz de confusión agregada de Gemma~4 con contexto sintético balanceado, \(K=32\), y consulta sobre los datos reales cedidos por el HUCA.}
+  \caption{Matriz de confusión agregada de Gemma~4 con contexto sintético balanceado, \(K=32\), y consulta sobre los datos reales del HUCA.}
   \label{fig:vlm_huca_synthetic_context_confusion}
 \end{figure}
 
-Los dos controles apuntan a la misma lectura. La información sintética ayuda a estudiar una regla visual controlada, pero no basta por sí sola para trasladar el criterio al dominio clínico. En la CNN, la alineación de representaciones produce una mejora limitada. En el VLM, las demostraciones sintéticas apenas modifican el régimen de predicción.
+Los dos análisis apuntan a la misma lectura. La información sintética ayuda a estudiar una regla visual definida, pero no basta por sí sola para trasladar el criterio al dominio clínico. En la CNN, la alineación de representaciones produce una mejora limitada. En el VLM, las demostraciones sintéticas apenas modifican el régimen de predicción.
 
-\section{Evaluación directa con los datos cedidos por el HUCA}
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.96\textwidth]{results/fig_synthetic_real_comparison.drawio.png}
+  \caption{Diferencias visuales entre un ejemplo del simulador QRS/ST y un ejemplo real del HUCA. La comparación ilustra por qué la transferencia desde el simulador no equivale a validar directamente sobre ECG clínicos.}
+  \label{fig:synthetic_real_comparison}
+\end{figure}
+
+\subsection{Evaluación directa con datos reales del HUCA}
 
 El último escalón utiliza los datos reales como referencia de evaluación principal. La CNN no se entrena de forma supervisada con la cohorte real, porque su cabeza multietiqueta exige anotaciones de RBBB, elevación ST e inversión de T que no están disponibles. Gemma~4 sí puede recibir demostraciones de la propia cohorte, porque el aprendizaje en contexto usa ejemplos etiquetados dentro del prompt sin modificar pesos.
 
-\subsection{CNN transferida desde el simulador}
+\subsubsection{CNN transferida desde el simulador}
 
-La evaluación principal de CNN mide transferencia sintético-real directa. Los \(K\) pacientes usados para actualizar pesos proceden del simulador QRS/ST. La prueba se realiza con la cohorte real cedida por el HUCA y la decisión final se compara con \texttt{clinical\_brugada}. En esta configuración, la CNN no reproduce el comportamiento observado en el simulador. Su mejor punto aparece en \(K=16\), con 0,516 de exactitud equilibrada, sensibilidad 0,658 y especificidad 0,375.
+La evaluación principal de CNN mide transferencia sintético-real directa. Los \(K\) pacientes usados para actualizar pesos proceden del simulador QRS/ST. La prueba se realiza con la cohorte real del HUCA y la decisión final se compara con \texttt{clinical\_brugada}. En esta configuración, la CNN no reproduce el comportamiento observado en el simulador. Su mejor punto aparece en \(K=16\), con 0,516 de exactitud equilibrada, sensibilidad 0,658 y especificidad 0,375.
 
 \begin{table}[H]
   \centering
@@ -132,33 +139,33 @@ La evaluación principal de CNN mide transferencia sintético-real directa. Los 
     32 & \(0,499 \pm 0,012\) & 0,466 & 0,644 & 0,355 & 0,491 \\
     \bottomrule
   \end{tabular}
-  \caption{Resultados CNN ResNet18 entrenada con simulador y evaluada con los datos cedidos por el HUCA. Las cifras son medias sobre tres semillas.}
+  \caption{Resultados CNN ResNet18 entrenada con simulador y evaluada con los datos reales del HUCA. Las cifras son medias sobre tres semillas.}
   \label{tab:huca_baseline_final}
 \end{table}
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.80\textwidth]{results/cnn_huca_balanced_accuracy_by_k.png}
-  \caption{Exactitud equilibrada de la CNN base evaluada con los datos cedidos por el HUCA según \(K\). Los puntos muestran la media de tres semillas y las barras la desviación estándar.}
+  \caption{Exactitud equilibrada de la CNN base evaluada con los datos reales del HUCA según \(K\). Los puntos muestran la media de tres semillas y las barras la desviación estándar.}
   \label{fig:cnn_huca_ba}
 \end{figure}
 
-La matriz agregada para \(K=16\), con 229 verdaderos positivos, 226 verdaderos negativos, 377 falsos positivos y 119 falsos negativos, evidencia el problema central. La CNN recupera una parte importante de los positivos, pero marca demasiados controles.
+La matriz agregada para \(K=16\), con 229 verdaderos positivos, 226 verdaderos negativos, 377 falsos positivos y 119 falsos negativos, evidencia el problema central. La CNN recupera una parte importante de los positivos, pero marca demasiados pacientes normales.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.58\textwidth]{results/cnn_huca_k16_confusion_matrix.png}
-  \caption{Matriz de confusión agregada de la CNN evaluada con los datos cedidos por el HUCA para \(K=16\), acumulando las tres semillas.}
+  \caption{Matriz de confusión agregada de la CNN evaluada con los datos reales del HUCA para \(K=16\), acumulando las tres semillas.}
   \label{fig:cnn_huca_confusion}
 \end{figure}
 
-\subsection{Gemma 4 con contexto real}
+\subsubsection{Gemma 4 con contexto real}
 
-El VLM se comporta de forma distinta a la CNN. En zero-shot, Gemma~4 tiende a una decisión casi monoclase y clasifica la práctica totalidad de las imágenes como controles, por lo que conserva una especificidad muy alta, 0,993, pero deja la sensibilidad en 0,023. Este comportamiento no debe interpretarse como evidencia de ausencia de señal en el ECG, sino como una limitación del modelo para fijar la frontera de decisión clínica sin ejemplos locales.
+El VLM se comporta de forma distinta a la CNN. En zero-shot, Gemma~4 tiende a una decisión casi monoclase y clasifica la práctica totalidad de las imágenes como normales, por lo que conserva una especificidad muy alta, 0,993, pero deja la sensibilidad en 0,023. Este comportamiento no debe interpretarse como evidencia de ausencia de señal en el ECG, sino como una limitación del modelo para fijar la frontera de decisión clínica sin ejemplos locales.
 
 Al añadir demostraciones tomadas de la propia cohorte cedida por el HUCA, el régimen de predicción cambia. El modelo empieza a aceptar con mucha más frecuencia la clase positiva y la sensibilidad aumenta de forma marcada. Con \(K=16\), el ICL normal alcanza BA 0,522, sensibilidad 0,690 y especificidad 0,355, mientras que el ICL balanceado mantiene una BA muy parecida, 0,522, pero sube la sensibilidad a 0,713 y baja la especificidad a 0,332. Por tanto, el contexto no resuelve el problema clínico, pero sí resulta informativo. Unos pocos ejemplos modifican de forma consistente el criterio de decisión frente al colapso conservador del zero-shot.
 
-En las tablas completas, la denominación V2 real identifica este bloque de evaluación con Gemma~4 sobre la imagen de la derivación V2 de cada paciente. Se informa así porque el experimento VLM sobre datos reales utiliza V2 como derivación de consulta principal, manteniendo la etiqueta clínica por paciente.
+En las tablas completas, la denominación V1 real identifica este grupo de evaluación con Gemma~4 sobre la imagen de la derivación V1 de cada paciente. Se informa así porque el experimento VLM sobre datos reales utiliza V1 como única derivación de consulta, manteniendo la etiqueta clínica por paciente.
 
 \begin{table}[H]
   \centering
@@ -173,7 +180,7 @@ En las tablas completas, la denominación V2 real identifica este bloque de eval
     ICL balanceado & 32 & 0,521 & 0,484 & 0,658 & 0,385 \\
     \bottomrule
   \end{tabularx}
-  \caption{Puntos principales de Gemma~4 con contexto real tomado de los datos cedidos por el HUCA. Las cifras son medias sobre tres semillas.}
+  \caption{Puntos principales de Gemma~4 con contexto real tomado de los datos reales del HUCA. Las cifras son medias sobre tres semillas.}
   \label{tab:vlm_huca_key}
 \end{table}
 
@@ -181,32 +188,32 @@ En las tablas completas, la denominación V2 real identifica este bloque de eval
   \centering
   \begin{subfigure}{0.48\textwidth}
     \centering
-    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v2_ba_by_k.png}
+    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v1_ba_by_k.png}
     \caption{Exactitud equilibrada.}
   \end{subfigure}
   \hfill
   \begin{subfigure}{0.48\textwidth}
     \centering
-    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v2_f1_by_k.png}
+    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v1_f1_by_k.png}
     \caption{F1.}
   \end{subfigure}
-  \caption{Curvas VLM/ICL de Gemma~4 con consulta V2 y contexto real tomado de los datos cedidos por el HUCA. Los puntos muestran la media de tres semillas y las barras la desviación estándar.}
+  \caption{Curvas VLM/ICL de Gemma~4 con consulta V1 y contexto real tomado de los datos reales del HUCA. Los puntos muestran la media de tres semillas y las barras la desviación estándar.}
   \label{fig:vlm_huca_curves}
 \end{figure}
 
-Las matrices de confusión muestran el cambio de régimen al introducir ejemplos. Gemma~4 pasa de un zero-shot conservador, prácticamente colapsado hacia la clase negativa, a una configuración que detecta más casos, pero también desplaza numerosos controles hacia la clase positiva.
+Las matrices de confusión muestran el cambio de régimen al introducir ejemplos. Gemma~4 pasa de un zero-shot conservador, prácticamente colapsado hacia la clase negativa, a una configuración que detecta más casos, pero también desplaza numerosos pacientes normales hacia la clase positiva.
 
 \begin{figure}[H]
   \centering
   \begin{subfigure}{0.42\textwidth}
     \centering
-    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v2_normal_k16_confusion_matrix.png}
+    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v1_normal_k16_confusion_matrix.png}
     \caption{ICL normal, \(K=16\).}
   \end{subfigure}
   \hfill
   \begin{subfigure}{0.42\textwidth}
     \centering
-    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v2_balanced_k16_confusion_matrix.png}
+    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v1_balanced_k16_confusion_matrix.png}
     \caption{ICL balanceado, \(K=16\).}
   \end{subfigure}
   \caption{Matrices de confusión agregadas de Gemma~4 con contexto real para los dos puntos principales de ICL.}
@@ -220,7 +227,7 @@ Las matrices de confusión muestran el cambio de régimen al introducir ejemplos
   \label{fig:vlm_huca_context_transfer}
 \end{figure}
 
-\section{Comparación clínica principal}
+\subsection{Comparación clínica principal}
 
 La comparación principal queda muy ajustada en exactitud equilibrada. La CNN base alcanza 0,516 en \(K=16\), Gemma~4 con ICL normal llega a 0,522 en el mismo valor de \(K\) y el ICL balanceado mantiene 0,522. La diferencia relevante está en sensibilidad y especificidad. Como resultado complementario, MMD con \(K=32\) sube a 0,549 de BA, aunque no cambia la conclusión global sobre falta de robustez.
 
@@ -239,7 +246,7 @@ La comparación principal queda muy ajustada en exactitud equilibrada. La CNN ba
     Gemma~4 contexto sintético & 32 & 0,505 & 0,022 & 0,011 & 0,998 \\
     \bottomrule
   \end{tabularx}
-  \caption{Puntos relevantes sobre los ECG reales cedidos por el HUCA.}
+  \caption{Puntos relevantes sobre los ECG reales del HUCA.}
   \label{tab:comparacion_real}
 \end{table}
 
@@ -256,22 +263,22 @@ La comparación principal queda muy ajustada en exactitud equilibrada. La CNN ba
     \safeincludegraphics[width=\textwidth]{results/comparison_huca_f1_by_k.png}
     \caption{F1.}
   \end{subfigure}
-  \caption{Comparación gráfica entre CNN base, ICL normal e ICL balanceado con los datos cedidos por el HUCA y contexto real para Gemma~4.}
+  \caption{Comparación gráfica entre CNN base, ICL normal e ICL balanceado con los datos reales del HUCA y contexto real para Gemma~4.}
   \label{fig:comparacion_huca_curvas}
 \end{figure}
 
-En un sistema de triaje, la sensibilidad tiene un peso especial. Un falso negativo puede retrasar la revisión de un paciente que quizá necesite reposicionamiento de derivaciones o prueba farmacológica. El aumento de sensibilidad del ICL balanceado frente a la CNN base, 0,713 frente a 0,658, es por tanto un resultado relevante. La otra mitad de la lectura es igual de necesaria, porque la especificidad baja de 0,375 en la CNN base a 0,332 con ICL balanceado y esa caída significa más alertas sobre controles.
+En un sistema de triaje, la sensibilidad tiene un peso especial. Un falso negativo puede retrasar la revisión de un paciente que quizá necesite reposicionamiento de derivaciones o prueba farmacológica. El aumento de sensibilidad del ICL balanceado frente a la CNN base, 0,713 frente a 0,658, es por tanto un resultado relevante. La otra mitad de la lectura es igual de necesaria, porque la especificidad baja de 0,375 en la CNN base a 0,332 con ICL balanceado y esa caída significa más alertas sobre pacientes normales.
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.86\textwidth]{results/comparison_huca_sens_spec_best.png}
-  \caption{Sensibilidad y especificidad de los puntos principales con los datos cedidos por el HUCA. La figura resume el compromiso clínico entre recuperar positivos y evitar alertas sobre controles.}
+  \caption{Sensibilidad y especificidad de los puntos principales con los datos reales del HUCA. La figura resume el compromiso clínico entre recuperar positivos y evitar alertas sobre pacientes normales.}
   \label{fig:comparacion_huca_sens_spec}
 \end{figure}
 
 El VLM aporta una señal interesante para priorización cuando dispone de contexto real, pero no una herramienta asistencial fiable con los datos actuales. La adaptación de dominio de la CNN mejora parcialmente algunos puntos, aunque todavía con métricas propias de un prototipo exploratorio. El contexto sintético del VLM confirma que las demostraciones del simulador no bastan para trasladar el criterio al dominio clínico.
 
-\section{Brecha integrada entre simulador y dominio clínico}
+\subsection{Brecha integrada entre simulador y dominio clínico}
 
 La brecha de dominio afecta a los dos enfoques. En la CNN, la exactitud equilibrada crece en el simulador hasta 0,848 con \(K=32\), mientras que en los ECG reales se mantiene alrededor de 0,50 antes de la adaptación. En el VLM ocurre una compresión similar. El ICL normal alcanza 0,750 en el simulador con \(K=16\), pero baja a 0,522 con contexto real y se queda en torno a 0,500 cuando el contexto procede del simulador.
 
@@ -288,27 +295,27 @@ La brecha de dominio afecta a los dos enfoques. En la CNN, la exactitud equilibr
     \safeincludegraphics[width=\textwidth]{results/domain_gap_cnn_f1_by_k.png}
     \caption{F1.}
   \end{subfigure}
-  \caption{Brecha sintético-real de la CNN base. Las líneas continuas corresponden al simulador y las discontinuas a los datos cedidos por el HUCA.}
+  \caption{Brecha sintético-real de la CNN base. Las líneas continuas corresponden al simulador y las discontinuas a los datos reales del HUCA.}
   \label{fig:domain_gap_cnn}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.98\textwidth]{results/domain_gap_icl_context_ba_by_k.png}
-  \caption{Brecha sintético-real de Gemma~4 para exactitud equilibrada. Se comparan simulador, contexto real de los datos cedidos por el HUCA y contexto sintético del simulador.}
+  \caption{Brecha sintético-real de Gemma~4 para exactitud equilibrada. Se comparan simulador, contexto real de los datos reales del HUCA y contexto sintético del simulador.}
   \label{fig:domain_gap_icl_context_ba}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \safeincludegraphics[width=0.98\textwidth]{results/domain_gap_icl_context_f1_by_k.png}
-  \caption{Brecha sintético-real de Gemma~4 para F1. Se comparan simulador, contexto real de los datos cedidos por el HUCA y contexto sintético del simulador.}
+  \caption{Brecha sintético-real de Gemma~4 para F1. Se comparan simulador, contexto real de los datos reales del HUCA y contexto sintético del simulador.}
   \label{fig:domain_gap_icl_context_f1}
 \end{figure}
 
-Las gráficas muestran que el simulador separa mejor la tarea para ambos paradigmas, pero esa ventaja no se conserva cuando la etiqueta pasa a ser clínica. Las causas plausibles incluyen ruido y variabilidad de adquisición, diferencias de escala, presencia de fenotipos diversos, etiqueta clínica no reducible a una sola ventana de ECG y ausencia de anotaciones morfológicas finas. El resultado no invalida el simulador. Delimita su función como banco controlado y muestra que el problema real exige más información que una imagen aislada.
+Las gráficas muestran que el simulador separa mejor la tarea para ambos paradigmas, pero esa ventaja no se conserva cuando la etiqueta pasa a ser clínica. Las causas plausibles incluyen ruido y variabilidad de adquisición, diferencias de escala, presencia de fenotipos diversos, etiqueta clínica no reducible a una sola ventana de ECG y ausencia de anotaciones morfológicas finas. El resultado no invalida el simulador. Delimita su función como banco sintético y muestra que el problema real exige más información que una imagen aislada.
 
-\section{Lectura final}
+\subsection{Interpretación final}
 
 Los datos reales muestran que el ECG como imagen contiene información, pero también que pocos ejemplos y una etiqueta clínica compleja no bastan para sostener una clasificación robusta. En ese escenario, la CNN ofrece una referencia supervisada transferida desde el simulador, la adaptación de dominio mide cuánto puede reducirse la brecha sin etiquetas morfológicas reales y el VLM permite explotar ejemplos de la cohorte clínica sin entrenamiento adicional.
 

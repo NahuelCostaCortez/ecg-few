@@ -71,6 +71,13 @@ La aparición de PULSE modifica el estado del arte, pero no elimina la pregunta 
 
 El aprendizaje en contexto (\emph{in-context learning}, ICL) modifica el ciclo habitual de entrenamiento supervisado. En lugar de ajustar los pesos de una red mediante descenso por gradiente, los ejemplos se colocan en la ventana de contexto del modelo durante la inferencia. Cada demostración consiste en una imagen y su etiqueta o descripción textual. El modelo produce una predicción para la imagen de consulta sin que sus pesos hayan cambiado. Esta propiedad es especialmente valiosa cuando los datos disponibles se reducen a unas pocas decenas de muestras, situación habitual en condiciones cardíacas de baja prevalencia como el síndrome de Brugada.
 
+\begin{figure}[H]
+  \centering
+  \safeincludegraphics[width=0.88\textwidth]{sources/icl_general_dong2024.png}
+  \caption{Esquema general del aprendizaje en contexto: varias demostraciones se concatenan con una consulta y el modelo congelado produce la respuesta sin actualizar parámetros. Fuente: Dong y colaboradores \cite{dong2024survey}.}
+  \label{fig:icl_context_related_work}
+\end{figure}
+
 Flamingo estableció la arquitectura de referencia para esta capacidad. El modelo recibe secuencias intercaladas de imágenes y texto y resuelve tareas con demostraciones de ejemplo \cite{alayrac2022}. Flamingo demostró que un modelo preentrenado de gran escala puede adaptarse a tareas nuevas durante la inferencia cuando se le proporcionan ejemplos visuales y textuales relevantes. Este resultado impulsó el uso de modelos multimodales como sistemas flexibles que no requieren un ciclo de ajuste dedicado para cada tarea.
 
 Sin embargo, los estudios posteriores demuestran que esta capacidad es frágil y que la contribución de cada componente de las demostraciones no es homogénea. Chen y colaboradores evaluaron si los modelos utilizaban realmente la parte visual de las demostraciones \cite{chen2024}. Encontraron una dependencia dominante del contenido textual en varios bancos de pruebas estándar. La selección de ejemplos basada en similitud visual seguía aportando valor marginal, pero la imagen dentro de la demostración podía tener menos influencia de la esperada. Ese resultado encaja con una duda central de este trabajo. Cuando las demostraciones contienen imágenes de ECG, ¿el modelo las procesa visualmente o se apoya solo en las descripciones textuales?
@@ -85,13 +92,11 @@ Además, la aplicación de ICL a dominios médicos especializados plantea retos 
 
 El estado del arte multimodal avanza en dos direcciones que interesan a este TFG. Una consiste en modelos generalistas cada vez más potentes, capaces de razonar sobre texto e imagen aunque no hayan sido entrenados específicamente para ECG. Otra consiste en modelos médicos adaptados a modalidades clínicas concretas. La elección del modelo no depende solo del rendimiento, sino también de privacidad, reproducibilidad y dependencia de servicios externos.
 
-Los modelos propietarios accesibles por API, incluidos modelos comerciales de la familia de OpenAI, son una referencia natural porque han mostrado capacidades multimodales fuertes. Además, trabajos recientes han demostrado que los VLM pueden detectar anomalías en ECG como imagen mediante aprendizaje en contexto \cite{camba2026icl}. Sin embargo, para un prototipo de triaje con datos sanitarios, la ejecución local reduce la exposición de las imágenes de pacientes, conserva el control sobre el entorno y evita cambios no documentados de versión.
+Los modelos propietarios accesibles por API, incluidos modelos comerciales de la familia de OpenAI, son una referencia natural porque han mostrado capacidades multimodales fuertes. Además, trabajos recientes han demostrado que los VLM pueden detectar anomalías en ECG como imagen mediante aprendizaje en contexto \cite{camba2026icl}. Sin embargo, para un prototipo de triaje con datos sanitarios, la ejecución local reduce la exposición de las imágenes de pacientes, conserva la trazabilidad del entorno y evita cambios no documentados de versión.
 
 MedGemma 1.5 pertenece a la línea de modelos médicos abiertos. El modelo ha recibido adaptación con diferentes modalidades clínicas, incluyendo radiología y dermatología \cite{medgemma15}. La documentación disponible no sitúa el ECG entre sus modalidades principales, por lo que su uso en este dominio requiere validación específica antes de extraer conclusiones sobre morfología electrocardiográfica.
 
 Gemma 4 es la familia abierta y multimodal elegida para la evaluación cuantitativa \cite{gemma4card}. Sus variantes admiten texto e imagen, contexto extenso y resolución visual variable. La elección se apoya en su carácter abierto, en su nivel de prestaciones y en la posibilidad de ejecutarlo localmente con un tamaño razonable para un entorno hospitalario de investigación. Esta combinación permite estudiar si el aprendizaje en contexto aporta señal sin entrenar pesos ni enviar datos a un proveedor externo.
-
-La comparación exige informar la versión del modelo, la resolución visual y el número de tokens dedicados a cada imagen. Sin esa información, dos evaluaciones con el mismo nombre de modelo podrían no ser equivalentes.
 
 \section{Hueco de investigación}
 
