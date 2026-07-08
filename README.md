@@ -85,7 +85,7 @@ El enfoque multimodal utiliza Gemma 4 como modelo de visión y lenguaje. El mode
 Se informan tres condiciones principales:
 
 - `zero-shot`, sin ejemplos previos
-- `ICL normal`, con demostraciones seleccionadas por el protocolo estándar
+- `ICL estándar`, con demostraciones seleccionadas por el protocolo estándar
 - `ICL balanceado`, con balance positivo-negativo cuando el pliegue lo permite
 
 En los datos reales se distinguen dos orígenes del contexto:
@@ -103,7 +103,7 @@ En el dominio sintético, ambos enfoques detectan señal visual. La CNN aprovech
 |---|---:|---:|---:|---:|---:|
 | CNN ResNet18 | 32 | 0.848 | 0.673 | 0.883 | 0.812 |
 | Gemma 4 zero-shot | 0 | 0.500 | 0.000 | 0.000 | 1.000 |
-| Gemma 4 ICL normal | 16 | 0.750 | 0.529 | 0.817 | 0.683 |
+| Gemma 4 ICL estándar | 16 | 0.750 | 0.529 | 0.817 | 0.683 |
 | Gemma 4 ICL balanceado | 8 | 0.754 | 0.511 | 0.950 | 0.558 |
 
 <img src="thesis/thesis/assets/results/comparison_simulator_ba_by_k.png" alt="Exactitud equilibrada en simulador" width="520">
@@ -112,7 +112,7 @@ En el dominio sintético, ambos enfoques detectan señal visual. La CNN aprovech
 Las matrices de confusión resumen los mejores puntos de cada enfoque:
 
 <img src="thesis/thesis/assets/results/cnn_simulator_qrs_k32_confusion_matrix.png" alt="Matriz CNN simulador K32" width="300">
-<img src="thesis/thesis/assets/results/vlm_simulator_qrs_normal_k16_confusion_matrix.png" alt="Matriz VLM simulador normal K16" width="300">
+<img src="thesis/thesis/assets/results/vlm_simulator_qrs_estandar_k16_confusion_matrix.png" alt="Matriz VLM simulador estándar K16" width="300">
 <img src="thesis/thesis/assets/results/vlm_simulator_qrs_balanced_k8_confusion_matrix.png" alt="Matriz VLM simulador balanceado K8" width="300">
 
 ## Transferencia sintético-real
@@ -148,8 +148,8 @@ El control VLM con contexto sintético usa demostraciones del simulador y consul
 | Condición | \(K\) | BA | F1 | Sens. | Esp. |
 |---|---:|---:|---:|---:|---:|
 | Zero-shot | 0 | 0.500 | 0.000 | 0.000 | 1.000 |
-| ICL normal | 16 | 0.501 | 0.006 | 0.003 | 0.998 |
-| ICL normal | 32 | 0.500 | 0.006 | 0.003 | 0.997 |
+| ICL estándar | 16 | 0.501 | 0.006 | 0.003 | 0.998 |
+| ICL estándar | 32 | 0.500 | 0.006 | 0.003 | 0.997 |
 | ICL balanceado | 8 | 0.501 | 0.006 | 0.003 | 1.000 |
 | ICL balanceado | 32 | 0.505 | 0.022 | 0.011 | 0.998 |
 
@@ -169,7 +169,7 @@ La comparación clínica principal enfrenta una CNN transferida desde el simulad
 | CNN ResNet18 base | 16 | 0.516 | 0.480 | 0.658 | 0.375 |
 | CNN MMD | 32 | 0.549 | 0.498 | 0.649 | 0.448 |
 | Gemma 4 zero-shot | 0 | 0.508 | 0.044 | 0.023 | 0.993 |
-| Gemma 4 ICL normal | 16 | 0.522 | 0.491 | 0.690 | 0.355 |
+| Gemma 4 ICL estándar | 16 | 0.522 | 0.491 | 0.690 | 0.355 |
 | Gemma 4 ICL balanceado | 16 | 0.522 | 0.496 | 0.713 | 0.332 |
 | Gemma 4 contexto sintético | 32 | 0.505 | 0.022 | 0.011 | 0.998 |
 

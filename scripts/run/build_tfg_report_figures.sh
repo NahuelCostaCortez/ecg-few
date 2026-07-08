@@ -75,7 +75,7 @@ if [ "$RUN_COMPARISONS" = "1" ]; then
     run_step "Build CNN vs VLM simulator report plots" env \
       CNN_SUMMARY="$ROOT_DIR/reports/loocv/cnn_simulator_qrs/cnn_summary_by_seed.csv" \
       VLM_SUMMARY="$ROOT_DIR/reports/loocv/vlm_simulator_qrs/vlm_summary_by_seed.csv" \
-      VLM_CONDITION=normal \
+      VLM_CONDITION=estandar \
       VLM_MODEL="$VLM_MODEL" \
       OUTPUT_DIR="$ROOT_DIR/reports/loocv/comparison_vlm_simulator_qrs" \
       sh "$ROOT_DIR/scripts/run/build_loocv_comparison.sh"
@@ -87,7 +87,7 @@ if [ "$RUN_COMPARISONS" = "1" ]; then
     run_step "Build CNN vs VLM HUCA morphology report plots" env \
       CNN_SUMMARY="$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
       VLM_SUMMARY="$ROOT_DIR/reports/loocv/vlm/vlm_summary_by_seed.csv" \
-      VLM_CONDITION=normal \
+      VLM_CONDITION=estandar \
       VLM_MODEL="$VLM_MODEL" \
       OUTPUT_DIR="$ROOT_DIR/reports/loocv/comparison" \
       sh "$ROOT_DIR/scripts/run/build_loocv_comparison.sh"
@@ -99,7 +99,7 @@ if [ "$RUN_COMPARISONS" = "1" ]; then
     run_step "Build CNN vs VLM HUCA clinical report plots" env \
       CNN_SUMMARY="$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv" \
       VLM_SUMMARY="$ROOT_DIR/reports/loocv/vlm_real_context/vlm_summary_by_seed.csv" \
-      VLM_CONDITION=normal \
+      VLM_CONDITION=estandar \
       VLM_MODEL="$VLM_MODEL" \
       OUTPUT_DIR="$ROOT_DIR/reports/loocv/comparison_vlm_real_context" \
       sh "$ROOT_DIR/scripts/run/build_loocv_comparison.sh"

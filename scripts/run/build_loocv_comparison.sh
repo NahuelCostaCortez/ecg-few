@@ -6,7 +6,7 @@ UV="${UV:-uv}"
 
 CNN_SUMMARY="${CNN_SUMMARY:-$ROOT_DIR/reports/loocv/cnn/cnn_summary_by_seed.csv}"
 VLM_SUMMARY="${VLM_SUMMARY:-$ROOT_DIR/reports/loocv/vlm/vlm_summary_by_seed.csv}"
-VLM_CONDITION="${VLM_CONDITION:-normal}"
+VLM_CONDITION="${VLM_CONDITION:-estandar}"
 VLM_MODEL="${VLM_MODEL:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/reports/loocv/comparison}"
 

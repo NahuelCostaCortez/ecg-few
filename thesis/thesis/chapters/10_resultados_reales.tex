@@ -84,8 +84,8 @@ El modelo predice primero RBBB, elevación ST e inversión de T, deriva la decis
     Condición & \(K\) & BA & F1 & Sens. & Esp. \\
     \midrule
     Zero-shot & 0  & 0,500 & 0,000 & 0,000 & 1,000 \\
-    ICL normal & 16 & 0,501 & 0,006 & 0,003 & 0,998 \\
-    ICL normal & 32 & 0,500 & 0,006 & 0,003 & 0,997 \\
+    ICL estándar & 16 & 0,501 & 0,006 & 0,003 & 0,998 \\
+    ICL estándar & 32 & 0,500 & 0,006 & 0,003 & 0,997 \\
     ICL balanceado & 8 & 0,501 & 0,006 & 0,003 & 1,000 \\
     ICL balanceado & 32 & 0,505 & 0,022 & 0,011 & 0,998 \\
     \bottomrule
@@ -163,7 +163,7 @@ La matriz agregada para \(K=16\), con 229 verdaderos positivos, 226 verdaderos n
 
 El VLM se comporta de forma distinta a la CNN. En zero-shot, Gemma~4 tiende a una decisión casi monoclase y clasifica la práctica totalidad de las imágenes como normales, por lo que conserva una especificidad muy alta, 0,993, pero deja la sensibilidad en 0,023. Este comportamiento no debe interpretarse como evidencia de ausencia de señal en el ECG, sino como una limitación del modelo para fijar la frontera de decisión clínica sin ejemplos locales.
 
-Al añadir demostraciones tomadas de la propia cohorte cedida por el HUCA, el régimen de predicción cambia. El modelo empieza a aceptar con mucha más frecuencia la clase positiva y la sensibilidad aumenta de forma marcada. Con \(K=16\), el ICL normal alcanza BA 0,522, sensibilidad 0,690 y especificidad 0,355, mientras que el ICL balanceado mantiene una BA muy parecida, 0,522, pero sube la sensibilidad a 0,713 y baja la especificidad a 0,332. Por tanto, el contexto no resuelve el problema clínico, pero sí resulta informativo. Unos pocos ejemplos modifican de forma consistente el criterio de decisión frente al colapso conservador del zero-shot.
+Al añadir demostraciones tomadas de la propia cohorte cedida por el HUCA, el régimen de predicción cambia. El modelo empieza a aceptar con mucha más frecuencia la clase positiva y la sensibilidad aumenta de forma marcada. Con \(K=16\), el ICL estándar alcanza BA 0,522, sensibilidad 0,690 y especificidad 0,355, mientras que el ICL balanceado mantiene una BA muy parecida, 0,522, pero sube la sensibilidad a 0,713 y baja la especificidad a 0,332. Por tanto, el contexto no resuelve el problema clínico, pero sí resulta informativo. Unos pocos ejemplos modifican de forma consistente el criterio de decisión frente al colapso conservador del zero-shot.
 
 En las tablas completas, la denominación V1 real identifica este grupo de evaluación con Gemma~4 sobre la imagen de la derivación V1 de cada paciente. Se informa así porque el experimento VLM sobre datos reales utiliza V1 como única derivación de consulta, manteniendo la etiqueta clínica por paciente.
 
@@ -175,7 +175,7 @@ En las tablas completas, la denominación V1 real identifica este grupo de evalu
     Condición & \(K\) & BA & F1 & Sens. & Esp. \\
     \midrule
     Zero-shot & 0  & 0,508 & 0,044 & 0,023 & 0,993 \\
-    ICL normal & 16 & 0,522 & 0,491 & 0,690 & 0,355 \\
+    ICL estándar & 16 & 0,522 & 0,491 & 0,690 & 0,355 \\
     ICL balanceado & 16 & 0,522 & 0,496 & 0,713 & 0,332 \\
     ICL balanceado & 32 & 0,521 & 0,484 & 0,658 & 0,385 \\
     \bottomrule
@@ -207,8 +207,8 @@ Las matrices de confusión muestran el cambio de régimen al introducir ejemplos
   \centering
   \begin{subfigure}{0.42\textwidth}
     \centering
-    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v1_normal_k16_confusion_matrix.png}
-    \caption{ICL normal, \(K=16\).}
+    \safeincludegraphics[width=\textwidth]{results/vlm_huca_v1_estandar_k16_confusion_matrix.png}
+    \caption{ICL estándar, \(K=16\).}
   \end{subfigure}
   \hfill
   \begin{subfigure}{0.42\textwidth}
@@ -229,7 +229,7 @@ Las matrices de confusión muestran el cambio de régimen al introducir ejemplos
 
 \subsection{Comparación clínica principal}
 
-La comparación principal queda muy ajustada en exactitud equilibrada. La CNN base alcanza 0,516 en \(K=16\), Gemma~4 con ICL normal llega a 0,522 en el mismo valor de \(K\) y el ICL balanceado mantiene 0,522. La diferencia relevante está en sensibilidad y especificidad. Como resultado complementario, MMD con \(K=32\) sube a 0,549 de BA, aunque no cambia la conclusión global sobre falta de robustez.
+La comparación principal queda muy ajustada en exactitud equilibrada. La CNN base alcanza 0,516 en \(K=16\), Gemma~4 con ICL estándar llega a 0,522 en el mismo valor de \(K\) y el ICL balanceado mantiene 0,522. La diferencia relevante está en sensibilidad y especificidad. Como resultado complementario, MMD con \(K=32\) sube a 0,549 de BA, aunque no cambia la conclusión global sobre falta de robustez.
 
 \begin{table}[H]
   \centering
@@ -241,7 +241,7 @@ La comparación principal queda muy ajustada en exactitud equilibrada. La CNN ba
     CNN ResNet18 base & 16 & 0,516 & 0,480 & 0,658 & 0,375 \\
     CNN MMD & 32 & 0,549 & 0,498 & 0,649 & 0,448 \\
     Gemma~4 zero-shot & 0 & 0,508 & 0,044 & 0,023 & 0,993 \\
-    Gemma~4 ICL normal & 16 & 0,522 & 0,491 & 0,690 & 0,355 \\
+    Gemma~4 ICL estándar & 16 & 0,522 & 0,491 & 0,690 & 0,355 \\
     Gemma~4 ICL balanceado & 16 & 0,522 & 0,496 & 0,713 & 0,332 \\
     Gemma~4 contexto sintético & 32 & 0,505 & 0,022 & 0,011 & 0,998 \\
     \bottomrule
@@ -263,7 +263,7 @@ La comparación principal queda muy ajustada en exactitud equilibrada. La CNN ba
     \safeincludegraphics[width=\textwidth]{results/comparison_huca_f1_by_k.png}
     \caption{F1.}
   \end{subfigure}
-  \caption{Comparación gráfica entre CNN base, ICL normal e ICL balanceado con los datos reales del HUCA y contexto real para Gemma~4.}
+  \caption{Comparación gráfica entre CNN base, ICL estándar e ICL balanceado con los datos reales del HUCA y contexto real para Gemma~4.}
   \label{fig:comparacion_huca_curvas}
 \end{figure}
 
@@ -280,7 +280,7 @@ El VLM aporta una señal interesante para priorización cuando dispone de contex
 
 \subsection{Brecha integrada entre simulador y dominio clínico}
 
-La brecha de dominio afecta a los dos enfoques. En la CNN, la exactitud equilibrada crece en el simulador hasta 0,848 con \(K=32\), mientras que en los ECG reales se mantiene alrededor de 0,50 antes de la adaptación. En el VLM ocurre una compresión similar. El ICL normal alcanza 0,750 en el simulador con \(K=16\), pero baja a 0,522 con contexto real y se queda en torno a 0,500 cuando el contexto procede del simulador.
+La brecha de dominio afecta a los dos enfoques. En la CNN, la exactitud equilibrada crece en el simulador hasta 0,848 con \(K=32\), mientras que en los ECG reales se mantiene alrededor de 0,50 antes de la adaptación. En el VLM ocurre una compresión similar. El ICL estándar alcanza 0,750 en el simulador con \(K=16\), pero baja a 0,522 con contexto real y se queda en torno a 0,500 cuando el contexto procede del simulador.
 
 \begin{figure}[H]
   \centering

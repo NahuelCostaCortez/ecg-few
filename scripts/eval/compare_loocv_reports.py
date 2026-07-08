@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("reports/loocv/vlm/vlm_summary_by_seed.csv"),
     )
-    parser.add_argument("--vlm-condition", default="normal")
+    parser.add_argument("--vlm-condition", default="estandar")
     parser.add_argument(
         "--vlm-model",
         default="",

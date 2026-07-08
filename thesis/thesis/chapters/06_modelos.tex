@@ -35,7 +35,7 @@ Esta diferencia es especialmente importante en enfermedades raras. Si cada posit
 
 \subsection{Tres condiciones de consulta}
 
-El enfoque multimodal se evalúa en tres condiciones. Zero-shot no incluye ejemplos locales. ICL normal añade demostraciones seleccionadas con el muestreo estándar del experimento. ICL balanceado intenta incluir positivos y negativos cuando el pliegue lo permite. Esta última condición es relevante porque puede aumentar sensibilidad, aunque también puede reducir especificidad.
+El enfoque multimodal se evalúa en tres condiciones. Zero-shot no incluye ejemplos locales. ICL estándar añade demostraciones seleccionadas con el muestreo estándar del experimento. ICL balanceado intenta incluir positivos y negativos cuando el pliegue lo permite. Esta última condición es relevante porque puede aumentar sensibilidad, aunque también puede reducir especificidad.
 
 La comparación con la CNN se hace con cautela. La CNN recibe \(K\) pacientes para entrenar. El VLM recibe \(K\) pacientes para construir el contexto. En ambos casos se respeta la separación por paciente y el paciente reservado no aparece entre los ejemplos.
 

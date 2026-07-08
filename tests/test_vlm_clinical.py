@@ -2,7 +2,7 @@ import argparse
 import importlib.util
 from pathlib import Path
 
-from ecg_few.loocv import BrugadaImageRow
+from ecg_few.loocv import BrugadaImageRow, build_fold_plan
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER_PATH = ROOT / "scripts" / "eval" / "run_vlm_loocv.py"
@@ -96,7 +96,7 @@ def test_clinical_fold_uses_v1_only() -> None:
     assert record["clinical_leads"] == "V1"
 
 
-def test_clinical_normal_uses_fold_selection_and_balanced_uses_stratified() -> None:
+def test_clinical_estandar_uses_fold_selection_and_balanced_uses_stratified() -> None:
     runner = load_runner()
     rows = [
         row("1", lead, 1)
@@ -124,7 +124,7 @@ def test_clinical_normal_uses_fold_selection_and_balanced_uses_stratified() -> N
         },
     }
 
-    normal = runner.selection_for_condition(
+    estandar = runner.selection_for_condition(
         fold=fold,
         rows=rows,
         context_pool_rows=rows,
@@ -133,7 +133,7 @@ def test_clinical_normal_uses_fold_selection_and_balanced_uses_stratified() -> N
         seed=42,
         fold_id=0,
         task=runner.CLINICAL_TASK,
-        condition=runner.NORMAL_CONDITION,
+        condition=runner.ESTANDAR_CONDITION,
     )
     balanced = runner.selection_for_condition(
         fold=fold,
@@ -147,11 +147,65 @@ def test_clinical_normal_uses_fold_selection_and_balanced_uses_stratified() -> N
         condition=runner.BALANCED_CONDITION,
     )
 
-    assert normal["context_patient_ids"] == ["2", "4"]
+    assert estandar["context_patient_ids"] == ["2", "4"]
     assert {
         next(item for item in rows if item.patient_id == patient_id).reference_brugada
         for patient_id in balanced["context_patient_ids"]
     } == {0, 1}
+
+
+def test_same_context_root_is_treated_as_internal(tmp_path: Path) -> None:
+    runner = load_runner()
+    dataset_root = tmp_path.resolve()
+
+    context_root, has_context_dataset = runner.resolve_context_dataset(
+        dataset_root,
+        dataset_root,
+    )
+
+    assert context_root == dataset_root
+    assert has_context_dataset is False
+
+
+def test_internal_morphology_context_never_uses_test_patient(tmp_path: Path) -> None:
+    runner = load_runner()
+    rows = [
+        morphology_row(str(patient_id), 1 if patient_id <= 3 else 0)
+        for patient_id in range(1, 9)
+    ]
+    folds = build_fold_plan(rows, k_values=[2, 4], seeds=[42], val_per_class=0)
+    args = argparse.Namespace(resume=False, dry_run_predictions="expected")
+
+    for condition in (runner.ESTANDAR_CONDITION, runner.BALANCED_CONDITION):
+        for k in (2, 4):
+            predictions = runner.run_k_seed(
+                rows=rows,
+                context_pool_rows=rows,
+                folds=folds,
+                dataset_root=ROOT,
+                context_dataset_root=ROOT,
+                run_dir=tmp_path / condition / f"k{k}",
+                k=k,
+                seed=42,
+                task=runner.MORPHOLOGY_TASK,
+                condition=condition,
+                runtime=runner.REMOTE_RUNTIME,
+                model="google/gemma-4-E4B-it",
+                api_base=None,
+                api_key="",
+                system_prompt="",
+                prompt_template="lead {lead}",
+                args=args,
+                generator=None,
+            )
+
+            for prediction in predictions:
+                context_ids = [
+                    item
+                    for item in str(prediction["context_patient_ids"]).split("|")
+                    if item
+                ]
+                assert str(prediction["test_patient_id"]) not in context_ids
 
 
 def test_external_morphology_controls_use_context_dataset_ids(tmp_path: Path) -> None:

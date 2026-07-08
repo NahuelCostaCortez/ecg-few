@@ -100,6 +100,6 @@ Return only valid JSON with exactly this key:
 
 \section{Construcci\'on del contexto}
 
-En zero-shot no se a\~naden demostraciones. El modelo recibe el mensaje de sistema, la tarea y la imagen objetivo. En ICL normal, cada demostraci\'on contiene una imagen V1 y la respuesta JSON correcta; la selecci\'on garantiza al menos una muestra de cada clase cuando \(K \geq 2\) y despu\'es completa el contexto de forma reproducible. En ICL balanceado, la selecci\'on intenta una composici\'on aproximadamente 50/50 entre pacientes positivos y negativos siempre que el pliegue lo permita. En ambos casos, el contexto nunca incluye el paciente reservado para test.
+En zero-shot no se a\~naden demostraciones. El modelo recibe el mensaje de sistema, la tarea y la imagen objetivo. En ICL estándar, cada demostraci\'on contiene una imagen V1 y la respuesta JSON correcta; la selecci\'on garantiza al menos una muestra de cada clase cuando \(K \geq 2\) y despu\'es completa el contexto de forma reproducible. En ICL balanceado, la selecci\'on intenta una composici\'on aproximadamente 50/50 entre pacientes positivos y negativos siempre que el pliegue lo permita. En ambos casos, el contexto nunca incluye el paciente reservado para test.
 
 Las respuestas se validan de forma estricta. Una salida con claves ausentes, claves adicionales, texto libre o tipos incorrectos se registra como fallo de formato. En la evaluaci\'on final, la tasa de JSON inv\'alido fue 0, por lo que las diferencias de rendimiento proceden de las decisiones del modelo y no de errores sint\'acticos.

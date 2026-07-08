@@ -23,7 +23,7 @@ DEFAULT_RESULTS_DIR = Path.home() / "Downloads" / "vlm-results"
 DEFAULT_ZIP = ROOT / "Archive (10).zip"
 
 MODEL = "google/gemma-4-E4B-it"
-KEEP_CONDITIONS = ("zero_shot", "normal", "balanced")
+KEEP_CONDITIONS = ("zero_shot", "estandar", "balanced")
 
 BLUE = "#005BBB"
 RED = "#D71920"
@@ -57,7 +57,7 @@ CONDITION_STYLE = {
         "linestyle": "None",
         "marker": "s",
     },
-    "normal": {"label": "ICL normal", "color": GREEN, "linestyle": "--", "marker": "o"},
+    "estandar": {"label": "ICL estándar", "color": GREEN, "linestyle": "--", "marker": "o"},
     "balanced": {
         "label": "ICL balanceado",
         "color": ORANGE,
@@ -347,9 +347,9 @@ def main() -> None:
     )
 
     plot_confusion(
-        OUT / "vlm_simulator_qrs_normal_k16_confusion_matrix.png",
-        row_for(sim_vlm, "normal", 16),
-        title="ICL normal, K=16",
+        OUT / "vlm_simulator_qrs_estandar_k16_confusion_matrix.png",
+        row_for(sim_vlm, "estandar", 16),
+        title="ICL estándar, K=16",
     )
     plot_confusion(
         OUT / "vlm_simulator_qrs_balanced_k8_confusion_matrix.png",
@@ -357,9 +357,9 @@ def main() -> None:
         title="ICL balanceado, K=8",
     )
     plot_confusion(
-        OUT / "vlm_huca_v1_normal_k16_confusion_matrix.png",
-        row_for(real_vlm, "normal", 16),
-        title="ICL normal, K=16",
+        OUT / "vlm_huca_v1_estandar_k16_confusion_matrix.png",
+        row_for(real_vlm, "estandar", 16),
+        title="ICL estándar, K=16",
     )
     plot_confusion(
         OUT / "vlm_huca_v1_balanced_k16_confusion_matrix.png",
@@ -408,6 +408,7 @@ def read_zip_csv(zip_path: Path, member: str) -> list[dict[str, str]]:
 
 
 def selected_vlm_rows(rows: list[dict[str, str]], *, model: str) -> list[dict[str, str]]:
+    rows = normalize_condition_rows(rows)
     selected = [
         row
         for row in rows
@@ -419,6 +420,16 @@ def selected_vlm_rows(rows: list[dict[str, str]], *, model: str) -> list[dict[st
         selected,
         key=lambda row: (int(row["k"]), KEEP_CONDITIONS.index(row["condition"])),
     )
+
+
+def normalize_condition_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    normalized: list[dict[str, str]] = []
+    for row in rows:
+        copy = dict(row)
+        if copy.get("condition") == "normal":
+            copy["condition"] = "estandar"
+        normalized.append(copy)
+    return normalized
 
 
 def f(row: dict[str, object], key: str) -> float:
@@ -515,7 +526,7 @@ def plot_comparison_metric(
         elinewidth=0.75,
         label="CNN",
     )
-    for condition in ("normal", "balanced"):
+    for condition in ("estandar", "balanced"):
         style = CONDITION_STYLE[condition]
         condition_rows = rows_for_condition(vlm_rows, condition)
         ax.errorbar(
@@ -540,12 +551,12 @@ def plot_comparison_metric(
 def plot_huca_sens_spec_best(path: Path, vlm_rows: list[dict[str, str]]) -> None:
     cnn = next(row for row in CNN_REAL if int(row["k"]) == 16)
     zero_shot = row_for(vlm_rows, "zero_shot", 0)
-    normal = row_for(vlm_rows, "normal", 16)
+    estandar = row_for(vlm_rows, "estandar", 16)
     balanced = row_for(vlm_rows, "balanced", 16)
     rows = [
         ("CNN K=16", f(cnn, "sensitivity_mean"), f(cnn, "specificity_mean")),
         ("Zero-shot", f(zero_shot, "sensitivity_mean"), f(zero_shot, "specificity_mean")),
-        ("ICL normal K=16", f(normal, "sensitivity_mean"), f(normal, "specificity_mean")),
+        ("ICL estándar K=16", f(estandar, "sensitivity_mean"), f(estandar, "specificity_mean")),
         ("ICL bal. K=16", f(balanced, "sensitivity_mean"), f(balanced, "specificity_mean")),
     ]
     labels = [row[0] for row in rows]
@@ -593,7 +604,7 @@ def plot_icl_domain_gap_metric(
     ylabel: str,
 ) -> None:
     fig, ax = plt.subplots(figsize=(3.95, 2.45))
-    for condition, marker in (("normal", "s"), ("balanced", "^")):
+    for condition, marker in (("estandar", "s"), ("balanced", "^")):
         style = CONDITION_STYLE[condition]
         plot_domain_pair(
             ax,
@@ -627,7 +638,7 @@ def plot_icl_context_transfer_metric(
 ) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(6.9, 2.65), sharey=True)
     for ax, condition, color, title in (
-        (axes[0], "normal", GREEN, "ICL normal"),
+        (axes[0], "estandar", GREEN, "ICL estándar"),
         (axes[1], "balanced", ORANGE, "ICL balanceado"),
     ):
         condition_rows = (
@@ -683,9 +694,9 @@ def plot_huca_context_sens_spec(
     huca_sim_context_vlm: list[dict[str, str]],
 ) -> None:
     rows = [
-        ("Real normal K=16", row_for(real_vlm, "normal", 16)),
+        ("Real estándar K=16", row_for(real_vlm, "estandar", 16)),
         ("Real bal. K=16", row_for(real_vlm, "balanced", 16)),
-        ("Sint. normal K=16", row_for(huca_sim_context_vlm, "normal", 16)),
+        ("Sint. estándar K=16", row_for(huca_sim_context_vlm, "estandar", 16)),
         ("Sint. bal. K=32", row_for(huca_sim_context_vlm, "balanced", 32)),
     ]
     labels = [label for label, _ in rows]

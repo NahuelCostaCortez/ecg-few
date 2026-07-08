@@ -22,7 +22,7 @@ if [ "${CONTEXT_DATASET_ROOT+x}" != "x" ]; then
 fi
 VLM_RUNTIME="${VLM_RUNTIME:-remote_api}"
 MODELS="${MODELS:-${VLM_MODELS:-${MODEL:-${VLM_MODEL:-google/gemma-4-E4B-it,google/medgemma-4b-it}}}}"
-CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
+CONDITIONS="${CONDITIONS:-zero_shot,estandar,balanced,permuted,no_support_images}"
 API_BASE="${API_BASE:-${VLM_API_BASE:-}}"
 OUTPUT="${OUTPUT:-$REPORT_DIR/vlm_setup_validation.json}"
 

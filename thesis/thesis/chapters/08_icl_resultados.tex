@@ -41,7 +41,7 @@ No se solicita una explicación libre obligatoria. El objetivo de esta evaluaci�
 
 Se informan tres condiciones VLM. En \emph{zero-shot}, el modelo recibe únicamente la imagen objetivo y las instrucciones. No se le enseña ningún ejemplo previo del conjunto. Esta condición mide qué hace Gemma~4 con su conocimiento previo y con la descripción textual de la tarea, sin ayuda local.
 
-En ICL normal, el prompt incluye \(K\) demostraciones correctas tomadas del conjunto disponible. Cada demostración contiene una imagen de ECG y la respuesta JSON esperada. La selección no fuerza explícitamente la proporción entre positivos y negativos. Por tanto, refleja el contexto que aparece al seguir la estrategia estándar de muestreo del experimento.
+En ICL estándar, el prompt incluye \(K\) demostraciones correctas tomadas del conjunto disponible. Cada demostración contiene una imagen de ECG y la respuesta JSON esperada. La selección no fuerza explícitamente la proporción entre positivos y negativos. Por tanto, refleja el contexto que aparece al seguir la estrategia estándar de muestreo del experimento.
 
 En ICL balanceado, el prompt también incluye \(K\) demostraciones, pero la selección intenta mantener ejemplos positivos y negativos siempre que el pliegue lo permite. Esta condición permite estudiar si un contexto con más presencia de casos Brugada desplaza la decisión hacia una lectura más sensible. En triaje, aumentar la sensibilidad puede ser valioso porque reduce los positivos no detectados. Al mismo tiempo, puede bajar la especificidad y aumentar las alertas innecesarias.
 

@@ -2,7 +2,7 @@
 # ruff: noqa: I001
 """Render VLM/ICL figures from Archive (10).zip.
 
-The final thesis reports the zero-shot, normal ICL and balanced ICL
+The final thesis reports the zero-shot, standard ICL and balanced ICL
 conditions, in that order.
 """
 
@@ -124,9 +124,20 @@ def read_zip_csv(zip_path: Path, member: str) -> list[dict[str, str]]:
 
 
 def selected_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    order = {"zero_shot": 0, "normal": 1, "balanced": 2}
+    rows = normalize_condition_rows(rows)
+    order = {"zero_shot": 0, "estandar": 1, "balanced": 2}
     keep = [row for row in rows if row["condition"] in order]
     return sorted(keep, key=lambda row: (int(row["k"]), order[row["condition"]]))
+
+
+def normalize_condition_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    normalized: list[dict[str, str]] = []
+    for row in rows:
+        copy = dict(row)
+        if copy.get("condition") == "normal":
+            copy["condition"] = "estandar"
+        normalized.append(copy)
+    return normalized
 
 
 def f(row: dict[str, str], key: str) -> float:
@@ -182,7 +193,7 @@ def plot_condition_curves(
         label="zero-shot",
     )
     for condition, color, linestyle, marker, label in (
-        ("normal", GREEN, "--", "o", "normal"),
+        ("estandar", GREEN, "--", "o", "estándar"),
         ("balanced", ORANGE, "-", "^", "balanceado"),
     ):
         k_values, means, stds = metric_series(rows, condition, metric)
@@ -257,7 +268,7 @@ def plot_clinical_sensitivity_specificity(rows: list[dict[str, str]]) -> None:
             label="zero-shot",
         )
         for condition, color, linestyle, marker, label in (
-            ("normal", GREEN, "--", "o", "normal"),
+            ("estandar", GREEN, "--", "o", "estándar"),
             ("balanced", ORANGE, "-", "^", "balanceado"),
         ):
             k_values, means, stds = metric_series(rows, condition, metric)

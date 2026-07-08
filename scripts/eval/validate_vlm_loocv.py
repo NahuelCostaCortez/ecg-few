@@ -24,7 +24,7 @@ from ecg_few.prompts import load_markdown_prompt
 from ecg_few.vlm.runtime import REMOTE_RUNTIME, resolve_api_base, resolve_model_name
 
 ZERO_SHOT_CONDITION = "zero_shot"
-NORMAL_CONDITION = "normal"
+ESTANDAR_CONDITION = "estandar"
 BALANCED_CONDITION = "balanced"
 PERMUTED_CONDITION = "permuted"
 NO_SUPPORT_IMAGES_CONDITION = "no_support_images"
@@ -39,7 +39,7 @@ DEFAULT_CLINICAL_LEADS = ("V1",)
 CLINICAL_AGGREGATIONS = {"majority", "any_positive", "all_positive"}
 ALL_CONDITIONS = {
     ZERO_SHOT_CONDITION,
-    NORMAL_CONDITION,
+    ESTANDAR_CONDITION,
     BALANCED_CONDITION,
     PERMUTED_CONDITION,
     NO_SUPPORT_IMAGES_CONDITION,
@@ -56,7 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--models", default="", help="Comma-separated model ids.")
     parser.add_argument(
         "--conditions",
-        default=NORMAL_CONDITION,
+        default=ESTANDAR_CONDITION,
         help="Comma-separated VLM conditions.",
     )
     parser.add_argument("--control-k-values", default="8,16,32")
@@ -94,11 +94,9 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
     dataset_root = Path(args.dataset_root).resolve()
-    has_context_dataset = str(args.context_dataset_root) not in {"", "."}
-    context_dataset_root = (
-        Path(args.context_dataset_root).resolve()
-        if has_context_dataset
-        else dataset_root
+    context_dataset_root, has_context_dataset = resolve_context_dataset(
+        dataset_root,
+        args.context_dataset_root,
     )
     folds_path = resolve_folds_path(dataset_root, args.folds)
     k_values = parse_int_list(str(args.k_values))
@@ -110,7 +108,7 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
         errors.append("Clinical VLM evaluation requires at least one lead.")
     if clinical_aggregation not in CLINICAL_AGGREGATIONS:
         errors.append(f"Unsupported clinical aggregation: {clinical_aggregation}")
-    conditions = parse_string_list(str(getattr(args, "conditions", NORMAL_CONDITION)))
+    conditions = parse_string_list(str(getattr(args, "conditions", ESTANDAR_CONDITION)))
     invalid_conditions = sorted(set(conditions) - ALL_CONDITIONS)
     if invalid_conditions:
         errors.append(f"Unsupported VLM conditions: {invalid_conditions}")
@@ -307,6 +305,19 @@ def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
 
 def only_v1_rows(rows: list[Any]) -> list[Any]:
     return [row for row in rows if str(row.lead).upper() == ONLY_LEAD]
+
+
+def resolve_context_dataset(
+    dataset_root: Path,
+    context_dataset_root: Path | str,
+) -> tuple[Path, bool]:
+    text = str(context_dataset_root)
+    if text in {"", "."}:
+        return dataset_root, False
+    resolved_context_root = Path(context_dataset_root).resolve()
+    if resolved_context_root == dataset_root:
+        return dataset_root, False
+    return resolved_context_root, True
 
 
 def resolve_prompt_path(path: str, *, task: str, kind: str) -> str:

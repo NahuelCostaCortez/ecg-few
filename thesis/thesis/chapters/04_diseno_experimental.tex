@@ -18,7 +18,7 @@ La estructura del protocolo sigue una lógica habitual en estudios de modelos pr
 
 \section{Planteamiento común}
 
-El enfoque supervisado entrena una ResNet18 con pocos ejemplos. El enfoque VLM/ICL usa Gemma~4 y evalúa zero-shot, ICL normal e ICL balanceado. Ambos comparten los mismos valores de \(K\), la misma separación por paciente y la misma agregación de métricas, de modo que las diferencias observadas puedan atribuirse al modo de utilizar los ejemplos etiquetados.
+El enfoque supervisado entrena una ResNet18 con pocos ejemplos. El enfoque VLM/ICL usa Gemma~4 y evalúa zero-shot, ICL estándar e ICL balanceado. Ambos comparten los mismos valores de \(K\), la misma separación por paciente y la misma agregación de métricas, de modo que las diferencias observadas puedan atribuirse al modo de utilizar los ejemplos etiquetados.
 
 La comparación se apoya en dos dominios. El simulador QRS/ST permite comprobar si la imagen contiene una señal morfológica aprendible en condiciones sintéticas. Los datos reales del HUCA permiten medir qué ocurre al pasar a ECG clínicos reales, con ruido de adquisición, variabilidad entre pacientes y una etiqueta clínica que no equivale exactamente a las reglas del simulador.
 

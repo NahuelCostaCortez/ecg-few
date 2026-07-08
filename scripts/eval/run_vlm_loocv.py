@@ -51,7 +51,7 @@ from ecg_few.vlm.runtime import (
 )
 
 ZERO_SHOT_CONDITION = "zero_shot"
-NORMAL_CONDITION = "normal"
+ESTANDAR_CONDITION = "estandar"
 BALANCED_CONDITION = "balanced"
 PERMUTED_CONDITION = "permuted"
 NO_SUPPORT_IMAGES_CONDITION = "no_support_images"
@@ -67,7 +67,7 @@ DEFAULT_CLINICAL_LEADS = ("V1",)
 CLINICAL_AGGREGATIONS = ("majority", "any_positive", "all_positive")
 ALL_CONDITIONS = (
     ZERO_SHOT_CONDITION,
-    NORMAL_CONDITION,
+    ESTANDAR_CONDITION,
     BALANCED_CONDITION,
     PERMUTED_CONDITION,
     NO_SUPPORT_IMAGES_CONDITION,
@@ -97,10 +97,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--conditions",
-        default=NORMAL_CONDITION,
+        default=ESTANDAR_CONDITION,
         help=(
             "Comma-separated VLM conditions: "
-            "zero_shot,normal,balanced,permuted,no_support_images."
+            "zero_shot,estandar,balanced,permuted,no_support_images."
         ),
     )
     parser.add_argument(
@@ -183,11 +183,9 @@ def run_with_args(args: argparse.Namespace) -> None:
     dataset_root = Path(args.dataset_root).resolve()
     folds_path = resolve_folds_path(dataset_root, args.folds)
     rows = only_v1_rows(read_manifest(dataset_root / "labels" / "all_labels.csv"))
-    has_context_dataset = str(args.context_dataset_root) not in {"", "."}
-    context_dataset_root = (
-        Path(args.context_dataset_root).resolve()
-        if has_context_dataset
-        else dataset_root
+    context_dataset_root, has_context_dataset = resolve_context_dataset(
+        dataset_root,
+        args.context_dataset_root,
     )
     context_pool_rows = (
         only_v1_rows(read_manifest(context_dataset_root / "labels" / "all_labels.csv"))
@@ -206,7 +204,7 @@ def run_with_args(args: argparse.Namespace) -> None:
     runtime = str(args.vlm_runtime)
     task = str(getattr(args, "task", MORPHOLOGY_TASK))
     models = resolve_models(args, runtime)
-    conditions = parse_string_list(getattr(args, "conditions", NORMAL_CONDITION))
+    conditions = parse_string_list(getattr(args, "conditions", ESTANDAR_CONDITION))
     invalid_conditions = sorted(set(conditions) - set(ALL_CONDITIONS))
     if invalid_conditions:
         raise ValueError(f"Unsupported VLM conditions: {invalid_conditions}")
@@ -307,6 +305,19 @@ def parse_string_list(text: str) -> list[str]:
 
 def only_v1_rows(rows: list[BrugadaImageRow]) -> list[BrugadaImageRow]:
     return [row for row in rows if row.lead.upper() == ONLY_LEAD]
+
+
+def resolve_context_dataset(
+    dataset_root: Path,
+    context_dataset_root: Path | str,
+) -> tuple[Path, bool]:
+    text = str(context_dataset_root)
+    if text in {"", "."}:
+        return dataset_root, False
+    resolved_context_root = Path(context_dataset_root).resolve()
+    if resolved_context_root == dataset_root:
+        return dataset_root, False
+    return resolved_context_root, True
 
 
 def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
@@ -410,7 +421,7 @@ def run_k_seed(
         if (
             task != CLINICAL_TASK
             and context_pool_rows is not rows
-            and condition in {NORMAL_CONDITION, PERMUTED_CONDITION, NO_SUPPORT_IMAGES_CONDITION}
+            and condition in {ESTANDAR_CONDITION, PERMUTED_CONDITION, NO_SUPPORT_IMAGES_CONDITION}
             and k > 0
         ):
             context_ids = select_qrs_context_patient_ids(
@@ -429,6 +440,13 @@ def run_k_seed(
                 test_patient_id="__real_eval_patient__",
                 k=k,
                 seed=seed + fold_id * 100_003,
+            )
+        if (
+            dataset_root.resolve() == context_dataset_root.resolve()
+            and test_patient_id in context_ids
+        ):
+            raise RuntimeError(
+                f"Fold {fold_id} leaks test patient {test_patient_id} into VLM context."
             )
         context_rows = rows_for_patient_ids(context_pool_rows, context_ids)
         answer_rows = answer_rows_for_condition(
