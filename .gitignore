@@ -8,6 +8,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 tests/*
+!tests/test_vlm_clinical.py
 jobs/vlm_server.sh
 
 # Generated experiment artifacts

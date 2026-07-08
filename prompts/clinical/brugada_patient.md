@@ -1,4 +1,4 @@
-Analyze this single right precordial ECG beat image from one patient.
+Analyze this single right precordial ECG beat image from lead {lead} from one patient.
 
 Decide whether the patient is clinically compatible with the Brugada-positive
 reference used in this study.

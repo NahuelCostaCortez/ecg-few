@@ -62,6 +62,8 @@ DEFAULT_MORPHOLOGY_SYSTEM_PROMPT = "prompts/system/qrs_huca.md"
 DEFAULT_MORPHOLOGY_PROMPT = "prompts/qrs/right_precordial_morphology.md"
 DEFAULT_CLINICAL_SYSTEM_PROMPT = "prompts/system/clinical_brugada_huca.md"
 DEFAULT_CLINICAL_PROMPT = "prompts/clinical/brugada_patient.md"
+DEFAULT_CLINICAL_LEADS = ("V1", "V2", "V3")
+CLINICAL_AGGREGATIONS = ("majority", "any_positive", "all_positive")
 ALL_CONDITIONS = (
     ZERO_SHOT_CONDITION,
     NORMAL_CONDITION,
@@ -119,13 +121,24 @@ def parse_args() -> argparse.Namespace:
         default=MORPHOLOGY_TASK,
         help=(
             "morphology predicts RBBB/ST_ELEVATION/T_WAVE_INVERSION per lead; "
-            "clinical predicts clinical_brugada from one fixed lead image per patient."
+            "clinical predicts clinical_brugada per configured lead and aggregates by patient."
         ),
     )
     parser.add_argument(
         "--clinical-lead",
         default="V2",
-        help="Single lead image used by TASK=clinical for every support and test patient.",
+        help="Legacy single lead used by TASK=clinical when --clinical-leads is empty.",
+    )
+    parser.add_argument(
+        "--clinical-leads",
+        default=",".join(DEFAULT_CLINICAL_LEADS),
+        help="Comma-separated leads used by TASK=clinical before patient-level aggregation.",
+    )
+    parser.add_argument(
+        "--clinical-aggregation",
+        choices=CLINICAL_AGGREGATIONS,
+        default="majority",
+        help="Patient-level aggregation rule for TASK=clinical multi-lead predictions.",
     )
     parser.add_argument("--system-prompt-file", default="")
     parser.add_argument(
@@ -291,6 +304,25 @@ def parse_string_list(text: str) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
 
 
+def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
+    leads = [
+        lead.upper()
+        for lead in parse_string_list(str(getattr(args, "clinical_leads", "")))
+    ]
+    if not leads:
+        leads = [str(getattr(args, "clinical_lead", "V2")).upper()]
+    seen: set[str] = set()
+    unique_leads: list[str] = []
+    for lead in leads:
+        if lead in seen:
+            continue
+        seen.add(lead)
+        unique_leads.append(lead)
+    if not unique_leads:
+        raise ValueError("TASK=clinical requires at least one clinical lead.")
+    return unique_leads
+
+
 def resolve_prompt_path(path: str, *, task: str, kind: str) -> str:
     if path:
         return path
@@ -368,20 +400,23 @@ def run_k_seed(
             condition=condition,
         )
         context_ids = selection["context_patient_ids"]
-        if task == CLINICAL_TASK and k > 0 and condition != ZERO_SHOT_CONDITION:
-            context_ids = select_balanced_clinical_context_patient_ids(
-                context_pool_rows,
-                test_patient_id=test_patient_id,
-                k=k,
-                seed=seed + fold_id * 100_003,
-            )
-        elif context_pool_rows is not rows and condition == NORMAL_CONDITION and k > 0:
+        if (
+            task != CLINICAL_TASK
+            and context_pool_rows is not rows
+            and condition == NORMAL_CONDITION
+            and k > 0
+        ):
             context_ids = select_qrs_context_patient_ids(
                 context_pool_rows,
                 k=k,
                 seed=seed + fold_id * 100_003,
             )
-        elif context_pool_rows is not rows and condition == BALANCED_CONDITION and k > 0:
+        elif (
+            task != CLINICAL_TASK
+            and context_pool_rows is not rows
+            and condition == BALANCED_CONDITION
+            and k > 0
+        ):
             context_ids = select_balanced_context_patient_ids(
                 context_pool_rows,
                 test_patient_id="__real_eval_patient__",
@@ -420,7 +455,8 @@ def run_k_seed(
                 system_prompt=system_prompt,
                 prompt_template=prompt_template,
                 include_support_images=condition != NO_SUPPORT_IMAGES_CONDITION,
-                clinical_lead=str(args.clinical_lead),
+                clinical_leads=resolve_clinical_leads(args),
+                clinical_aggregation=str(getattr(args, "clinical_aggregation", "majority")),
                 started=started,
                 selection=selection,
                 context_ids=context_ids,
@@ -519,10 +555,28 @@ def selection_for_condition(
         validation_ids = []
         if context_pool_rows is rows:
             validation_ids = selection_for(fold, k=k, seed=seed)["validation_patient_ids"]
+        if condition == BALANCED_CONDITION:
+            return {
+                "context_patient_ids": select_balanced_clinical_context_patient_ids(
+                    context_pool_rows,
+                    test_patient_id=test_patient_id,
+                    k=k,
+                    seed=seed + fold_id * 100_003,
+                ),
+                "validation_patient_ids": validation_ids,
+            }
+        if context_pool_rows is rows:
+            return {
+                "context_patient_ids": selection_for(fold, k=k, seed=seed)[
+                    "context_patient_ids"
+                ],
+                "validation_patient_ids": validation_ids,
+            }
+        patients = patients_from_rows(context_pool_rows)
         return {
-            "context_patient_ids": select_balanced_clinical_context_patient_ids(
-                context_pool_rows,
-                test_patient_id=test_patient_id,
+            "context_patient_ids": select_context_patient_ids(
+                patients,
+                test_patient_id="__real_eval_patient__",
                 k=k,
                 seed=seed + fold_id * 100_003,
             ),
@@ -582,7 +636,8 @@ def run_clinical_fold(
     system_prompt: str,
     prompt_template: str,
     include_support_images: bool,
-    clinical_lead: str,
+    clinical_leads: list[str],
+    clinical_aggregation: str,
     started: float,
     selection: dict[str, list[str]],
     context_ids: list[str],
@@ -590,48 +645,59 @@ def run_clinical_fold(
     generator: LocalGPUGenerator | None,
 ) -> dict[str, object]:
     test_rows = rows_for_patient_ids(rows, [test_patient_id])
-    try:
-        if args.dry_run_predictions != "none":
-            prediction = dry_run_clinical_prediction(
-                test_rows[0],
-                mode=str(args.dry_run_predictions),
-            )
-            raw_text = json.dumps(prediction, sort_keys=True)
-        else:
-            messages = build_clinical_messages(
-                dataset_root=dataset_root,
-                context_dataset_root=context_dataset_root,
-                system_prompt=system_prompt,
-                prompt_template=prompt_template,
-                context_rows=context_rows,
-                condition=condition,
-                seed=seed,
-                test_rows=test_rows,
-                clinical_lead=clinical_lead,
-                include_support_images=include_support_images,
-                local=runtime == LOCAL_RUNTIME,
-            )
-            raw_text = call_model(
-                messages,
-                runtime=runtime,
-                model=model,
-                api_base=api_base,
-                api_key=api_key,
-                task=CLINICAL_TASK,
-                args=args,
-                generator=generator,
-            )
-            prediction = parse_clinical_prediction(raw_text)
-        pred_label = int(bool(prediction[CLINICAL_LABEL_NAME]))
-        error = ""
-        valid_requests = 1
-        invalid_requests = 0
-    except Exception as exc:  # noqa: BLE001
-        pred_label = 0
-        raw_text = ""
-        error = str(exc)
-        valid_requests = 0
-        invalid_requests = 1
+    lead_predictions: dict[str, dict[str, bool]] = {}
+    lead_errors: dict[str, str] = {}
+    raw_outputs: dict[str, str] = {}
+    for clinical_lead in clinical_leads:
+        try:
+            test_row = row_for_lead(test_rows, clinical_lead)
+            if args.dry_run_predictions != "none":
+                prediction = dry_run_clinical_prediction(
+                    test_row,
+                    mode=str(args.dry_run_predictions),
+                )
+                raw_text = json.dumps(prediction, sort_keys=True)
+            else:
+                messages = build_clinical_messages(
+                    dataset_root=dataset_root,
+                    context_dataset_root=context_dataset_root,
+                    system_prompt=system_prompt,
+                    prompt_template=prompt_template,
+                    context_rows=context_rows,
+                    condition=condition,
+                    seed=seed,
+                    test_row=test_row,
+                    clinical_leads=clinical_leads,
+                    include_support_images=include_support_images,
+                    local=runtime == LOCAL_RUNTIME,
+                )
+                raw_text = call_model(
+                    messages,
+                    runtime=runtime,
+                    model=model,
+                    api_base=api_base,
+                    api_key=api_key,
+                    task=CLINICAL_TASK,
+                    args=args,
+                    generator=generator,
+                )
+                prediction = parse_clinical_prediction(raw_text)
+            lead_predictions[test_row.lead] = {
+                CLINICAL_LABEL_NAME: bool(prediction[CLINICAL_LABEL_NAME])
+            }
+            raw_outputs[test_row.lead] = raw_text
+        except Exception as exc:  # noqa: BLE001
+            lead_errors[clinical_lead.upper()] = str(exc)
+            raw_outputs[clinical_lead.upper()] = ""
+    pred_label = int(
+        aggregate_clinical_lead_predictions(
+            {
+                lead: bool(prediction[CLINICAL_LABEL_NAME])
+                for lead, prediction in lead_predictions.items()
+            },
+            method=clinical_aggregation,
+        )
+    )
     return {
         "key": key,
         "fold_id": fold_id,
@@ -644,18 +710,17 @@ def run_clinical_fold(
         "true_label": int(test_rows[0].reference_brugada),
         "pred_label": pred_label,
         "pred_clinical_brugada": pred_label,
-        "clinical_lead": clinical_lead.upper(),
+        "clinical_lead": ",".join(clinical_leads),
+        "clinical_leads": "|".join(clinical_leads),
+        "clinical_aggregation": clinical_aggregation,
         "context_patient_ids": "|".join(context_ids),
         "validation_patient_ids": "|".join(selection["validation_patient_ids"]),
-        "valid_leads": valid_requests,
-        "invalid_leads": invalid_requests,
-        "json_invalid": int(bool(error)),
-        "lead_predictions": json.dumps(
-            {CLINICAL_LABEL_NAME: bool(pred_label)} if not error else {},
-            sort_keys=True,
-        ),
-        "raw_outputs": json.dumps({"patient": raw_text}, sort_keys=True),
-        "errors": json.dumps({"patient": error} if error else {}, sort_keys=True),
+        "valid_leads": len(lead_predictions),
+        "invalid_leads": len(lead_errors),
+        "json_invalid": int(bool(lead_errors)),
+        "lead_predictions": json.dumps(lead_predictions, sort_keys=True),
+        "raw_outputs": json.dumps(raw_outputs, sort_keys=True),
+        "errors": json.dumps(lead_errors, sort_keys=True),
         "latency_seconds": time.perf_counter() - started,
         "model": model,
         "model_slug": model_slug(model),
@@ -672,8 +737,8 @@ def build_clinical_messages(
     context_rows: list[BrugadaImageRow],
     condition: str,
     seed: int,
-    test_rows: list[BrugadaImageRow],
-    clinical_lead: str,
+    test_row: BrugadaImageRow,
+    clinical_leads: list[str],
     include_support_images: bool,
     local: bool,
 ) -> list[dict[str, Any]]:
@@ -687,25 +752,25 @@ def build_clinical_messages(
         seed=seed,
     )
     for patient_id in sorted(context_by_patient, key=patient_sort_key):
-        support_row = row_for_lead(context_by_patient[patient_id], clinical_lead)
-        messages.append(
-            support_patient_message(
-                prompt_template,
-                context_dataset_root / support_row.image_path,
-                include_images=include_support_images,
-                local=local,
+        for support_row in rows_for_leads(context_by_patient[patient_id], clinical_leads):
+            messages.append(
+                support_patient_message(
+                    prompt_for_row(prompt_template, support_row),
+                    context_dataset_root / support_row.image_path,
+                    include_images=include_support_images,
+                    local=local,
+                )
             )
-        )
-        messages.append(
-            {
-                "role": "assistant",
-                "content": clinical_answer_text(answers_by_patient[patient_id]),
-            }
-        )
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": clinical_answer_text(answers_by_patient[patient_id]),
+                }
+            )
     messages.append(
         patient_message(
-            prompt_template,
-            dataset_root / row_for_lead(test_rows, clinical_lead).image_path,
+            prompt_for_row(prompt_template, test_row),
+            dataset_root / test_row.image_path,
             local=local,
         )
     )
@@ -775,6 +840,10 @@ def row_for_lead(rows: list[BrugadaImageRow], lead: str) -> BrugadaImageRow:
     raise ValueError(
         f"Patient {patient_id} has no {requested}; available: {available}"
     )
+
+
+def rows_for_leads(rows: list[BrugadaImageRow], leads: list[str]) -> list[BrugadaImageRow]:
+    return [row_for_lead(rows, lead) for lead in leads]
 
 
 def rows_by_patient(rows: list[BrugadaImageRow]) -> dict[str, list[BrugadaImageRow]]:
@@ -1026,6 +1095,24 @@ def aggregate_lead_findings(
     }
 
 
+def aggregate_clinical_lead_predictions(
+    lead_predictions: dict[str, bool],
+    *,
+    method: str,
+) -> bool:
+    if not lead_predictions:
+        return False
+    positives = sum(1 for value in lead_predictions.values() if value)
+    total = len(lead_predictions)
+    if method == "majority":
+        return positives / total >= 0.5
+    if method == "any_positive":
+        return positives > 0
+    if method == "all_positive":
+        return positives == total
+    raise ValueError(f"Unsupported clinical aggregation method: {method}")
+
+
 def select_qrs_context_patient_ids(
     rows: list[BrugadaImageRow],
     *,
@@ -1145,6 +1232,8 @@ def summarize_predictions(
         "model_slug": model_slug(model),
         "task": task,
         "clinical_lead": first_nonempty(predictions, "clinical_lead"),
+        "clinical_leads": first_nonempty(predictions, "clinical_leads"),
+        "clinical_aggregation": first_nonempty(predictions, "clinical_aggregation"),
         "condition": condition,
         "k": k,
         "seed": seed,
@@ -1325,12 +1414,24 @@ def write_campaign_manifest(path: Path, rows: list[dict[str, object]]) -> None:
     tasks = sorted({str(row.get("task", "")) for row in rows if row.get("task")})
     k_values = sorted({int(row["k"]) for row in rows}) if rows else []
     seeds = sorted({int(row["seed"]) for row in rows}) if rows else []
+    clinical_leads = sorted(
+        {str(row.get("clinical_leads", "")) for row in rows if row.get("clinical_leads")}
+    )
+    clinical_aggregations = sorted(
+        {
+            str(row.get("clinical_aggregation", ""))
+            for row in rows
+            if row.get("clinical_aggregation")
+        }
+    )
     payload = {
         "models": models,
         "conditions": conditions,
         "tasks": tasks,
         "k_values": k_values,
         "seeds": seeds,
+        "clinical_leads": clinical_leads,
+        "clinical_aggregations": clinical_aggregations,
         "runs": len(rows),
         "artifacts": {
             "summary_by_seed": "vlm_summary_by_seed.csv",

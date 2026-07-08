@@ -34,6 +34,8 @@ DEFAULT_MORPHOLOGY_SYSTEM_PROMPT = "prompts/system/qrs_huca.md"
 DEFAULT_MORPHOLOGY_PROMPT = "prompts/qrs/right_precordial_morphology.md"
 DEFAULT_CLINICAL_SYSTEM_PROMPT = "prompts/system/clinical_brugada_huca.md"
 DEFAULT_CLINICAL_PROMPT = "prompts/clinical/brugada_patient.md"
+DEFAULT_CLINICAL_LEADS = ("V1", "V2", "V3")
+CLINICAL_AGGREGATIONS = {"majority", "any_positive", "all_positive"}
 ALL_CONDITIONS = {
     ZERO_SHOT_CONDITION,
     NORMAL_CONDITION,
@@ -59,6 +61,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--control-k-values", default="8,16,32")
     parser.add_argument("--task", choices=(MORPHOLOGY_TASK, CLINICAL_TASK), default=MORPHOLOGY_TASK)
     parser.add_argument("--clinical-lead", default="V2")
+    parser.add_argument("--clinical-leads", default=",".join(DEFAULT_CLINICAL_LEADS))
+    parser.add_argument("--clinical-aggregation", default="majority")
     parser.add_argument("--vlm-runtime", default=REMOTE_RUNTIME)
     parser.add_argument("--model", default="")
     parser.add_argument("--api-base", default="")
@@ -99,7 +103,12 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
     k_values = parse_int_list(str(args.k_values))
     seeds = parse_int_list(str(args.seeds))
     task = str(getattr(args, "task", MORPHOLOGY_TASK))
-    clinical_lead = str(getattr(args, "clinical_lead", "V2")).upper()
+    clinical_leads = resolve_clinical_leads(args)
+    clinical_aggregation = str(getattr(args, "clinical_aggregation", "majority"))
+    if task == CLINICAL_TASK and not clinical_leads:
+        errors.append("Clinical VLM evaluation requires at least one lead.")
+    if clinical_aggregation not in CLINICAL_AGGREGATIONS:
+        errors.append(f"Unsupported clinical aggregation: {clinical_aggregation}")
     conditions = parse_string_list(str(getattr(args, "conditions", NORMAL_CONDITION)))
     invalid_conditions = sorted(set(conditions) - ALL_CONDITIONS)
     if invalid_conditions:
@@ -131,12 +140,13 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
         labels = {row.reference_brugada for row in context_rows}
         if labels != {0, 1}:
             errors.append("Clinical real-context ICL requires both normal and Brugada patients.")
-        missing_lead_patients = patients_missing_lead(context_rows, clinical_lead)
-        if missing_lead_patients:
-            errors.append(
-                f"Clinical real-context ICL requires lead {clinical_lead}; "
-                f"missing for patients: {missing_lead_patients[:5]}"
-            )
+        for clinical_lead in clinical_leads:
+            missing_lead_patients = patients_missing_lead(context_rows, clinical_lead)
+            if missing_lead_patients:
+                errors.append(
+                    f"Clinical real-context ICL requires lead {clinical_lead}; "
+                    f"missing for patients: {missing_lead_patients[:5]}"
+                )
     system_prompt_file = resolve_prompt_path(
         str(args.system_prompt_file),
         task=task,
@@ -178,12 +188,12 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
     )
     planned_patient_predictions = len(folds) * planned_runs
     planned_image_requests = (
-        planned_patient_predictions
+        planned_patient_predictions * len(clinical_leads)
         if task == CLINICAL_TASK
         else planned_patient_predictions * 3
     )
     planned_model_requests = (
-        planned_patient_predictions
+        planned_patient_predictions * len(clinical_leads)
         if task == CLINICAL_TASK
         else planned_patient_predictions * 3
     )
@@ -196,13 +206,24 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
                 for seed in seeds:
                     if k == 0 or condition == ZERO_SHOT_CONDITION:
                         context_ids = []
-                    elif task == CLINICAL_TASK:
+                    elif task == CLINICAL_TASK and condition == BALANCED_CONDITION:
                         context_ids = select_balanced_clinical_context_patient_ids(
                             clinical_patients,
                             test_patient_id=str(fold["test_patient_id"]),
                             k=k,
                             seed=seed + int(fold["fold_id"]) * 100_003,
                         )
+                    elif task == CLINICAL_TASK and has_context_dataset:
+                        context_ids = select_context_patient_ids(
+                            clinical_patients,
+                            test_patient_id="__real_eval_patient__",
+                            k=k,
+                            seed=seed + int(fold["fold_id"]) * 100_003,
+                        )
+                    elif task == CLINICAL_TASK:
+                        context_ids = selection_for(fold, k=k, seed=seed)[
+                            "context_patient_ids"
+                        ]
                     elif has_context_dataset:
                         context_ids = select_context_patient_ids(
                             qrs_patients,
@@ -217,7 +238,7 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
                     if condition == NO_SUPPORT_IMAGES_CONDITION:
                         multiplier = 0
                     elif task == CLINICAL_TASK:
-                        multiplier = 1
+                        multiplier = len(clinical_leads)
                     else:
                         multiplier = 3
                     context_examples += len(context_ids) * multiplier * len(models)
@@ -236,7 +257,9 @@ def validate_setup(args: argparse.Namespace) -> dict[str, Any]:
         "models": models,
         "vlm_runtime": args.vlm_runtime,
         "task": task,
-        "clinical_lead": clinical_lead if task == CLINICAL_TASK else "",
+        "clinical_lead": ",".join(clinical_leads) if task == CLINICAL_TASK else "",
+        "clinical_leads": clinical_leads if task == CLINICAL_TASK else [],
+        "clinical_aggregation": clinical_aggregation if task == CLINICAL_TASK else "",
         "conditions": conditions,
         "condition_k_plan": condition_k_plan,
         "planned_patient_predictions": planned_patient_predictions,
@@ -260,6 +283,23 @@ def resolve_models(args: argparse.Namespace) -> list[str]:
 
 def parse_string_list(text: str) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
+
+
+def resolve_clinical_leads(args: argparse.Namespace) -> list[str]:
+    leads = [
+        lead.upper()
+        for lead in parse_string_list(str(getattr(args, "clinical_leads", "")))
+    ]
+    if not leads:
+        leads = [str(getattr(args, "clinical_lead", "V2")).upper()]
+    seen: set[str] = set()
+    unique_leads: list[str] = []
+    for lead in leads:
+        if lead in seen:
+            continue
+        seen.add(lead)
+        unique_leads.append(lead)
+    return unique_leads
 
 
 def resolve_prompt_path(path: str, *, task: str, kind: str) -> str:

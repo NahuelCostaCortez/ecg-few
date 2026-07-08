@@ -6,6 +6,7 @@ SLRCORES=1
 #SLRNGPU=H100
 SLRNGPU=${SLRNGPU:-A6000}
 SLRGPUS=${SLRGPUS:-1}
+TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-${SLRGPUS}}"
 MODEL="${MODEL:-google/gemma-4-E4B-it}"
 PORT="${PORT:-8000}"
 
@@ -18,7 +19,8 @@ source .venv/bin/activate
 vllm serve \
   --model "${MODEL}" \
   --host 0.0.0.0 \
-  --port "${PORT}"
+  --port "${PORT}" \
+  --tensor-parallel-size "${TENSOR_PARALLEL_SIZE}"
 
 # check if the server is up
 # curl http://slave2.pir.uo:8000/v1/models

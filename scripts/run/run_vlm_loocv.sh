@@ -12,6 +12,8 @@ CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
 SEEDS="${SEEDS:-42,123,2026}"
 TASK="${TASK:-morphology}"
 CLINICAL_LEAD="${CLINICAL_LEAD:-V2}"
+CLINICAL_LEADS="${CLINICAL_LEADS:-V1,V2,V3}"
+CLINICAL_AGGREGATION="${CLINICAL_AGGREGATION:-majority}"
 if [ "${CONTEXT_DATASET_ROOT+x}" != "x" ]; then
   if [ "$TASK" = "clinical" ]; then
     CONTEXT_DATASET_ROOT=""
@@ -54,6 +56,8 @@ fi
   --models "$MODELS" \
   --task "$TASK" \
   --clinical-lead "$CLINICAL_LEAD" \
+  --clinical-leads "$CLINICAL_LEADS" \
+  --clinical-aggregation "$CLINICAL_AGGREGATION" \
   --conditions "$CONDITIONS" \
   --vlm-runtime "$VLM_RUNTIME" \
   --max-output-tokens "$MAX_OUTPUT_TOKENS" \

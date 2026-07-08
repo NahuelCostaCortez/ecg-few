@@ -13,6 +13,8 @@ CONTROL_K_VALUES="${CONTROL_K_VALUES:-8,16,32}"
 SEEDS="${SEEDS:-42,123,2026}"
 CONDITIONS="${CONDITIONS:-zero_shot,normal,balanced,permuted,no_support_images}"
 CLINICAL_LEAD="${CLINICAL_LEAD:-V2}"
+CLINICAL_LEADS="${CLINICAL_LEADS:-V1,V2,V3}"
+CLINICAL_AGGREGATION="${CLINICAL_AGGREGATION:-majority}"
 
 RUN_VALIDATE="${RUN_VALIDATE:-1}"
 RUN_COMPARISONS="${RUN_COMPARISONS:-auto}"
@@ -25,7 +27,7 @@ SIMULATOR_DATASET_ROOT="${SIMULATOR_DATASET_ROOT:-$ROOT_DIR/data/simulator_qrs}"
 HUCA_DATASET_ROOT="${HUCA_DATASET_ROOT:-$ROOT_DIR/data/brugada_huca}"
 
 export MPLBACKEND VLM_RUNTIME VLM_API_BASE VLM_MODELS CONTROL_K_VALUES
-export SEEDS CONDITIONS CLINICAL_LEAD
+export SEEDS CONDITIONS CLINICAL_LEAD CLINICAL_LEADS CLINICAL_AGGREGATION
 
 if [ "$VLM_RUNTIME" = "remote_api" ] && [ "$VLM_API_BASE" = "" ]; then
   echo "Set VLM_API_BASE before running remote_api experiments."
@@ -112,6 +114,8 @@ printf "VLM models: %s\n" "$VLM_MODELS"
 printf "VLM k values: %s\n" "$VLM_K_VALUES"
 printf "Seeds: %s\n" "$SEEDS"
 printf "Conditions: %s\n" "$CONDITIONS"
+printf "Clinical leads: %s\n" "$CLINICAL_LEADS"
+printf "Clinical aggregation: %s\n" "$CLINICAL_AGGREGATION"
 printf "Comparisons: %s\n" "$RUN_COMPARISONS"
 printf "Audit: %s\n" "$RUN_AUDIT"
 
