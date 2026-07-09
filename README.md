@@ -225,6 +225,12 @@ Si se reconstruyen los datos reales desde WFDB:
 uv sync --extra dev --extra cnn --extra real-data
 ```
 
+Ejecución end-to-end:
+
+```bash
+sh scripts/run/run_tfg_end_to_end.sh
+```
+
 Construcción de datasets:
 
 ```bash
